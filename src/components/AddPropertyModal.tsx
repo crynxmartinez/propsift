@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Loader2, Search, Check } from 'lucide-react'
 
 interface AddPropertyModalProps {
@@ -105,7 +105,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   const [addressResults, setAddressResults] = useState<AddressResult[]>([])
   const [searchingAddress, setSearchingAddress] = useState(false)
   const [showAddressDropdown, setShowAddressDropdown] = useState(false)
-  const [addressSelected, setAddressSelected] = useState(false)
+  const skipNextSearchRef = useRef(false)
   
   // Options for dropdowns
   const [statuses, setStatuses] = useState<StatusItem[]>([])
@@ -187,8 +187,8 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   // Debounce effect for address search
   useEffect(() => {
     // Skip search if address was just selected from dropdown
-    if (addressSelected) {
-      setAddressSelected(false)
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false
       return
     }
     const timer = setTimeout(() => {
@@ -197,7 +197,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [addressQuery, searchAddress, addressSelected])
+  }, [addressQuery, searchAddress])
 
   const selectAddress = (result: AddressResult) => {
     const street = [result.address.house_number, result.address.road].filter(Boolean).join(' ')
@@ -210,7 +210,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
       propertyState: result.address.state || '',
       propertyZip: result.address.postcode || '',
     }))
-    setAddressSelected(true)
+    skipNextSearchRef.current = true
     setAddressQuery(street)
     setAddressResults([])
     setShowAddressDropdown(false)
