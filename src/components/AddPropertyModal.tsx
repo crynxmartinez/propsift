@@ -111,6 +111,12 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   const [motivations, setMotivations] = useState<MotivationItem[]>([])
   const [tags, setTags] = useState<TagItem[]>([])
   const [users, setUsers] = useState<UserItem[]>([])
+  
+  // Search states for motivations and tags
+  const [motivationSearch, setMotivationSearch] = useState('')
+  const [tagSearch, setTagSearch] = useState('')
+  const [showMotivationDropdown, setShowMotivationDropdown] = useState(false)
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
 
   // Fetch options on mount
   useEffect(() => {
@@ -306,8 +312,27 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
     setFormData(initialFormData)
     setAddressQuery('')
     setAddressResults([])
+    setMotivationSearch('')
+    setTagSearch('')
+    setShowMotivationDropdown(false)
+    setShowTagDropdown(false)
     onClose()
   }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-motivation-dropdown]')) {
+        setShowMotivationDropdown(false)
+      }
+      if (!target.closest('[data-tag-dropdown]')) {
+        setShowTagDropdown(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   const canProceed = () => {
     if (step === 1) {
@@ -640,50 +665,142 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
 
               {/* Motivations */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Motivations</label>
-                <div className="flex flex-wrap gap-2">
-                  {motivations.length === 0 ? (
-                    <p className="text-sm text-gray-500">No motivations available</p>
-                  ) : (
-                    motivations.map((motivation) => (
-                      <button
-                        key={motivation.id}
-                        type="button"
-                        onClick={() => toggleArrayItem('motivationIds', motivation.id)}
-                        className={`px-3 py-1 rounded-full text-sm transition ${
-                          formData.motivationIds.includes(motivation.id)
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {motivation.name}
-                      </button>
-                    ))
+                <label className="block text-sm font-medium text-gray-700 mb-1">Motivations</label>
+                {/* Selected motivations */}
+                {formData.motivationIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.motivationIds.map((id) => {
+                      const motivation = motivations.find(m => m.id === id)
+                      return motivation ? (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                        >
+                          {motivation.name}
+                          <button
+                            type="button"
+                            onClick={() => toggleArrayItem('motivationIds', id)}
+                            className="hover:text-purple-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ) : null
+                    })}
+                  </div>
+                )}
+                {/* Search dropdown */}
+                <div className="relative" data-motivation-dropdown>
+                  <input
+                    type="text"
+                    value={motivationSearch}
+                    onChange={(e) => setMotivationSearch(e.target.value)}
+                    onFocus={() => setShowMotivationDropdown(true)}
+                    placeholder="Search motivations..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  {showMotivationDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {motivations.length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-500">No motivations available</div>
+                      ) : (
+                        motivations
+                          .filter(m => 
+                            m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                            !formData.motivationIds.includes(m.id)
+                          )
+                          .map((motivation) => (
+                            <button
+                              key={motivation.id}
+                              type="button"
+                              onClick={() => {
+                                toggleArrayItem('motivationIds', motivation.id)
+                                setMotivationSearch('')
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            >
+                              {motivation.name}
+                            </button>
+                          ))
+                      )}
+                      {motivations.filter(m => 
+                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                        !formData.motivationIds.includes(m.id)
+                      ).length === 0 && motivations.length > 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                <div className="flex flex-wrap gap-2">
-                  {tags.length === 0 ? (
-                    <p className="text-sm text-gray-500">No tags available</p>
-                  ) : (
-                    tags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => toggleArrayItem('tagIds', tag.id)}
-                        className={`px-3 py-1 rounded-full text-sm transition ${
-                          formData.tagIds.includes(tag.id)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {tag.name}
-                      </button>
-                    ))
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                {/* Selected tags */}
+                {formData.tagIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.tagIds.map((id) => {
+                      const tag = tags.find(t => t.id === id)
+                      return tag ? (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                        >
+                          {tag.name}
+                          <button
+                            type="button"
+                            onClick={() => toggleArrayItem('tagIds', id)}
+                            className="hover:text-blue-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ) : null
+                    })}
+                  </div>
+                )}
+                {/* Search dropdown */}
+                <div className="relative" data-tag-dropdown>
+                  <input
+                    type="text"
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    onFocus={() => setShowTagDropdown(true)}
+                    placeholder="Search tags..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  {showTagDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {tags.length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-500">No tags available</div>
+                      ) : (
+                        tags
+                          .filter(t => 
+                            t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                            !formData.tagIds.includes(t.id)
+                          )
+                          .map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => {
+                                toggleArrayItem('tagIds', tag.id)
+                                setTagSearch('')
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            >
+                              {tag.name}
+                            </button>
+                          ))
+                      )}
+                      {tags.filter(t => 
+                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                        !formData.tagIds.includes(t.id)
+                      ).length === 0 && tags.length > 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
