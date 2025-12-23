@@ -318,11 +318,12 @@ export default function StatusesPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-10 px-2 py-3"></th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Properties</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
+                <th className="w-48 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Name</th>
+                <th className="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                <th className="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Properties</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                <th className="w-32 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
+                <th className="w-12 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -356,17 +357,17 @@ export default function StatusesPage() {
                       {status.isDefault ? '⚙️ System' : '👤 Custom'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-20">
-                      <span className="text-sm text-blue-600">
-                        {status.recordCount} {status.recordCount === 1 ? 'property' : 'properties'}
-                      </span>
-                      <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                        See Properties <ExternalLink className="w-3 h-3" />
-                      </button>
-                    </div>
+                  <td className="w-32 px-6 py-4">
+                    <span className="text-sm text-blue-600">
+                      {status.recordCount} {status.recordCount === 1 ? 'property' : 'properties'}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4">
+                    <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                      See Properties <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </td>
+                  <td className="w-32 px-6 py-4 text-right">
                     <button
                       onClick={() => handleToggle(status)}
                       disabled={togglingId === status.id}
