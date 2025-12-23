@@ -215,8 +215,29 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
     }
   }, [formData.sameAsProperty, formData.propertyStreet, formData.propertyCity, formData.propertyState, formData.propertyZip])
 
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '')
+    
+    // Limit to 11 digits (1 + 10 digit US number)
+    const limited = digits.slice(0, 11)
+    
+    // Format based on length
+    if (limited.length === 0) return ''
+    if (limited.length <= 3) return `(${limited}`
+    if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`
+    if (limited.length <= 10) return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`
+    // 11 digits - includes country code
+    return `+${limited.slice(0, 1)} (${limited.slice(1, 4)}) ${limited.slice(4, 7)}-${limited.slice(7)}`
+  }
+
   const updateFormData = (field: keyof FormData, value: string | boolean | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    // Auto-format phone number
+    if (field === 'phone' && typeof value === 'string') {
+      setFormData(prev => ({ ...prev, [field]: formatPhoneNumber(value) }))
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
   }
 
   const toggleArrayItem = (field: 'motivationIds' | 'tagIds', id: string) => {
