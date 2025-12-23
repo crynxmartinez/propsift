@@ -357,7 +357,7 @@ export default function StatusesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-20">
                       <span className="text-sm text-blue-600">
                         {status.recordCount} {status.recordCount === 1 ? 'property' : 'properties'}
                       </span>
