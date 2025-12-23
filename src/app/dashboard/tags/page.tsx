@@ -20,6 +20,7 @@ export default function TagsPage() {
   const [editingName, setEditingName] = useState('')
   const [updating, setUpdating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<TagItem | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -110,10 +111,12 @@ export default function TagsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id)
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    
+    setDeletingId(deleteConfirm.id)
     try {
-      const res = await fetch(`/api/tags/${id}`, {
+      const res = await fetch(`/api/tags/${deleteConfirm.id}`, {
         method: 'DELETE'
       })
 
@@ -129,6 +132,7 @@ export default function TagsPage() {
       showMessage('error', err instanceof Error ? err.message : 'Failed to delete tag')
     } finally {
       setDeletingId(null)
+      setDeleteConfirm(null)
     }
   }
 
@@ -280,7 +284,7 @@ export default function TagsPage() {
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(tag.id)}
+                          onClick={() => setDeleteConfirm(tag)}
                           disabled={deletingId === tag.id}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                         >
@@ -295,6 +299,39 @@ export default function TagsPage() {
           </table>
         )}
       </div>
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Delete Tag</h2>
+              <p className="text-gray-600">
+                Are you sure you want to delete <span className="font-medium">"{deleteConfirm.name}"</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-200 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingId === deleteConfirm.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

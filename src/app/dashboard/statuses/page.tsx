@@ -39,6 +39,7 @@ export default function StatusesPage() {
 
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<StatusItem | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
 
@@ -175,11 +176,12 @@ export default function StatusesPage() {
     }
   }
 
-  const handleDelete = async (status: StatusItem) => {
-    setDeletingId(status.id)
-    setOpenMenuId(null)
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    
+    setDeletingId(deleteConfirm.id)
     try {
-      const res = await fetch(`/api/statuses/${status.id}`, {
+      const res = await fetch(`/api/statuses/${deleteConfirm.id}`, {
         method: 'DELETE'
       })
 
@@ -195,6 +197,7 @@ export default function StatusesPage() {
       showMessage('error', err instanceof Error ? err.message : 'Failed to delete status')
     } finally {
       setDeletingId(null)
+      setDeleteConfirm(null)
     }
   }
 
@@ -402,7 +405,10 @@ export default function StatusesPage() {
                           </button>
                           {!status.isDefault && (
                             <button
-                              onClick={() => handleDelete(status)}
+                              onClick={() => {
+                                setDeleteConfirm(status)
+                                setOpenMenuId(null)
+                              }}
                               disabled={deletingId === status.id}
                               className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                             >
@@ -491,6 +497,39 @@ export default function StatusesPage() {
                   <Check className="w-4 h-4" />
                 )}
                 {modalMode === 'create' ? 'Create Status' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Delete Status</h2>
+              <p className="text-gray-600">
+                Are you sure you want to delete <span className="font-medium" style={{ color: deleteConfirm.color }}>"{deleteConfirm.name}"</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-200 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingId === deleteConfirm.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Delete
               </button>
             </div>
           </div>
