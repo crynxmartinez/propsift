@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       ownerFirstName,
       ownerLastName,
       ownerFullName,
+      isCompany: isCompanyInput,
       propertyStreet,
       propertyCity,
       propertyState,
@@ -92,7 +93,13 @@ export async function POST(request: NextRequest) {
       mailingCity,
       mailingState,
       mailingZip,
+      phone,
+      email,
+      notes,
       statusId,
+      assignedToId,
+      motivationIds,
+      tagIds,
     } = body;
 
     // Validate required field
@@ -103,14 +110,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-detect if company
-    const isCompany = detectCompany(ownerFullName);
+    // Use provided isCompany or auto-detect
+    const isCompany = isCompanyInput !== undefined ? isCompanyInput : detectCompany(ownerFullName);
 
-    // Build record data
-    const recordData = {
+    // Build record data for completeness check
+    const recordDataForCheck = {
       ownerFirstName: ownerFirstName || null,
       ownerLastName: ownerLastName || null,
-      ownerFullName,
       isCompany,
       isCompanyOverride: null,
       propertyStreet: propertyStreet || null,
@@ -121,18 +127,49 @@ export async function POST(request: NextRequest) {
       mailingCity: mailingCity || null,
       mailingState: mailingState || null,
       mailingZip: mailingZip || null,
-      statusId: statusId || null,
-      isComplete: false, // Will be calculated below
     };
 
     // Calculate completeness
-    recordData.isComplete = isRecordComplete(recordData);
+    const isComplete = isRecordComplete(recordDataForCheck);
 
-    // Create record
+    // Create record with relations
     const record = await prisma.record.create({
-      data: recordData,
+      data: {
+        ownerFirstName: ownerFirstName || null,
+        ownerLastName: ownerLastName || null,
+        ownerFullName,
+        isCompany,
+        isCompanyOverride: null,
+        propertyStreet: propertyStreet || null,
+        propertyCity: propertyCity || null,
+        propertyState: propertyState || null,
+        propertyZip: propertyZip || null,
+        mailingStreet: mailingStreet || null,
+        mailingCity: mailingCity || null,
+        mailingState: mailingState || null,
+        mailingZip: mailingZip || null,
+        phone: phone || null,
+        email: email || null,
+        notes: notes || null,
+        statusId: statusId || null,
+        assignedToId: assignedToId || null,
+        isComplete,
+        // Create tag relations
+        recordTags: tagIds && tagIds.length > 0 ? {
+          create: tagIds.map((tagId: string) => ({
+            tagId,
+          })),
+        } : undefined,
+        // Create motivation relations
+        recordMotivations: motivationIds && motivationIds.length > 0 ? {
+          create: motivationIds.map((motivationId: string) => ({
+            motivationId,
+          })),
+        } : undefined,
+      },
       include: {
         status: true,
+        assignedTo: true,
         recordTags: {
           include: {
             tag: true,

@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  name            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  assignedRecords Record[]
 }
 
 model Property {
@@ -127,12 +128,23 @@ model Record {
   mailingState        String?
   mailingZip          String?
   
+  // Contact Information
+  phone               String?
+  email               String?
+  
+  // Notes
+  notes               String?
+  
   // Completeness (computed on save)
   isComplete          Boolean  @default(false)
   
   // Status relation
   statusId            String?
   status              Status?  @relation(fields: [statusId], references: [id])
+  
+  // Assigned To
+  assignedToId        String?
+  assignedTo          User?    @relation(fields: [assignedToId], references: [id])
   
   // Skiptrace
   skiptraceDate       DateTime?

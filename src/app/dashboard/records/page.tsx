@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import AddPropertyModal from '@/components/AddPropertyModal'
 
 interface RecordItem {
   id: string
@@ -69,6 +70,7 @@ export default function RecordsPage() {
   const [activeTab, setActiveTab] = useState<'property' | 'owner'>('property')
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -225,7 +227,13 @@ export default function RecordsPage() {
             </button>
             {showAddDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                <button 
+                  onClick={() => {
+                    setShowAddModal(true)
+                    setShowAddDropdown(false)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                >
                   Add Single Property
                 </button>
                 <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
@@ -493,6 +501,15 @@ export default function RecordsPage() {
           </>
         )}
       </div>
+
+      {/* Add Property Modal */}
+      <AddPropertyModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          fetchRecords()
+        }}
+      />
     </div>
   )
 }
