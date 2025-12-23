@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CircleDot, Plus, Pencil, Trash2, X, Check, Loader2, MoreVertical } from 'lucide-react'
+import { CircleDot, Plus, Pencil, Trash2, X, Check, Loader2, MoreVertical, GripVertical } from 'lucide-react'
 
 interface StatusItem {
   id: string
@@ -9,6 +9,7 @@ interface StatusItem {
   color: string
   isDefault: boolean
   isActive: boolean
+  order: number
   recordCount: number
   createdAt: string
   updatedAt: string
@@ -39,6 +40,7 @@ export default function StatusesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
 
   const fetchStatuses = async () => {
     try {
@@ -196,6 +198,59 @@ export default function StatusesPage() {
     }
   }
 
+  const handleDragStart = (e: React.DragEvent, statusId: string) => {
+    setDraggedId(statusId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null)
+      return
+    }
+
+    const draggedIndex = statuses.findIndex(s => s.id === draggedId)
+    const targetIndex = statuses.findIndex(s => s.id === targetId)
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedId(null)
+      return
+    }
+
+    const newStatuses = [...statuses]
+    const [draggedItem] = newStatuses.splice(draggedIndex, 1)
+    newStatuses.splice(targetIndex, 0, draggedItem)
+
+    setStatuses(newStatuses)
+    setDraggedId(null)
+
+    try {
+      const orderedIds = newStatuses.map(s => s.id)
+      const res = await fetch('/api/statuses/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to save order')
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to save order')
+      fetchStatuses()
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedId(null)
+  }
+
   const filteredStatuses = showCustomOnly
     ? statuses.filter(s => !s.isDefault)
     : statuses
@@ -259,6 +314,7 @@ export default function StatusesPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="w-10 px-2 py-3"></th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Properties</th>
@@ -268,7 +324,20 @@ export default function StatusesPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredStatuses.map((status) => (
-                <tr key={status.id} className="hover:bg-gray-50">
+                <tr
+                  key={status.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, status.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, status.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`hover:bg-gray-50 ${draggedId === status.id ? 'opacity-50' : ''}`}
+                >
+                  <td className="w-10 px-2 py-4">
+                    <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
+                      <GripVertical className="w-5 h-5" />
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <span

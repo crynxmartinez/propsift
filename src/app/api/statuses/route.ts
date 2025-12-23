@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const DEFAULT_STATUSES = [
-  { name: 'New Lead', color: '#3B82F6', isDefault: true },
-  { name: 'Contacted', color: '#06B6D4', isDefault: true },
-  { name: 'Follow Up', color: '#EAB308', isDefault: true },
-  { name: 'Qualified', color: '#22C55E', isDefault: true },
-  { name: 'Not Interested', color: '#6B7280', isDefault: true },
-  { name: 'Negotiating', color: '#F97316', isDefault: true },
-  { name: 'Under Contract', color: '#8B5CF6', isDefault: true },
-  { name: 'Closed', color: '#10B981', isDefault: true },
-  { name: 'Opt Out', color: '#EF4444', isDefault: true },
-  { name: 'DNC', color: '#991B1B', isDefault: true },
+  { name: 'New Lead', color: '#3B82F6', isDefault: true, order: 0 },
+  { name: 'Contacted', color: '#06B6D4', isDefault: true, order: 1 },
+  { name: 'Follow Up', color: '#EAB308', isDefault: true, order: 2 },
+  { name: 'Qualified', color: '#22C55E', isDefault: true, order: 3 },
+  { name: 'Not Interested', color: '#6B7280', isDefault: true, order: 4 },
+  { name: 'Negotiating', color: '#F97316', isDefault: true, order: 5 },
+  { name: 'Under Contract', color: '#8B5CF6', isDefault: true, order: 6 },
+  { name: 'Closed', color: '#10B981', isDefault: true, order: 7 },
+  { name: 'Opt Out', color: '#EF4444', isDefault: true, order: 8 },
+  { name: 'DNC', color: '#991B1B', isDefault: true, order: 9 },
 ]
 
 async function seedDefaultStatuses() {
@@ -35,10 +35,7 @@ export async function GET() {
           select: { properties: true }
         }
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: { order: 'asc' }
     })
 
     const formattedStatuses = statuses.map(status => ({
@@ -47,6 +44,7 @@ export async function GET() {
       color: status.color,
       isDefault: status.isDefault,
       isActive: status.isActive,
+      order: status.order,
       recordCount: status._count.properties,
       createdAt: status.createdAt,
       updatedAt: status.updatedAt
@@ -79,12 +77,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Status with this name already exists' }, { status: 409 })
     }
 
+    const maxOrder = await prisma.status.aggregate({
+      _max: { order: true }
+    })
+    const newOrder = (maxOrder._max.order ?? -1) + 1
+
     const status = await prisma.status.create({
       data: {
         name: name.trim(),
         color: color.trim(),
         isDefault: false,
-        isActive: true
+        isActive: true,
+        order: newOrder
       }
     })
 
