@@ -4,9 +4,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   Home, 
-  Search, 
-  Upload, 
-  Database, 
   Settings, 
   LogOut,
   Building2
@@ -14,9 +11,6 @@ import {
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Property Search', href: '/dashboard/search', icon: Search },
-  { name: 'Batch Upload', href: '/dashboard/upload', icon: Upload },
-  { name: 'Properties', href: '/dashboard/properties', icon: Database },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
