@@ -261,7 +261,7 @@ export default function MotivationsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-8">
                       <button className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1">
                         See Breakdown <ExternalLink className="w-3 h-3" />
                       </button>
