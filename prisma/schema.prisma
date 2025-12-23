@@ -36,4 +36,44 @@ model Property {
   rawData         Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  tags            PropertyTag[]
+  motivations     PropertyMotivation[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  properties PropertyTag[]
+}
+
+model Motivation {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  properties PropertyMotivation[]
+}
+
+model PropertyTag {
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  tagId      String
+  createdAt  DateTime @default(now())
+
+  @@unique([propertyId, tagId])
+}
+
+model PropertyMotivation {
+  id           String     @id @default(cuid())
+  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId   String
+  motivation   Motivation @relation(fields: [motivationId], references: [id], onDelete: Restrict)
+  motivationId String
+  createdAt    DateTime   @default(now())
+
+  @@unique([propertyId, motivationId])
 }

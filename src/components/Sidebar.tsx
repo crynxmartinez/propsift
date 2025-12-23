@@ -6,11 +6,15 @@ import {
   Home, 
   Settings, 
   LogOut,
-  Building2
+  Building2,
+  Tag,
+  Zap
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Tags', href: '/dashboard/tags', icon: Tag },
+  { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
