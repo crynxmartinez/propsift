@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Tag, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink } from 'lucide-react'
+import { Tag, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink, MoreVertical } from 'lucide-react'
 
 interface TagItem {
   id: string
@@ -21,6 +21,7 @@ export default function TagsPage() {
   const [updating, setUpdating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<TagItem | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -39,6 +40,17 @@ export default function TagsPage() {
 
   useEffect(() => {
     fetchTags()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-menu-container]')) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
   const showMessage = (type: 'error' | 'success', message: string) => {
@@ -249,7 +261,7 @@ export default function TagsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-6">
                       <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
                         See Breakdown <ExternalLink className="w-3 h-3" />
                       </button>
@@ -276,20 +288,45 @@ export default function TagsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="relative" data-menu-container>
                         <button
-                          onClick={() => startEditing(tag)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === tag.id ? null : tag.id)
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600 rounded"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <MoreVertical className="w-5 h-5" />
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirm(tag)}
-                          disabled={deletingId === tag.id}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                        >
-                          {deletingId === tag.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        </button>
+                        {openMenuId === tag.id && (
+                          <div className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                            <button
+                              onClick={() => {
+                                startEditing(tag)
+                                setOpenMenuId(null)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Pencil className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDeleteConfirm(tag)
+                                setOpenMenuId(null)
+                              }}
+                              disabled={deletingId === tag.id}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              {deletingId === tag.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </td>

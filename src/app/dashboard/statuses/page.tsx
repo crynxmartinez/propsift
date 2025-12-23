@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CircleDot, Plus, Pencil, Trash2, X, Check, Loader2, MoreVertical, GripVertical } from 'lucide-react'
+import { CircleDot, Plus, Pencil, Trash2, X, Check, Loader2, MoreVertical, GripVertical, ExternalLink } from 'lucide-react'
 
 interface StatusItem {
   id: string
@@ -357,9 +357,14 @@ export default function StatusesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-blue-600">
-                      {status.recordCount} {status.recordCount === 1 ? 'property' : 'properties'}
-                    </span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-blue-600">
+                        {status.recordCount} {status.recordCount === 1 ? 'property' : 'properties'}
+                      </span>
+                      <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                        See Properties <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
