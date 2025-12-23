@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Property {
+  id              String   @id @default(cuid())
+  address         String   @unique
+  zpid            String?
+  streetAddress   String?
+  city            String?
+  state           String?
+  zipcode         String?
+  bedrooms        Int?
+  bathrooms       Float?
+  livingArea      Int?
+  yearBuilt       Int?
+  homeType        String?
+  price           Float?
+  zestimate       Float?
+  priceHistory    Json?
+  zestimateHistory Json?
+  rawData         Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
