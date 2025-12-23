@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 
@@ -55,6 +56,7 @@ interface ApiResponse {
 type FilterType = 'all' | 'complete' | 'incomplete'
 
 export default function RecordsPage() {
+  const router = useRouter()
   const [records, setRecords] = useState<RecordItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
@@ -387,8 +389,12 @@ export default function RecordsPage() {
                   </tr>
                 ) : (
                   records.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4">
+                    <tr 
+                      key={record.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/records/${record.id}`)}
+                    >
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedIds.has(record.id)}
@@ -397,19 +403,19 @@ export default function RecordsPage() {
                         />
                       </td>
                       <td className="px-4 py-4">
-                        <button className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium">
+                        <span className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium">
                           {record.ownerFullName}
-                        </button>
+                        </span>
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <button className="text-left hover:text-blue-600">
+                        <span className="text-left hover:text-blue-600">
                           {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
-                        </button>
+                        </span>
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <button className="text-left hover:text-blue-600">
+                        <span className="text-left hover:text-blue-600">
                           {formatAddress(record.propertyStreet, record.propertyCity, record.propertyState, record.propertyZip)}
-                        </button>
+                        </span>
                       </td>
                       <td className="px-4 py-4">
                         {record.status ? (

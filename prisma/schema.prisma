@@ -15,6 +15,8 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   assignedRecords Record[]
+  comments        RecordComment[]
+  activityLogs    RecordActivityLog[]
 }
 
 model Property {
@@ -128,12 +130,33 @@ model Record {
   mailingState        String?
   mailingZip          String?
   
-  // Contact Information
+  // Contact Information (legacy single phone/email - kept for backward compatibility)
   phone               String?
   email               String?
   
-  // Notes
+  // Notes & Description
   notes               String?
+  description         String?
+  
+  // Temperature (COLD, WARM, HOT)
+  temperature         String?
+  
+  // Property Details
+  estimatedValue      Decimal?
+  bedrooms            Int?
+  bathrooms           Decimal?
+  sqft                Int?
+  lotSize             Decimal?
+  structureType       String?
+  heatingType         String?
+  airConditioner      String?
+  yearBuilt           Int?
+  
+  // Attempt Counters
+  callAttempts        Int      @default(0)
+  directMailAttempts  Int      @default(0)
+  smsAttempts         Int      @default(0)
+  rvmAttempts         Int      @default(0)
   
   // Completeness (computed on save)
   isComplete          Boolean  @default(false)
@@ -156,6 +179,10 @@ model Record {
   // Relations
   recordTags          RecordTag[]
   recordMotivations   RecordMotivation[]
+  phoneNumbers        RecordPhoneNumber[]
+  emails              RecordEmail[]
+  comments            RecordComment[]
+  activityLogs        RecordActivityLog[]
 }
 
 model RecordTag {
@@ -178,4 +205,60 @@ model RecordMotivation {
   createdAt    DateTime   @default(now())
 
   @@unique([recordId, motivationId])
+}
+
+model RecordPhoneNumber {
+  id        String   @id @default(cuid())
+  recordId  String
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  number    String
+  type      String   @default("MOBILE") // MOBILE, LANDLINE
+  status    String   @default("NONE")   // NONE, PRIMARY, CORRECT, WRONG, NO_ANSWER, DNC, DEAD
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recordId])
+}
+
+model RecordEmail {
+  id        String   @id @default(cuid())
+  recordId  String
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  email     String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recordId])
+}
+
+model RecordComment {
+  id        String   @id @default(cuid())
+  recordId  String
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([recordId])
+  @@index([userId])
+}
+
+model RecordActivityLog {
+  id        String   @id @default(cuid())
+  recordId  String
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   // created, updated, deleted
+  field     String?  // which field changed
+  oldValue  String?
+  newValue  String?
+  source    String?  // Property Details Page, Bulk Actions, API, etc.
+  createdAt DateTime @default(now())
+
+  @@index([recordId])
+  @@index([userId])
+  @@index([createdAt])
 }
