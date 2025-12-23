@@ -607,16 +607,18 @@ export default function PropertyDetailsPage() {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">GALLERY/MAP</span>
             </div>
-            <div className="h-64 bg-gray-100">
-              {fullAddress && (
+            <div className="h-64 bg-gray-100 flex items-center justify-center">
+              {fullAddress ? (
                 <iframe
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   style={{ border: 0 }}
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(fullAddress)}&layer=mapnik`}
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`}
                   allowFullScreen
                 />
+              ) : (
+                <p className="text-gray-400">No address available for map</p>
               )}
             </div>
             {/* Description */}
