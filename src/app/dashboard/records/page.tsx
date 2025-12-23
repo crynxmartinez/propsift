@@ -256,16 +256,6 @@ export default function RecordsPage() {
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
             <p className="text-gray-500 mt-2">Loading records...</p>
           </div>
-        ) : records.length === 0 ? (
-          <div className="p-12 text-center">
-            <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500">No records found</p>
-            <p className="text-sm text-gray-400">
-              {filter === 'complete' ? 'No complete records yet' : 
-               filter === 'incomplete' ? 'No incomplete records' : 
-               'Add your first property record'}
-            </p>
-          </div>
         ) : (
           <>
             <table className="w-full table-fixed">
@@ -324,54 +314,68 @@ export default function RecordsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {records.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(record.id)}
-                        onChange={() => toggleSelect(record.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <button className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium">
-                        {record.ownerFullName}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-sm">
-                      <button className="text-left hover:text-blue-600">
-                        {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-sm">
-                      <button className="text-left hover:text-blue-600">
-                        {formatAddress(record.propertyStreet, record.propertyCity, record.propertyState, record.propertyZip)}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4">
-                      {record.status ? (
-                        <span
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: record.status.color }}
-                        >
-                          {record.status.name}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-sm">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-500">
-                      {formatSkiptraceDate(record.skiptraceDate)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="inline-flex items-center gap-1 text-sm text-gray-500">
-                        <span className="text-lg">📋</span>
-                        {record.recordTags.length}
-                      </span>
+                {records.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center">
+                      <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500">No records found</p>
+                      <p className="text-sm text-gray-400">
+                        {filter === 'complete' ? 'No complete records yet' : 
+                         filter === 'incomplete' ? 'No incomplete records' : 
+                         'Add your first property record'}
+                      </p>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  records.map((record) => (
+                    <tr key={record.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(record.id)}
+                          onChange={() => toggleSelect(record.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <button className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium">
+                          {record.ownerFullName}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        <button className="text-left hover:text-blue-600">
+                          {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        <button className="text-left hover:text-blue-600">
+                          {formatAddress(record.propertyStreet, record.propertyCity, record.propertyState, record.propertyZip)}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4">
+                        {record.status ? (
+                          <span
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                            style={{ backgroundColor: record.status.color }}
+                          >
+                            {record.status.name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        {formatSkiptraceDate(record.skiptraceDate)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="inline-flex items-center gap-1 text-sm text-gray-500">
+                          <span className="text-lg">📋</span>
+                          {record.recordTags.length}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
 
