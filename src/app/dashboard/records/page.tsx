@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 interface RecordItem {
   id: string
@@ -66,6 +66,9 @@ export default function RecordsPage() {
   const [showAddDropdown, setShowAddDropdown] = useState(false)
   const [showSelectDropdown, setShowSelectDropdown] = useState(false)
   const [showLimitDropdown, setShowLimitDropdown] = useState(false)
+  const [activeTab, setActiveTab] = useState<'property' | 'owner'>('property')
+  const [assignedToMe, setAssignedToMe] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -169,24 +172,45 @@ export default function RecordsPage() {
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <FileText className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Property Records</h1>
-            <p className="text-gray-500">{counts.all} records total</p>
-          </div>
+      {/* Row 1: Top Navigation */}
+      <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-4">
+        {/* Left: Tab Navigation */}
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => setActiveTab('property')}
+            className={`text-sm font-medium pb-2 border-b-2 transition ${
+              activeTab === 'property'
+                ? 'text-blue-600 border-blue-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            Property Records
+          </button>
+          <button
+            onClick={() => setActiveTab('owner')}
+            className={`text-sm font-medium pb-2 border-b-2 transition ${
+              activeTab === 'owner'
+                ? 'text-blue-600 border-blue-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            Owner Records
+          </button>
         </div>
 
+        {/* Right: Search + Add Button */}
         <div className="flex items-center gap-3">
-          {/* Filter Button */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-            <Filter className="w-4 h-4" />
-            Filter Records
-          </button>
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search for records..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
 
           {/* Add New Property Button */}
           <div className="relative" data-dropdown>
@@ -195,11 +219,9 @@ export default function RecordsPage() {
                 e.stopPropagation()
                 setShowAddDropdown(!showAddDropdown)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
             >
-              <Plus className="w-4 h-4" />
               Add New Property
-              <ChevronDown className="w-4 h-4" />
             </button>
             {showAddDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
@@ -215,38 +237,67 @@ export default function RecordsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6">
-        <button
-          onClick={() => setFilter('complete')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            filter === 'complete'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Complete ({counts.complete})
-        </button>
-        <button
-          onClick={() => setFilter('incomplete')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            filter === 'incomplete'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Incomplete ({counts.incomplete})
-        </button>
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            filter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          All ({counts.all})
-        </button>
+      {/* Row 2: Filter Tabs + Assigned to me + Filter Button */}
+      <div className="flex items-center justify-between mb-6">
+        {/* Left: Filter Tabs */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setFilter('complete')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              filter === 'complete'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Complete
+          </button>
+          <button
+            onClick={() => setFilter('incomplete')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              filter === 'incomplete'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Incomplete
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              filter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+        </div>
+
+        {/* Right: Assigned to me + Filter Records */}
+        <div className="flex items-center gap-4">
+          {/* Assigned to me toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <button
+              onClick={() => setAssignedToMe(!assignedToMe)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                assignedToMe ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  assignedToMe ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-600">Assigned to me</span>
+          </label>
+
+          {/* Filter Records Button */}
+          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <Filter className="w-4 h-4" />
+            Filter Records
+          </button>
+        </div>
       </div>
 
       {/* Table */}
