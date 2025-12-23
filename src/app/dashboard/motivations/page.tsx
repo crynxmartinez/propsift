@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Plus, Pencil, Trash2, X, Check, Loader2 } from 'lucide-react'
+import { Zap, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink } from 'lucide-react'
 
 interface MotivationItem {
   id: string
@@ -217,6 +217,7 @@ export default function MotivationsPage() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -242,6 +243,16 @@ export default function MotivationsPage() {
                     }`}>
                       {motivation.recordCount} record{motivation.recordCount !== 1 ? 's' : ''}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <button className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                        See Breakdown <ExternalLink className="w-3 h-3" />
+                      </button>
+                      <button className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                        See Properties <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     {editingId === motivation.id ? (
