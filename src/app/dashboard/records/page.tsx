@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 
 interface RecordItem {
@@ -73,6 +73,17 @@ export default function RecordsPage() {
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showManageDropdown, setShowManageDropdown] = useState(false)
+  const [bulkActionModal, setBulkActionModal] = useState<string | null>(null)
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+  
+  // Options for bulk actions
+  const [tags, setTags] = useState<{id: string, name: string}[]>([])
+  const [motivations, setMotivations] = useState<{id: string, name: string}[]>([])
+  const [statuses, setStatuses] = useState<{id: string, name: string, color: string}[]>([])
+  const [users, setUsers] = useState<{id: string, name: string | null, email: string}[]>([])
+  const [selectedBulkItems, setSelectedBulkItems] = useState<string[]>([])
+  const [selectedTemperature, setSelectedTemperature] = useState<string>('')
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -107,11 +118,91 @@ export default function RecordsPage() {
         setShowAddDropdown(false)
         setShowSelectDropdown(false)
         setShowLimitDropdown(false)
+        setShowManageDropdown(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
+
+  // Fetch options for bulk actions
+  const fetchBulkOptions = async () => {
+    try {
+      const [tagsRes, motivationsRes, statusesRes, usersRes] = await Promise.all([
+        fetch('/api/tags'),
+        fetch('/api/motivations'),
+        fetch('/api/statuses'),
+        fetch('/api/users'),
+      ])
+      if (tagsRes.ok) setTags(await tagsRes.json())
+      if (motivationsRes.ok) setMotivations(await motivationsRes.json())
+      if (statusesRes.ok) setStatuses(await statusesRes.json())
+      if (usersRes.ok) setUsers(await usersRes.json())
+    } catch (error) {
+      console.error('Error fetching bulk options:', error)
+    }
+  }
+
+  const openBulkActionModal = (action: string) => {
+    setBulkActionModal(action)
+    setShowManageDropdown(false)
+    setSelectedBulkItems([])
+    setSelectedTemperature('')
+    if (tags.length === 0) fetchBulkOptions()
+  }
+
+  const executeBulkAction = async () => {
+    if (!bulkActionModal) return
+    setBulkActionLoading(true)
+    try {
+      const recordIds = Array.from(selectedIds)
+      let body: Record<string, unknown> = { action: bulkActionModal, recordIds }
+
+      switch (bulkActionModal) {
+        case 'addTags':
+        case 'removeTags':
+          body.tagIds = selectedBulkItems
+          break
+        case 'addMotivations':
+        case 'removeMotivations':
+          body.motivationIds = selectedBulkItems
+          break
+        case 'updateStatus':
+          body.statusId = selectedBulkItems[0] || null
+          break
+        case 'updateTemperature':
+          body.temperature = selectedTemperature
+          break
+        case 'assignToUser':
+          body.userId = selectedBulkItems[0] || null
+          break
+        case 'deletePhones':
+        case 'deleteRecords':
+          // No additional data needed
+          break
+      }
+
+      const res = await fetch('/api/records/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (res.ok) {
+        setBulkActionModal(null)
+        setSelectedIds(new Set())
+        fetchRecords()
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Bulk action failed')
+      }
+    } catch (error) {
+      console.error('Error executing bulk action:', error)
+      alert('Failed to execute bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
 
   const formatAddress = (street: string | null, city: string | null, state: string | null, zip: string | null) => {
     const parts = [street, city, state, zip].filter(Boolean)
@@ -247,40 +338,122 @@ export default function RecordsPage() {
         </div>
       </div>
 
-      {/* Row 2: Filter Tabs + Assigned to me + Filter Button */}
+      {/* Row 2: Filter Toggle + Selection Info + Manage Button */}
       <div className="flex items-center justify-between mb-6">
-        {/* Left: Filter Tabs */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setFilter('complete')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              filter === 'complete'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Complete
-          </button>
-          <button
-            onClick={() => setFilter('incomplete')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              filter === 'incomplete'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Incomplete
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
+        {/* Left: 3-way Toggle Filter (pill style) */}
+        <div className="flex items-center gap-4">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setFilter('complete')}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                filter === 'complete'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Clean
+            </button>
+            <button
+              onClick={() => setFilter('incomplete')}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                filter === 'incomplete'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Incomplete
+            </button>
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                filter === 'all'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              All
+            </button>
+          </div>
+
+          {/* Selection indicator + Manage button (only when items selected) */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                Selecting {selectedIds.size} {selectedIds.size === 1 ? 'property' : 'properties'}
+              </span>
+              <div className="relative" data-dropdown>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowManageDropdown(!showManageDropdown)
+                  }}
+                  className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+                >
+                  Manage
+                  <Settings className="w-4 h-4" />
+                </button>
+                {showManageDropdown && (
+                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    <button
+                      onClick={() => openBulkActionModal('addTags')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Tag className="w-4 h-4" /> Add tags
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('removeTags')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Tag className="w-4 h-4" /> Remove tags
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('addMotivations')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Target className="w-4 h-4" /> Add motivation
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('removeMotivations')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Target className="w-4 h-4" /> Remove motivation
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('updateStatus')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4" /> Update status
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('updateTemperature')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Thermometer className="w-4 h-4" /> Update temperature
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('assignToUser')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" /> Assign to user
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button
+                      onClick={() => openBulkActionModal('deletePhones')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Phone className="w-4 h-4" /> Delete phones
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('deleteRecords')}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Assigned to me + Filter Records */}
@@ -516,6 +689,211 @@ export default function RecordsPage() {
           fetchRecords()
         }}
       />
+
+      {/* Bulk Action Modals */}
+      {bulkActionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                {bulkActionModal === 'addTags' && 'Add Tags'}
+                {bulkActionModal === 'removeTags' && 'Remove Tags'}
+                {bulkActionModal === 'addMotivations' && 'Add Motivations'}
+                {bulkActionModal === 'removeMotivations' && 'Remove Motivations'}
+                {bulkActionModal === 'updateStatus' && 'Update Status'}
+                {bulkActionModal === 'updateTemperature' && 'Update Temperature'}
+                {bulkActionModal === 'assignToUser' && 'Assign to User'}
+                {bulkActionModal === 'deletePhones' && 'Delete Phones'}
+                {bulkActionModal === 'deleteRecords' && 'Delete Records'}
+              </h3>
+              <button onClick={() => setBulkActionModal(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              This will affect {selectedIds.size} selected {selectedIds.size === 1 ? 'record' : 'records'}.
+            </p>
+
+            {/* Tags selection */}
+            {(bulkActionModal === 'addTags' || bulkActionModal === 'removeTags') && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {tags.map((tag) => (
+                  <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedBulkItems.includes(tag.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedBulkItems([...selectedBulkItems, tag.id])
+                        } else {
+                          setSelectedBulkItems(selectedBulkItems.filter(id => id !== tag.id))
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    />
+                    <span className="text-sm">{tag.name}</span>
+                  </label>
+                ))}
+                {tags.length === 0 && <p className="text-sm text-gray-400">No tags available</p>}
+              </div>
+            )}
+
+            {/* Motivations selection */}
+            {(bulkActionModal === 'addMotivations' || bulkActionModal === 'removeMotivations') && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {motivations.map((motivation) => (
+                  <label key={motivation.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedBulkItems.includes(motivation.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedBulkItems([...selectedBulkItems, motivation.id])
+                        } else {
+                          setSelectedBulkItems(selectedBulkItems.filter(id => id !== motivation.id))
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    />
+                    <span className="text-sm">{motivation.name}</span>
+                  </label>
+                ))}
+                {motivations.length === 0 && <p className="text-sm text-gray-400">No motivations available</p>}
+              </div>
+            )}
+
+            {/* Status selection */}
+            {bulkActionModal === 'updateStatus' && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {statuses.map((status) => (
+                  <label key={status.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="radio"
+                      name="status"
+                      checked={selectedBulkItems[0] === status.id}
+                      onChange={() => setSelectedBulkItems([status.id])}
+                      className="w-4 h-4 border-gray-300 text-blue-600"
+                    />
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: status.color }}
+                    >
+                      {status.name}
+                    </span>
+                  </label>
+                ))}
+                {statuses.length === 0 && <p className="text-sm text-gray-400">No statuses available</p>}
+              </div>
+            )}
+
+            {/* Temperature selection */}
+            {bulkActionModal === 'updateTemperature' && (
+              <div className="flex gap-2">
+                {['COLD', 'WARM', 'HOT'].map((temp) => (
+                  <button
+                    key={temp}
+                    onClick={() => setSelectedTemperature(temp)}
+                    className={`flex-1 py-3 rounded-lg border transition ${
+                      selectedTemperature === temp
+                        ? temp === 'COLD'
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                          : temp === 'WARM'
+                          ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
+                          : 'bg-red-100 border-red-300 text-red-700'
+                        : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {temp === 'COLD' && '❄️ Cold'}
+                    {temp === 'WARM' && '🌡️ Warm'}
+                    {temp === 'HOT' && '🔥 Hot'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* User selection */}
+            {bulkActionModal === 'assignToUser' && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                  <input
+                    type="radio"
+                    name="user"
+                    checked={selectedBulkItems.length === 0}
+                    onChange={() => setSelectedBulkItems([])}
+                    className="w-4 h-4 border-gray-300 text-blue-600"
+                  />
+                  <span className="text-sm text-gray-500">Unassigned</span>
+                </label>
+                {users.map((user) => (
+                  <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="radio"
+                      name="user"
+                      checked={selectedBulkItems[0] === user.id}
+                      onChange={() => setSelectedBulkItems([user.id])}
+                      className="w-4 h-4 border-gray-300 text-blue-600"
+                    />
+                    <span className="text-sm">{user.name || user.email}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Delete confirmations */}
+            {bulkActionModal === 'deletePhones' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  This will permanently delete all phone numbers from the selected records. This action cannot be undone.
+                </p>
+              </div>
+            )}
+
+            {bulkActionModal === 'deleteRecords' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  This will permanently delete the selected records and all their associated data. This action cannot be undone.
+                </p>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setBulkActionModal(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeBulkAction}
+                disabled={bulkActionLoading || (
+                  (bulkActionModal === 'addTags' || bulkActionModal === 'removeTags' || 
+                   bulkActionModal === 'addMotivations' || bulkActionModal === 'removeMotivations') && 
+                  selectedBulkItems.length === 0
+                ) || (
+                  bulkActionModal === 'updateTemperature' && !selectedTemperature
+                )}
+                className={`px-4 py-2 rounded-lg text-white transition ${
+                  bulkActionModal === 'deleteRecords'
+                    ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300'
+                    : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'
+                }`}
+              >
+                {bulkActionLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : bulkActionModal === 'deleteRecords' ? (
+                  'Delete'
+                ) : bulkActionModal === 'deletePhones' ? (
+                  'Delete Phones'
+                ) : (
+                  'Apply'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
