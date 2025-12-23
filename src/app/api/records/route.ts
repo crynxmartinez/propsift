@@ -154,6 +154,21 @@ export async function POST(request: NextRequest) {
         statusId: statusId || null,
         assignedToId: assignedToId || null,
         isComplete,
+        // Create phone number entry if provided
+        phoneNumbers: phone ? {
+          create: {
+            number: phone,
+            type: 'MOBILE',
+            status: 'NONE',
+          },
+        } : undefined,
+        // Create email entry if provided
+        emails: email ? {
+          create: {
+            email: email,
+            isPrimary: true,
+          },
+        } : undefined,
         // Create tag relations
         recordTags: tagIds && tagIds.length > 0 ? {
           create: tagIds.map((tagId: string) => ({
@@ -180,6 +195,8 @@ export async function POST(request: NextRequest) {
             motivation: true,
           },
         },
+        phoneNumbers: true,
+        emails: true,
       },
     });
 

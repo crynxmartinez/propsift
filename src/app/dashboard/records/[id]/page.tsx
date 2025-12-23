@@ -462,20 +462,8 @@ export default function PropertyDetailsPage() {
 
   const getZillowUrl = () => {
     if (!record) return '#'
-    const address = `${record.propertyStreet || ''} ${record.propertyCity || ''} ${record.propertyState || ''} ${record.propertyZip || ''}`.trim()
+    const address = `${record.propertyStreet || ''}, ${record.propertyCity || ''}, ${record.propertyState || ''} ${record.propertyZip || ''}`.trim()
     return `https://www.zillow.com/homes/${encodeURIComponent(address)}_rb/`
-  }
-
-  const getRedfinUrl = () => {
-    if (!record) return '#'
-    const address = `${record.propertyStreet || ''} ${record.propertyCity || ''} ${record.propertyState || ''} ${record.propertyZip || ''}`.trim()
-    return `https://www.redfin.com/search?q=${encodeURIComponent(address)}`
-  }
-
-  const getPropwireUrl = () => {
-    if (!record) return '#'
-    const address = `${record.propertyStreet || ''} ${record.propertyCity || ''} ${record.propertyState || ''} ${record.propertyZip || ''}`.trim()
-    return `https://www.propwire.com/search?q=${encodeURIComponent(address)}`
   }
 
   if (loading) {
@@ -576,22 +564,6 @@ export default function PropertyDetailsPage() {
                 >
                   Check Zillow <ExternalLink className="w-3 h-3" />
                 </a>
-                <a
-                  href={getRedfinUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Check Redfin <ExternalLink className="w-3 h-3" />
-                </a>
-                <a
-                  href={getPropwireUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Check Propwire <ExternalLink className="w-3 h-3" />
-                </a>
               </div>
             )}
           </div>
@@ -605,7 +577,7 @@ export default function PropertyDetailsPage() {
           {/* Map Section */}
           <div className="bg-white rounded-lg border border-gray-200 mb-6">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">GALLERY/MAP</span>
+              <span className="text-sm font-medium text-gray-700">MAP</span>
             </div>
             <div className="h-64 bg-gray-100 flex items-center justify-center">
               {fullAddress ? (
