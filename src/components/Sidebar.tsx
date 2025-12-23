@@ -8,13 +8,15 @@ import {
   LogOut,
   Building2,
   Tag,
-  Zap
+  Zap,
+  CircleDot
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
+  { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
