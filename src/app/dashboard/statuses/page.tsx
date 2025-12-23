@@ -58,7 +58,12 @@ export default function StatusesPage() {
   }, [])
 
   useEffect(() => {
-    const handleClickOutside = () => setOpenMenuId(null)
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-menu-container]')) {
+        setOpenMenuId(null)
+      }
+    }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
@@ -301,7 +306,7 @@ export default function StatusesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="relative">
+                    <div className="relative" data-menu-container>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
