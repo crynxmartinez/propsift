@@ -105,6 +105,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   const [addressResults, setAddressResults] = useState<AddressResult[]>([])
   const [searchingAddress, setSearchingAddress] = useState(false)
   const [showAddressDropdown, setShowAddressDropdown] = useState(false)
+  const [addressSelected, setAddressSelected] = useState(false)
   
   // Options for dropdowns
   const [statuses, setStatuses] = useState<StatusItem[]>([])
@@ -185,13 +186,18 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
 
   // Debounce effect for address search
   useEffect(() => {
+    // Skip search if address was just selected from dropdown
+    if (addressSelected) {
+      setAddressSelected(false)
+      return
+    }
     const timer = setTimeout(() => {
       if (addressQuery) {
         searchAddress(addressQuery)
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [addressQuery, searchAddress])
+  }, [addressQuery, searchAddress, addressSelected])
 
   const selectAddress = (result: AddressResult) => {
     const street = [result.address.house_number, result.address.road].filter(Boolean).join(' ')
@@ -204,7 +210,9 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
       propertyState: result.address.state || '',
       propertyZip: result.address.postcode || '',
     }))
+    setAddressSelected(true)
     setAddressQuery(street)
+    setAddressResults([])
     setShowAddressDropdown(false)
   }
 
