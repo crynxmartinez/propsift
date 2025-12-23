@@ -47,6 +47,7 @@ model Tag {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   properties PropertyTag[]
+  records    RecordTag[]
 }
 
 model Motivation {
@@ -55,6 +56,7 @@ model Motivation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   properties PropertyMotivation[]
+  records    RecordMotivation[]
 }
 
 model PropertyTag {
@@ -89,6 +91,7 @@ model Status {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   properties PropertyStatus[]
+  records    Record[]
 }
 
 model PropertyStatus {
@@ -100,4 +103,67 @@ model PropertyStatus {
   createdAt  DateTime @default(now())
 
   @@unique([propertyId, statusId])
+}
+
+model Record {
+  id                  String   @id @default(cuid())
+  
+  // Owner Information
+  ownerFirstName      String?
+  ownerLastName       String?
+  ownerFullName       String
+  isCompany           Boolean  @default(false)
+  isCompanyOverride   Boolean?
+  
+  // Property Address
+  propertyStreet      String?
+  propertyCity        String?
+  propertyState       String?
+  propertyZip         String?
+  
+  // Mailing Address
+  mailingStreet       String?
+  mailingCity         String?
+  mailingState        String?
+  mailingZip          String?
+  
+  // Completeness (computed on save)
+  isComplete          Boolean  @default(false)
+  
+  // Status relation
+  statusId            String?
+  status              Status?  @relation(fields: [statusId], references: [id])
+  
+  // Skiptrace
+  skiptraceDate       DateTime?
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Relations
+  recordTags          RecordTag[]
+  recordMotivations   RecordMotivation[]
+}
+
+model RecordTag {
+  id        String   @id @default(cuid())
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  recordId  String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  tagId     String
+  createdAt DateTime @default(now())
+
+  @@unique([recordId, tagId])
+}
+
+model RecordMotivation {
+  id           String     @id @default(cuid())
+  record       Record     @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  recordId     String
+  motivation   Motivation @relation(fields: [motivationId], references: [id], onDelete: Restrict)
+  motivationId String
+  createdAt    DateTime   @default(now())
+
+  @@unique([recordId, motivationId])
 }

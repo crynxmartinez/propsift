@@ -9,11 +9,13 @@ import {
   Building2,
   Tag,
   Zap,
-  CircleDot
+  CircleDot,
+  FileText
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Records', href: '/dashboard/records', icon: FileText },
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
