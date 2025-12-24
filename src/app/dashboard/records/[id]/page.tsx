@@ -239,6 +239,19 @@ export default function PropertyDetailsPage() {
   const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([])
   const [customFieldValues, setCustomFieldValues] = useState<CustomFieldValue[]>([])
   const [editCustomFieldModal, setEditCustomFieldModal] = useState<{ fieldId: string; name: string; value: string; fieldType: string } | null>(null)
+  
+  // Edit property address modal
+  const [showEditAddressModal, setShowEditAddressModal] = useState(false)
+  const [editAddressData, setEditAddressData] = useState({ street: '', city: '', state: '', zip: '' })
+  
+  // Loading states
+  const [savingField, setSavingField] = useState(false)
+  const [savingCustomField, setSavingCustomField] = useState(false)
+  const [savingCustomFieldValue, setSavingCustomFieldValue] = useState(false)
+  const [savingAddress, setSavingAddress] = useState(false)
+  const [savingPhone, setSavingPhone] = useState(false)
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [deletingItem, setDeletingItem] = useState(false)
 
   useEffect(() => {
     fetchRecord()
@@ -294,6 +307,7 @@ export default function PropertyDetailsPage() {
 
   const createCustomField = async () => {
     if (!newFieldData.name.trim()) return
+    setSavingCustomField(true)
     try {
       const res = await fetch('/api/custom-fields', {
         method: 'POST',
@@ -308,11 +322,14 @@ export default function PropertyDetailsPage() {
       }
     } catch (error) {
       console.error('Error creating custom field:', error)
+    } finally {
+      setSavingCustomField(false)
     }
   }
 
   const saveCustomFieldValue = async () => {
     if (!editCustomFieldModal) return
+    setSavingCustomFieldValue(true)
     try {
       const res = await fetch(`/api/records/${recordId}/custom-fields`, {
         method: 'POST',
@@ -337,6 +354,8 @@ export default function PropertyDetailsPage() {
       }
     } catch (error) {
       console.error('Error saving custom field value:', error)
+    } finally {
+      setSavingCustomFieldValue(false)
     }
   }
 
@@ -400,12 +419,17 @@ export default function PropertyDetailsPage() {
 
   const saveFieldEdit = async () => {
     if (!editFieldModal) return
-    let value: string | number | null = editFieldModal.value
-    if (editFieldModal.type === 'number' || editFieldModal.type === 'currency') {
-      value = editFieldModal.value ? parseFloat(editFieldModal.value.replace(/[^0-9.-]/g, '')) : null
+    setSavingField(true)
+    try {
+      let value: string | number | null = editFieldModal.value
+      if (editFieldModal.type === 'number' || editFieldModal.type === 'currency') {
+        value = editFieldModal.value ? parseFloat(editFieldModal.value.replace(/[^0-9.-]/g, '')) : null
+      }
+      await updateRecord({ [editFieldModal.field]: value })
+      setEditFieldModal(null)
+    } finally {
+      setSavingField(false)
     }
-    await updateRecord({ [editFieldModal.field]: value })
-    setEditFieldModal(null)
   }
 
   const updateRecord = async (updates: Partial<RecordData>) => {
@@ -442,6 +466,7 @@ export default function PropertyDetailsPage() {
 
   const addPhone = async () => {
     if (!newPhone.number.trim()) return
+    setSavingPhone(true)
     try {
       const res = await fetch(`/api/records/${recordId}/phones`, {
         method: 'POST',
@@ -455,6 +480,8 @@ export default function PropertyDetailsPage() {
       }
     } catch (error) {
       console.error('Error adding phone:', error)
+    } finally {
+      setSavingPhone(false)
     }
   }
 
@@ -480,6 +507,7 @@ export default function PropertyDetailsPage() {
   }
 
   const deletePhone = async (phoneId: string) => {
+    setDeletingItem(true)
     try {
       await fetch(`/api/records/${recordId}/phones/${phoneId}`, {
         method: 'DELETE',
@@ -488,11 +516,14 @@ export default function PropertyDetailsPage() {
       setConfirmDelete({ type: null, id: null })
     } catch (error) {
       console.error('Error deleting phone:', error)
+    } finally {
+      setDeletingItem(false)
     }
   }
 
   const addEmail = async () => {
     if (!newEmail.trim()) return
+    setSavingEmail(true)
     try {
       const res = await fetch(`/api/records/${recordId}/emails`, {
         method: 'POST',
@@ -506,10 +537,13 @@ export default function PropertyDetailsPage() {
       }
     } catch (error) {
       console.error('Error adding email:', error)
+    } finally {
+      setSavingEmail(false)
     }
   }
 
   const deleteEmail = async (emailId: string) => {
+    setDeletingItem(true)
     try {
       await fetch(`/api/records/${recordId}/emails/${emailId}`, {
         method: 'DELETE',
@@ -518,6 +552,23 @@ export default function PropertyDetailsPage() {
       setConfirmDelete({ type: null, id: null })
     } catch (error) {
       console.error('Error deleting email:', error)
+    } finally {
+      setDeletingItem(false)
+    }
+  }
+  
+  const saveAddress = async () => {
+    setSavingAddress(true)
+    try {
+      await updateRecord({
+        propertyStreet: editAddressData.street,
+        propertyCity: editAddressData.city,
+        propertyState: editAddressData.state,
+        propertyZip: editAddressData.zip,
+      })
+      setShowEditAddressModal(false)
+    } finally {
+      setSavingAddress(false)
     }
   }
 
@@ -635,7 +686,18 @@ export default function PropertyDetailsPage() {
             </p>
           </div>
           {/* Edit Button - beside address */}
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-1">
+          <button 
+            onClick={() => {
+              setEditAddressData({
+                street: record.propertyStreet || '',
+                city: record.propertyCity || '',
+                state: record.propertyState || '',
+                zip: record.propertyZip || '',
+              })
+              setShowEditAddressModal(true)
+            }}
+            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-1"
+          >
             <Pencil className="w-4 h-4 text-gray-600" />
           </button>
         </div>
@@ -1442,14 +1504,17 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddPhoneModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={savingPhone}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={addPhone}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={savingPhone}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
               >
+                {savingPhone && <Loader2 className="w-4 h-4 animate-spin" />}
                 Add Phone
               </button>
             </div>
@@ -1475,14 +1540,17 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddEmailModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={savingEmail}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={addEmail}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={savingEmail}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
               >
+                {savingEmail && <Loader2 className="w-4 h-4 animate-spin" />}
                 Add Email
               </button>
             </div>
@@ -1501,7 +1569,8 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmDelete({ type: null, id: null })}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={deletingItem}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1513,8 +1582,10 @@ export default function PropertyDetailsPage() {
                     deleteEmail(confirmDelete.id!)
                   }
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={deletingItem}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center gap-2"
               >
+                {deletingItem && <Loader2 className="w-4 h-4 animate-spin" />}
                 Delete
               </button>
             </div>
@@ -1540,14 +1611,17 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setEditFieldModal(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={savingField}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={saveFieldEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={savingField}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
               >
+                {savingField && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save
               </button>
             </div>
@@ -1615,15 +1689,17 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowAddFieldModal(false); setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' }) }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={savingCustomField}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={createCustomField}
-                disabled={!newFieldData.name.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+                disabled={!newFieldData.name.trim() || savingCustomField}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2"
               >
+                {savingCustomField && <Loader2 className="w-4 h-4 animate-spin" />}
                 Create Field
               </button>
             </div>
@@ -1668,14 +1744,87 @@ export default function PropertyDetailsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setEditCustomFieldModal(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={savingCustomFieldValue}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={saveCustomFieldValue}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={savingCustomFieldValue}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
               >
+                {savingCustomFieldValue && <Loader2 className="w-4 h-4 animate-spin" />}
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Address Modal */}
+      {showEditAddressModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Edit Property Address</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                <input
+                  type="text"
+                  value={editAddressData.street}
+                  onChange={(e) => setEditAddressData({ ...editAddressData, street: e.target.value })}
+                  placeholder="123 Main St"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editAddressData.city}
+                    onChange={(e) => setEditAddressData({ ...editAddressData, city: e.target.value })}
+                    placeholder="City"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    value={editAddressData.state}
+                    onChange={(e) => setEditAddressData({ ...editAddressData, state: e.target.value })}
+                    placeholder="State"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Zip</label>
+                  <input
+                    type="text"
+                    value={editAddressData.zip}
+                    onChange={(e) => setEditAddressData({ ...editAddressData, zip: e.target.value })}
+                    placeholder="12345"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowEditAddressModal(false)}
+                disabled={savingAddress}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveAddress}
+                disabled={savingAddress}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
+              >
+                {savingAddress && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save
               </button>
             </div>
