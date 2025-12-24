@@ -233,14 +233,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     return new Set(Object.values(state.fieldMapping))
   }, [state.fieldMapping])
 
-  // Reverse mapping: systemField -> csvColumn
-  const reverseMapping = useMemo(() => {
-    const reverse: Record<string, string> = {}
-    Object.entries(state.fieldMapping).forEach(([csvCol, sysField]) => {
-      reverse[sysField] = csvCol
-    })
-    return reverse
-  }, [state.fieldMapping])
+  // reverseMapping is not needed - fieldMapping is already systemField -> csvColumn
+  // Just use state.fieldMapping directly for the right side display
 
   // Get required fields based on import type and option
   const getRequiredFields = useCallback(() => {
@@ -990,7 +984,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           <div className="space-y-1">
                             {groupFields.map((field) => {
                               const isRequired = getRequiredFields().includes(field.key)
-                              const mappedFrom = reverseMapping[field.key]
+                              const mappedFrom = state.fieldMapping[field.key]
                               
                               return (
                                 <div
