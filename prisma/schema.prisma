@@ -158,6 +158,9 @@ model Record {
   smsAttempts         Int      @default(0)
   rvmAttempts         Int      @default(0)
   
+  // Contact flag
+  isContact           Boolean  @default(false)
+  
   // Completeness (computed on save)
   isComplete          Boolean  @default(false)
   
