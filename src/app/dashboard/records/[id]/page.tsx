@@ -224,6 +224,17 @@ export default function PropertyDetailsPage() {
   // Motivations & Tags tab
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
   const [listSearch, setListSearch] = useState('')
+  const [showMotivationDropdown, setShowMotivationDropdown] = useState(false)
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [addingMotivation, setAddingMotivation] = useState(false)
+  const [addingTag, setAddingTag] = useState(false)
+  const [removingMotivation, setRemovingMotivation] = useState<string | null>(null)
+  const [removingTag, setRemovingTag] = useState<string | null>(null)
+  
+  // Notes editing
+  const [showEditNotesModal, setShowEditNotesModal] = useState(false)
+  const [editNotesValue, setEditNotesValue] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
   
   // Confirmation dialogs
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'phone' | 'email' | null; id: string | null }>({ type: null, id: null })
@@ -569,6 +580,100 @@ export default function PropertyDetailsPage() {
       setShowEditAddressModal(false)
     } finally {
       setSavingAddress(false)
+    }
+  }
+
+  const addMotivation = async (motivationId: string) => {
+    setAddingMotivation(true)
+    try {
+      const res = await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          addMotivationIds: [motivationId]
+        }),
+      })
+      if (res.ok) {
+        fetchRecord()
+        setShowMotivationDropdown(false)
+        setListSearch('')
+      }
+    } catch (error) {
+      console.error('Error adding motivation:', error)
+    } finally {
+      setAddingMotivation(false)
+    }
+  }
+
+  const removeMotivation = async (motivationId: string) => {
+    setRemovingMotivation(motivationId)
+    try {
+      const res = await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          removeMotivationIds: [motivationId]
+        }),
+      })
+      if (res.ok) {
+        fetchRecord()
+      }
+    } catch (error) {
+      console.error('Error removing motivation:', error)
+    } finally {
+      setRemovingMotivation(null)
+    }
+  }
+
+  const addTag = async (tagId: string) => {
+    setAddingTag(true)
+    try {
+      const res = await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          addTagIds: [tagId]
+        }),
+      })
+      if (res.ok) {
+        fetchRecord()
+        setShowTagDropdown(false)
+        setListSearch('')
+      }
+    } catch (error) {
+      console.error('Error adding tag:', error)
+    } finally {
+      setAddingTag(false)
+    }
+  }
+
+  const removeTag = async (tagId: string) => {
+    setRemovingTag(tagId)
+    try {
+      const res = await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          removeTagIds: [tagId]
+        }),
+      })
+      if (res.ok) {
+        fetchRecord()
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error)
+    } finally {
+      setRemovingTag(null)
+    }
+  }
+
+  const saveNotes = async () => {
+    setSavingNotes(true)
+    try {
+      await updateRecord({ notes: editNotesValue })
+      setShowEditNotesModal(false)
+    } finally {
+      setSavingNotes(false)
     }
   }
 
@@ -1008,22 +1113,72 @@ export default function PropertyDetailsPage() {
                         </button>
                       </div>
 
-                      {/* Search Input */}
+                      {/* Search Input with Dropdown */}
                       <div className="p-3 border-b border-gray-100">
                         <div className="relative">
                           <input
                             type="text"
                             value={listSearch}
                             onChange={(e) => setListSearch(e.target.value)}
+                            onFocus={() => activeListTab === 'motivations' ? setShowMotivationDropdown(true) : setShowTagDropdown(true)}
                             placeholder={`Search ${activeListTab}...`}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
                           <button
                             type="button"
+                            onClick={() => activeListTab === 'motivations' ? setShowMotivationDropdown(!showMotivationDropdown) : setShowTagDropdown(!showTagDropdown)}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 text-sm font-medium hover:text-blue-700"
                           >
                             Add
                           </button>
+                          
+                          {/* Motivation Dropdown */}
+                          {activeListTab === 'motivations' && showMotivationDropdown && (
+                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {motivations
+                                .filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id))
+                                .filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase()))
+                                .map(motivation => (
+                                  <button
+                                    key={motivation.id}
+                                    type="button"
+                                    onClick={() => addMotivation(motivation.id)}
+                                    disabled={addingMotivation}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2"
+                                  >
+                                    {addingMotivation && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    {motivation.name}
+                                  </button>
+                                ))}
+                              {motivations.filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id)).filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && (
+                                <div className="px-4 py-2 text-sm text-gray-400">No motivations available</div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Tag Dropdown */}
+                          {activeListTab === 'tags' && showTagDropdown && (
+                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {tags
+                                .filter(t => !record.recordTags.some(rt => rt.tag.id === t.id))
+                                .filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase()))
+                                .map(tag => (
+                                  <button
+                                    key={tag.id}
+                                    type="button"
+                                    onClick={() => addTag(tag.id)}
+                                    disabled={addingTag}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2"
+                                  >
+                                    {addingTag && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    {tag.name}
+                                  </button>
+                                ))}
+                              {tags.filter(t => !record.recordTags.some(rt => rt.tag.id === t.id)).filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && (
+                                <div className="px-4 py-2 text-sm text-gray-400">No tags available</div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1039,9 +1194,11 @@ export default function PropertyDetailsPage() {
                                 <span className="text-sm text-gray-700">{rm.motivation.name}</span>
                                 <button
                                   type="button"
-                                  className="text-gray-400 hover:text-gray-600"
+                                  onClick={() => removeMotivation(rm.motivation.id)}
+                                  disabled={removingMotivation === rm.motivation.id}
+                                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                                 >
-                                  ×
+                                  {removingMotivation === rm.motivation.id ? <Loader2 className="w-3 h-3 animate-spin" /> : '×'}
                                 </button>
                               </div>
                             ))}
@@ -1061,9 +1218,11 @@ export default function PropertyDetailsPage() {
                                 <span className="text-sm text-gray-700">{rt.tag.name}</span>
                                 <button
                                   type="button"
-                                  className="text-gray-400 hover:text-gray-600"
+                                  onClick={() => removeTag(rt.tag.id)}
+                                  disabled={removingTag === rt.tag.id}
+                                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                                 >
-                                  ×
+                                  {removingTag === rt.tag.id ? <Loader2 className="w-3 h-3 animate-spin" /> : '×'}
                                 </button>
                               </div>
                             ))}
@@ -1080,9 +1239,21 @@ export default function PropertyDetailsPage() {
                     {/* Notes Box */}
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Header */}
-                      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
-                        <span className="text-blue-600">—</span>
-                        <span className="text-sm font-medium text-blue-600">NOTES</span>
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600">—</span>
+                          <span className="text-sm font-medium text-blue-600">NOTES</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditNotesValue(record.notes || '')
+                            setShowEditNotesModal(true)
+                          }}
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <Pencil className="w-3 h-3 text-gray-500" />
+                        </button>
                       </div>
                       
                       {/* Notes Content */}
@@ -1825,6 +1996,41 @@ export default function PropertyDetailsPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
               >
                 {savingAddress && <Loader2 className="w-4 h-4 animate-spin" />}
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Notes Modal */}
+      {showEditNotesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-4">Edit Notes</h3>
+            <div>
+              <textarea
+                value={editNotesValue}
+                onChange={(e) => setEditNotesValue(e.target.value)}
+                placeholder="Add notes about this property..."
+                rows={6}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowEditNotesModal(false)}
+                disabled={savingNotes}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveNotes}
+                disabled={savingNotes}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
+              >
+                {savingNotes && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save
               </button>
             </div>
