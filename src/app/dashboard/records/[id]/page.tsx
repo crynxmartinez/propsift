@@ -208,6 +208,9 @@ export default function PropertyDetailsPage() {
   // Motivations & Tags tab
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
   const [listSearch, setListSearch] = useState('')
+  
+  // Confirmation dialogs
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'phone' | 'email' | null; id: string | null }>({ type: null, id: null })
 
   useEffect(() => {
     fetchRecord()
@@ -376,6 +379,7 @@ export default function PropertyDetailsPage() {
         method: 'DELETE',
       })
       fetchRecord()
+      setConfirmDelete({ type: null, id: null })
     } catch (error) {
       console.error('Error deleting phone:', error)
     }
@@ -405,6 +409,7 @@ export default function PropertyDetailsPage() {
         method: 'DELETE',
       })
       fetchRecord()
+      setConfirmDelete({ type: null, id: null })
     } catch (error) {
       console.error('Error deleting email:', error)
     }
@@ -1110,7 +1115,7 @@ export default function PropertyDetailsPage() {
                       )
                     })}
                     <button
-                      onClick={() => deletePhone(phone.id)}
+                      onClick={() => setConfirmDelete({ type: 'phone', id: phone.id })}
                       className="w-6 h-6 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500"
                     >
                       <X className="w-3 h-3" />
@@ -1148,7 +1153,7 @@ export default function PropertyDetailsPage() {
                     )}
                   </div>
                   <button
-                    onClick={() => deleteEmail(email.id)}
+                    onClick={() => setConfirmDelete({ type: 'email', id: email.id })}
                     className="w-6 h-6 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500"
                   >
                     <X className="w-3 h-3" />
@@ -1237,6 +1242,38 @@ export default function PropertyDetailsPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Add Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {confirmDelete.type && confirmDelete.id && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              This will permanently delete this {confirmDelete.type === 'phone' ? 'phone number' : 'email'}. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete({ type: null, id: null })}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmDelete.type === 'phone') {
+                    deletePhone(confirmDelete.id!)
+                  } else {
+                    deleteEmail(confirmDelete.id!)
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete
               </button>
             </div>
           </div>

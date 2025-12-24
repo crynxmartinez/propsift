@@ -852,11 +852,28 @@ export default function RecordsPage() {
               </div>
             )}
 
+            {/* Remove confirmations */}
+            {bulkActionModal === 'removeTags' && selectedBulkItems.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                <p className="text-sm text-yellow-800">
+                  Are you sure? This will remove the selected tags from {selectedIds.size} record(s).
+                </p>
+              </div>
+            )}
+
+            {bulkActionModal === 'removeMotivations' && selectedBulkItems.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                <p className="text-sm text-yellow-800">
+                  Are you sure? This will remove the selected motivations from {selectedIds.size} record(s).
+                </p>
+              </div>
+            )}
+
             {/* Delete confirmations */}
             {bulkActionModal === 'deletePhones' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-sm text-yellow-800">
-                  This will permanently delete all phone numbers from the selected records. This action cannot be undone.
+                  <strong>Are you sure?</strong> This will permanently delete all phone numbers from the selected records. This action cannot be undone.
                 </p>
               </div>
             )}
@@ -864,7 +881,7 @@ export default function RecordsPage() {
             {bulkActionModal === 'deleteRecords' && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm text-red-800">
-                  This will permanently delete the selected records and all their associated data. This action cannot be undone.
+                  <strong>Are you sure?</strong> This will permanently delete the selected records and all their associated data. This action cannot be undone.
                 </p>
               </div>
             )}
