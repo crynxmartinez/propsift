@@ -105,6 +105,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   const [motivationSearch, setMotivationSearch] = useState('')
   const [tagSearch, setTagSearch] = useState('')
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -574,6 +575,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           setTagSearch(e.target.value)
                         }
                       }}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                       placeholder={`Search ${activeListTab}...`}
                       className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
@@ -582,8 +585,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 
                 {/* Scrollable Content Area */}
                 <div className="flex-1 overflow-y-auto min-h-0">
-                  {/* Dropdown - when searching */}
-                  {activeListTab === 'motivations' && motivationSearch ? (
+                  {/* Dropdown - when focused or searching */}
+                  {activeListTab === 'motivations' && (isSearchFocused || motivationSearch) ? (
                     <div className="bg-gray-50">
                       {motivations
                         .filter(m => 
@@ -610,7 +613,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
                       )}
                     </div>
-                  ) : activeListTab === 'tags' && tagSearch ? (
+                  ) : activeListTab === 'tags' && (isSearchFocused || tagSearch) ? (
                     <div className="bg-gray-50">
                       {tags
                         .filter(t => 

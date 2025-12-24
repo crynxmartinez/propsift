@@ -1148,7 +1148,7 @@ export default function PropertyDetailsPage() {
                   {/* Motivations & Tags + Notes */}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Motivations & Tags Box */}
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="border border-gray-200 rounded-lg">
                       {/* Header */}
                       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
                         <span className="text-blue-600">—</span>

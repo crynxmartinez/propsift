@@ -119,6 +119,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   const [showMotivationDropdown, setShowMotivationDropdown] = useState(false)
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
+  const [isListSearchFocused, setIsListSearchFocused] = useState(false)
 
   // Fetch options on mount
   useEffect(() => {
@@ -759,6 +760,8 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                             setTagSearch(e.target.value)
                           }
                         }}
+                        onFocus={() => setIsListSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsListSearchFocused(false), 200)}
                         placeholder={`Search ${activeListTab}...`}
                         className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
@@ -773,8 +776,8 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                   
                   {/* Scrollable Content Area - shows either dropdown or selected items */}
                   <div className="flex-1 overflow-y-auto min-h-0">
-                    {/* Dropdown - when searching */}
-                    {activeListTab === 'motivations' && motivationSearch ? (
+                    {/* Dropdown - when focused or searching */}
+                    {activeListTab === 'motivations' && (isListSearchFocused || motivationSearch) ? (
                       <div className="bg-gray-50">
                         {motivations
                           .filter(m => 
@@ -801,7 +804,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                           <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
                         )}
                       </div>
-                    ) : activeListTab === 'tags' && tagSearch ? (
+                    ) : activeListTab === 'tags' && (isListSearchFocused || tagSearch) ? (
                       <div className="bg-gray-50">
                         {tags
                           .filter(t => 
