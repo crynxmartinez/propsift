@@ -979,7 +979,7 @@ export default function PropertyDetailsPage() {
                   height="100%"
                   frameBorder="0"
                   style={{ border: 0 }}
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                   allowFullScreen
                 />
               ) : (
