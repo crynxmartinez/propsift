@@ -78,6 +78,40 @@ export async function POST(request: NextRequest) {
           if (email) emails.push(email);
         }
 
+        // Extract attempts
+        const callAttempts = parseInt(getValue(row, 'callAttempts') || '0', 10) || 0;
+        const directMailAttempts = parseInt(getValue(row, 'directMailAttempts') || '0', 10) || 0;
+        const smsAttempts = parseInt(getValue(row, 'smsAttempts') || '0', 10) || 0;
+        const rvmAttempts = parseInt(getValue(row, 'rvmAttempts') || '0', 10) || 0;
+
+        // Extract property details
+        const estimatedValue = parseFloat(getValue(row, 'estimatedValue') || '') || null;
+        const bedrooms = parseInt(getValue(row, 'bedrooms') || '', 10) || null;
+        const bathrooms = parseFloat(getValue(row, 'bathrooms') || '') || null;
+        const sqft = parseInt(getValue(row, 'sqft') || '', 10) || null;
+        const lotSize = parseFloat(getValue(row, 'lotSize') || '') || null;
+        const yearBuilt = parseInt(getValue(row, 'yearBuilt') || '', 10) || null;
+        const structureType = getValue(row, 'structureType') || null;
+        const heatingType = getValue(row, 'heatingType') || null;
+        const airConditioner = getValue(row, 'airConditioner') || null;
+
+        // Extract other fields
+        const notes = getValue(row, 'notes') || null;
+        const description = getValue(row, 'description') || null;
+        const temperature = getValue(row, 'temperature') || null;
+
+        // Extract custom fields
+        const customFieldValues: Record<string, string> = {};
+        Object.keys(fieldMapping).forEach(key => {
+          if (key.startsWith('custom_')) {
+            const fieldId = key.replace('custom_', '');
+            const value = getValue(row, key);
+            if (value) {
+              customFieldValues[fieldId] = value;
+            }
+          }
+        });
+
         // Validate required fields based on import option
         if (importType === 'update' && importOption === 'mailing_address') {
           if (!mailingStreet || !mailingCity || !mailingState || !mailingZip) {
@@ -145,6 +179,22 @@ export async function POST(request: NextRequest) {
                 mailingCity,
                 mailingState,
                 mailingZip,
+                callAttempts,
+                directMailAttempts,
+                smsAttempts,
+                rvmAttempts,
+                estimatedValue,
+                bedrooms,
+                bathrooms,
+                sqft,
+                lotSize,
+                yearBuilt,
+                structureType,
+                heatingType,
+                airConditioner,
+                notes,
+                description,
+                temperature,
                 isComplete,
               },
             });
@@ -185,6 +235,15 @@ export async function POST(request: NextRequest) {
               });
             }
 
+            // Add/update custom fields
+            for (const [fieldId, value] of Object.entries(customFieldValues)) {
+              await prisma.customFieldValue.upsert({
+                where: { fieldId_recordId: { recordId: existingRecord.id, fieldId } },
+                create: { recordId: existingRecord.id, fieldId, value },
+                update: { value },
+              });
+            }
+
             updated++;
           } else {
             // Create new record
@@ -202,6 +261,22 @@ export async function POST(request: NextRequest) {
                 mailingCity,
                 mailingState,
                 mailingZip,
+                callAttempts,
+                directMailAttempts,
+                smsAttempts,
+                rvmAttempts,
+                estimatedValue,
+                bedrooms,
+                bathrooms,
+                sqft,
+                lotSize,
+                yearBuilt,
+                structureType,
+                heatingType,
+                airConditioner,
+                notes,
+                description,
+                temperature,
                 isComplete,
               },
             });
@@ -231,6 +306,13 @@ export async function POST(request: NextRequest) {
             for (const tagId of tagIds) {
               await prisma.recordTag.create({
                 data: { recordId: newRecord.id, tagId },
+              });
+            }
+
+            // Add custom fields
+            for (const [fieldId, value] of Object.entries(customFieldValues)) {
+              await prisma.customFieldValue.create({
+                data: { recordId: newRecord.id, fieldId, value },
               });
             }
 
@@ -285,6 +367,25 @@ export async function POST(request: NextRequest) {
           if (mailingCity) updateData.mailingCity = mailingCity;
           if (mailingState) updateData.mailingState = mailingState;
           if (mailingZip) updateData.mailingZip = mailingZip;
+          // Attempts (only update if > 0)
+          if (callAttempts > 0) updateData.callAttempts = callAttempts;
+          if (directMailAttempts > 0) updateData.directMailAttempts = directMailAttempts;
+          if (smsAttempts > 0) updateData.smsAttempts = smsAttempts;
+          if (rvmAttempts > 0) updateData.rvmAttempts = rvmAttempts;
+          // Property details
+          if (estimatedValue !== null) updateData.estimatedValue = estimatedValue;
+          if (bedrooms !== null) updateData.bedrooms = bedrooms;
+          if (bathrooms !== null) updateData.bathrooms = bathrooms;
+          if (sqft !== null) updateData.sqft = sqft;
+          if (lotSize !== null) updateData.lotSize = lotSize;
+          if (yearBuilt !== null) updateData.yearBuilt = yearBuilt;
+          if (structureType) updateData.structureType = structureType;
+          if (heatingType) updateData.heatingType = heatingType;
+          if (airConditioner) updateData.airConditioner = airConditioner;
+          // Other fields
+          if (notes) updateData.notes = notes;
+          if (description) updateData.description = description;
+          if (temperature) updateData.temperature = temperature;
 
           // Recalculate completeness with merged data
           const mergedData = {
@@ -304,11 +405,12 @@ export async function POST(request: NextRequest) {
           };
           updateData.isComplete = isRecordComplete(mergedData);
 
-          // Check if we have data to update (more than just isComplete) or phones/emails to add
+          // Check if we have data to update (more than just isComplete) or phones/emails/custom fields to add
           const hasDataToUpdate = Object.keys(updateData).length > 1;
           const hasPhonesOrEmails = phones.length > 0 || emails.length > 0;
+          const hasCustomFields = Object.keys(customFieldValues).length > 0;
 
-          if (hasDataToUpdate || hasPhonesOrEmails) {
+          if (hasDataToUpdate || hasPhonesOrEmails || hasCustomFields) {
             if (hasDataToUpdate) {
               await prisma.record.update({
                 where: { id: existingRecord.id },
@@ -357,6 +459,15 @@ export async function POST(request: NextRequest) {
                 where: { recordId_tagId: { recordId: existingRecord.id, tagId } },
                 create: { recordId: existingRecord.id, tagId },
                 update: {},
+              });
+            }
+
+            // Add/update custom fields
+            for (const [fieldId, value] of Object.entries(customFieldValues)) {
+              await prisma.customFieldValue.upsert({
+                where: { fieldId_recordId: { recordId: existingRecord.id, fieldId } },
+                create: { recordId: existingRecord.id, fieldId, value },
+                update: { value },
               });
             }
 

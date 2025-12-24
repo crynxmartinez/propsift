@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, Loader2, Check, Upload, FileText, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search } from 'lucide-react'
 
 interface BulkImportModalProps {
   isOpen: boolean
@@ -56,14 +56,17 @@ const initialState: ImportState = {
 }
 
 const SYSTEM_FIELDS = [
+  // Property Address
   { key: 'propertyStreet', label: 'Property Street', group: 'property' },
   { key: 'propertyCity', label: 'Property City', group: 'property' },
   { key: 'propertyState', label: 'Property State', group: 'property' },
   { key: 'propertyZip', label: 'Property ZIP', group: 'property' },
+  // Mailing Address
   { key: 'mailingStreet', label: 'Mailing Street', group: 'mailing' },
   { key: 'mailingCity', label: 'Mailing City', group: 'mailing' },
   { key: 'mailingState', label: 'Mailing State', group: 'mailing' },
   { key: 'mailingZip', label: 'Mailing ZIP', group: 'mailing' },
+  // Owner Info
   { key: 'ownerFirstName', label: 'Owner First Name', group: 'owner' },
   { key: 'ownerLastName', label: 'Owner Last Name', group: 'owner' },
   { key: 'ownerFullName', label: 'Owner Full Name', group: 'owner' },
@@ -89,7 +92,44 @@ const SYSTEM_FIELDS = [
   { key: 'email3', label: 'Email 3', group: 'email' },
   { key: 'email4', label: 'Email 4', group: 'email' },
   { key: 'email5', label: 'Email 5', group: 'email' },
+  // Attempts
+  { key: 'callAttempts', label: 'Call Attempts', group: 'attempts' },
+  { key: 'directMailAttempts', label: 'Direct Mail Attempts', group: 'attempts' },
+  { key: 'smsAttempts', label: 'SMS Attempts', group: 'attempts' },
+  { key: 'rvmAttempts', label: 'RVM Attempts', group: 'attempts' },
+  // Property Details
+  { key: 'estimatedValue', label: 'Estimated Value', group: 'details' },
+  { key: 'bedrooms', label: 'Bedrooms', group: 'details' },
+  { key: 'bathrooms', label: 'Bathrooms', group: 'details' },
+  { key: 'sqft', label: 'Sqft', group: 'details' },
+  { key: 'lotSize', label: 'Lot Size', group: 'details' },
+  { key: 'yearBuilt', label: 'Year Built', group: 'details' },
+  { key: 'structureType', label: 'Structure Type', group: 'details' },
+  { key: 'heatingType', label: 'Heating Type', group: 'details' },
+  { key: 'airConditioner', label: 'Air Conditioner', group: 'details' },
+  // Other
+  { key: 'notes', label: 'Notes', group: 'other' },
+  { key: 'description', label: 'Description', group: 'other' },
+  { key: 'temperature', label: 'Temperature', group: 'other' },
 ]
+
+const GROUP_LABELS: Record<string, string> = {
+  property: 'Property Address',
+  mailing: 'Mailing Address',
+  owner: 'Owner Info',
+  phone: 'Phone Numbers',
+  email: 'Email Addresses',
+  attempts: 'Attempts',
+  details: 'Property Details',
+  other: 'Other',
+  custom: 'Custom Fields',
+}
+
+interface CustomField {
+  id: string
+  name: string
+  fieldType: string
+}
 
 export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalProps) {
   const [step, setStep] = useState(1)
@@ -100,6 +140,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Data fetching
   const [motivations, setMotivations] = useState<MotivationItem[]>([])
   const [tags, setTags] = useState<TagItem[]>([])
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
   
   // Search states for Step 2
   const [motivationSearch, setMotivationSearch] = useState('')
@@ -107,13 +148,19 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   
+  // Search state for Step 4 (field mapping)
+  const [fieldSearch, setFieldSearch] = useState('')
+  
+  // Drag state for field mapping
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null)
+  
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Drag and drop state
+  // Drag and drop state for CSV upload
   const [isDragging, setIsDragging] = useState(false)
 
-  // Fetch motivations and tags
+  // Fetch motivations, tags, and custom fields
   useEffect(() => {
     if (isOpen) {
       fetch('/api/motivations')
@@ -124,6 +171,11 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       fetch('/api/tags')
         .then(res => res.json())
         .then(data => setTags(data))
+        .catch(console.error)
+      
+      fetch('/api/custom-fields')
+        .then(res => res.json())
+        .then(data => setCustomFields(data))
         .catch(console.error)
     }
   }, [isOpen])
@@ -136,8 +188,59 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       setMotivationSearch('')
       setTagSearch('')
       setActiveListTab('motivations')
+      setFieldSearch('')
+      setDraggedColumn(null)
     }
   }, [isOpen])
+
+  // Combine system fields with custom fields
+  const allSystemFields = useMemo(() => {
+    const fields = [...SYSTEM_FIELDS]
+    customFields.forEach(cf => {
+      fields.push({
+        key: `custom_${cf.id}`,
+        label: cf.name,
+        group: 'custom'
+      })
+    })
+    return fields
+  }, [customFields])
+
+  // Get all unique groups in order
+  const fieldGroups = useMemo(() => {
+    const groups: string[] = []
+    allSystemFields.forEach(field => {
+      if (!groups.includes(field.group)) {
+        groups.push(field.group)
+      }
+    })
+    return groups
+  }, [allSystemFields])
+
+  // Filter fields by search
+  const filteredFields = useMemo(() => {
+    if (!fieldSearch.trim()) return allSystemFields
+    const search = fieldSearch.toLowerCase()
+    return allSystemFields.filter(field => 
+      field.label.toLowerCase().includes(search) ||
+      field.group.toLowerCase().includes(search) ||
+      GROUP_LABELS[field.group]?.toLowerCase().includes(search)
+    )
+  }, [allSystemFields, fieldSearch])
+
+  // Get mapped CSV columns (to show which ones are already used)
+  const mappedColumns = useMemo(() => {
+    return new Set(Object.values(state.fieldMapping))
+  }, [state.fieldMapping])
+
+  // Reverse mapping: systemField -> csvColumn
+  const reverseMapping = useMemo(() => {
+    const reverse: Record<string, string> = {}
+    Object.entries(state.fieldMapping).forEach(([csvCol, sysField]) => {
+      reverse[sysField] = csvCol
+    })
+    return reverse
+  }, [state.fieldMapping])
 
   // Get required fields based on import type and option
   const getRequiredFields = useCallback(() => {
@@ -802,121 +905,189 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
           {/* Step 4: Map Fields */}
           {step === 4 && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600 mb-4">
-                Map your CSV columns to the system fields. Click a CSV column, then click a system field to map them.
+              <p className="text-sm text-gray-600 mb-2">
+                Drag CSV columns from the left and drop them onto system fields on the right.
               </p>
               
-              <div className="grid grid-cols-2 gap-6">
-                {/* Left: CSV Columns */}
-                <div className="border border-gray-200 rounded-lg">
-                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left: CSV Columns (Draggable) */}
+                <div className="border border-gray-200 rounded-lg flex flex-col h-96">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">CSV Columns</span>
+                      <span className="text-xs text-gray-400">({state.csvHeaders.length})</span>
                     </div>
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
                     {state.csvHeaders.map((header, index) => {
-                      const mappedTo = Object.entries(state.fieldMapping).find(([_, csv]) => csv === header)?.[0]
+                      const isMapped = mappedColumns.has(header)
                       const sampleValue = state.csvData[0]?.[index] || ''
                       
                       return (
                         <div
                           key={header}
-                          className={`px-4 py-3 border-b border-gray-100 last:border-0 ${
-                            mappedTo ? 'bg-green-50' : ''
+                          draggable={!isMapped}
+                          onDragStart={(e) => {
+                            setDraggedColumn(header)
+                            e.dataTransfer.setData('text/plain', header)
+                            e.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onDragEnd={() => setDraggedColumn(null)}
+                          className={`px-3 py-2 rounded-lg border transition-all ${
+                            isMapped 
+                              ? 'bg-green-50 border-green-200 opacity-60' 
+                              : draggedColumn === header
+                                ? 'bg-blue-50 border-blue-300 shadow-md'
+                                : 'bg-white border-gray-200 hover:border-gray-300 cursor-grab active:cursor-grabbing'
                           }`}
                         >
-                          <div className="font-medium text-sm text-gray-900">{header}</div>
-                          <div className="text-xs text-gray-500 truncate mt-1">{sampleValue}</div>
-                          {mappedTo && (
-                            <div className="text-xs text-green-600 mt-1">
-                              → {SYSTEM_FIELDS.find(f => f.key === mappedTo)?.label}
+                          <div className="flex items-center gap-2">
+                            {!isMapped && (
+                              <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            )}
+                            {isMapped && (
+                              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm text-gray-900 truncate">{header}</div>
+                              <div className="text-xs text-gray-500 truncate">{sampleValue || '(empty)'}</div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
 
-                {/* Right: System Fields */}
-                <div className="border border-gray-200 rounded-lg">
-                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                    <span className="text-sm font-medium text-gray-700">System Fields</span>
+                {/* Right: System Fields (Drop Zones) */}
+                <div className="border border-gray-200 rounded-lg flex flex-col h-96">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-gray-700">System Fields</span>
+                    </div>
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={fieldSearch}
+                        onChange={(e) => setFieldSearch(e.target.value)}
+                        placeholder="Search fields..."
+                        className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                    </div>
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {SYSTEM_FIELDS.map((field) => {
-                      const isRequired = getRequiredFields().includes(field.key)
-                      const mappedFrom = state.fieldMapping[field.key]
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {fieldGroups.map(group => {
+                      const groupFields = filteredFields.filter(f => f.group === group)
+                      if (groupFields.length === 0) return null
                       
                       return (
-                        <div
-                          key={field.key}
-                          className={`px-4 py-3 border-b border-gray-100 last:border-0 flex items-center justify-between ${
-                            mappedFrom ? 'bg-green-50' : ''
-                          }`}
-                        >
-                          <div>
-                            <div className="font-medium text-sm text-gray-900">{field.label}</div>
-                            {mappedFrom && (
-                              <div className="text-xs text-green-600 mt-1">
-                                ← {mappedFrom}
-                              </div>
-                            )}
+                        <div key={group} className="mb-3">
+                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 py-1 sticky top-0 bg-white">
+                            {GROUP_LABELS[group] || group}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {isRequired && (
-                              <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded">
-                                Required
-                              </span>
-                            )}
-                            {mappedFrom && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setState(prev => {
-                                    const newMapping = { ...prev.fieldMapping }
-                                    delete newMapping[field.key]
-                                    return { ...prev, fieldMapping: newMapping }
-                                  })
-                                }}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                ×
-                              </button>
-                            )}
-                            {!mappedFrom && (
-                              <select
-                                value=""
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    setState(prev => ({
-                                      ...prev,
-                                      fieldMapping: {
-                                        ...prev.fieldMapping,
-                                        [field.key]: e.target.value
-                                      }
-                                    }))
-                                  }
-                                }}
-                                className="text-xs border border-gray-300 rounded px-2 py-1"
-                              >
-                                <option value="">Select column</option>
-                                {state.csvHeaders
-                                  .filter(h => !Object.values(state.fieldMapping).includes(h))
-                                  .map(header => (
-                                    <option key={header} value={header}>{header}</option>
-                                  ))
-                                }
-                              </select>
-                            )}
+                          <div className="space-y-1">
+                            {groupFields.map((field) => {
+                              const isRequired = getRequiredFields().includes(field.key)
+                              const mappedFrom = reverseMapping[field.key]
+                              
+                              return (
+                                <div
+                                  key={field.key}
+                                  onDragOver={(e) => {
+                                    e.preventDefault()
+                                    e.dataTransfer.dropEffect = 'move'
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault()
+                                    const csvColumn = e.dataTransfer.getData('text/plain')
+                                    if (csvColumn) {
+                                      setState(prev => {
+                                        const newMapping = { ...prev.fieldMapping }
+                                        // Remove old mapping for this CSV column if exists
+                                        Object.keys(newMapping).forEach(key => {
+                                          if (newMapping[key] === csvColumn) {
+                                            delete newMapping[key]
+                                          }
+                                        })
+                                        // Add new mapping
+                                        newMapping[field.key] = csvColumn
+                                        return { ...prev, fieldMapping: newMapping }
+                                      })
+                                    }
+                                    setDraggedColumn(null)
+                                  }}
+                                  className={`px-3 py-2 rounded-lg border-2 border-dashed transition-all ${
+                                    mappedFrom 
+                                      ? 'bg-green-50 border-green-300 border-solid' 
+                                      : draggedColumn
+                                        ? 'border-blue-300 bg-blue-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-sm text-gray-900">{field.label}</span>
+                                        {isRequired && (
+                                          <span className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded">
+                                            Required
+                                          </span>
+                                        )}
+                                      </div>
+                                      {mappedFrom ? (
+                                        <div className="text-xs text-green-600 mt-0.5 flex items-center gap-1">
+                                          <Check className="w-3 h-3" />
+                                          {mappedFrom}
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs text-gray-400 mt-0.5">
+                                          Drop CSV column here
+                                        </div>
+                                      )}
+                                    </div>
+                                    {mappedFrom && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setState(prev => {
+                                            const newMapping = { ...prev.fieldMapping }
+                                            delete newMapping[field.key]
+                                            return { ...prev, fieldMapping: newMapping }
+                                          })
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Mapping Summary */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">
+                  {Object.keys(state.fieldMapping).length} of {state.csvHeaders.length} columns mapped
+                </span>
+                {Object.keys(state.fieldMapping).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setState(prev => ({ ...prev, fieldMapping: {} }))}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                  >
+                    Clear all mappings
+                  </button>
+                )}
               </div>
 
               {!areRequiredFieldsMapped() && (
