@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Also create a system log entry
     await prisma.activityLog.create({
       data: {
-        type: 'log',
+        type: 'action',
         action: 'export',
         description: `User created a download "${filename}"`,
         total: totalRecords,

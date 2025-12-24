@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 async function createSystemLog(description: string, action: string, total: number) {
   await prisma.activityLog.create({
     data: {
-      type: 'log',
+      type: 'action',
       action,
       description,
       total,

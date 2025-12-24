@@ -564,7 +564,7 @@ export async function POST(request: NextRequest) {
       // Create system log entry
       await prisma.activityLog.create({
         data: {
-          type: 'log',
+          type: 'action',
           action: 'bulk_import',
           description: `User uploaded "${activity?.filename || 'file'}" (${added} added, ${updated} updated, ${errors} errors)`,
           total: csvData.length,
