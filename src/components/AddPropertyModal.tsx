@@ -665,192 +665,214 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
           {/* Step 3: Assignment & Notes */}
           {step === 3 && (
             <div className="space-y-4">
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.statusId}
-                  onChange={(e) => updateFormData('statusId', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="">Select a status</option>
-                  {statuses.map((status) => (
-                    <option key={status.id} value={status.id}>
-                      {status.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Status & Assign To Row */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={formData.statusId}
+                    onChange={(e) => updateFormData('statusId', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="">Select a status</option>
+                    {statuses.map((status) => (
+                      <option key={status.id} value={status.id}>
+                        {status.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Assign To */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                  <select
+                    value={formData.assignedToId}
+                    onChange={(e) => updateFormData('assignedToId', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name || user.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Motivations */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Motivations</label>
-                {/* Selected motivations */}
-                {formData.motivationIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
+              {/* Lists & Tags + Notes Side by Side */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Lists & Tags Box */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <span className="text-blue-600">—</span>
+                    <span className="text-sm font-medium text-blue-600">MOTIVATIONS & TAGS</span>
+                  </div>
+                  
+                  {/* Tabs */}
+                  <div className="flex border-b border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setMotivationSearch('')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                        !showTagDropdown && !tagSearch
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Motivations ({formData.motivationIds.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTagSearch('')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                        showTagDropdown || tagSearch
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Tags ({formData.tagIds.length})
+                    </button>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="relative" data-motivation-dropdown data-tag-dropdown>
+                      <input
+                        type="text"
+                        value={motivationSearch || tagSearch}
+                        onChange={(e) => {
+                          setMotivationSearch(e.target.value)
+                          setTagSearch(e.target.value)
+                        }}
+                        placeholder="Search or add..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 text-sm font-medium hover:text-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Selected Items List */}
+                  <div className="max-h-48 overflow-y-auto">
+                    {/* Motivations */}
                     {formData.motivationIds.map((id) => {
                       const motivation = motivations.find(m => m.id === id)
                       return motivation ? (
-                        <span
+                        <div
                           key={id}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                          className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
                         >
-                          {motivation.name}
+                          <span className="text-sm text-gray-700">{motivation.name}</span>
                           <button
                             type="button"
                             onClick={() => toggleArrayItem('motivationIds', id)}
-                            className="hover:text-purple-900"
+                            className="text-gray-400 hover:text-gray-600"
                           >
                             ×
                           </button>
-                        </span>
+                        </div>
                       ) : null
                     })}
-                  </div>
-                )}
-                {/* Search dropdown */}
-                <div className="relative" data-motivation-dropdown>
-                  <input
-                    type="text"
-                    value={motivationSearch}
-                    onChange={(e) => setMotivationSearch(e.target.value)}
-                    onFocus={() => setShowMotivationDropdown(true)}
-                    placeholder="Search motivations..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                  {showMotivationDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {motivations.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">No motivations available</div>
-                      ) : (
-                        motivations
-                          .filter(m => 
-                            m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
-                            !formData.motivationIds.includes(m.id)
-                          )
-                          .map((motivation) => (
-                            <button
-                              key={motivation.id}
-                              type="button"
-                              onClick={() => {
-                                toggleArrayItem('motivationIds', motivation.id)
-                                setMotivationSearch('')
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                            >
-                              {motivation.name}
-                            </button>
-                          ))
-                      )}
-                      {motivations.filter(m => 
-                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
-                        !formData.motivationIds.includes(m.id)
-                      ).length === 0 && motivations.length > 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                {/* Selected tags */}
-                {formData.tagIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
+                    {/* Tags */}
                     {formData.tagIds.map((id) => {
                       const tag = tags.find(t => t.id === id)
                       return tag ? (
-                        <span
+                        <div
                           key={id}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                          className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
                         >
-                          {tag.name}
+                          <span className="text-sm text-gray-700">{tag.name}</span>
                           <button
                             type="button"
                             onClick={() => toggleArrayItem('tagIds', id)}
-                            className="hover:text-blue-900"
+                            className="text-gray-400 hover:text-gray-600"
                           >
                             ×
                           </button>
-                        </span>
+                        </div>
                       ) : null
                     })}
+                    {formData.motivationIds.length === 0 && formData.tagIds.length === 0 && (
+                      <div className="px-4 py-6 text-center text-sm text-gray-400">
+                        No motivations or tags selected
+                      </div>
+                    )}
                   </div>
-                )}
-                {/* Search dropdown */}
-                <div className="relative" data-tag-dropdown>
-                  <input
-                    type="text"
-                    value={tagSearch}
-                    onChange={(e) => setTagSearch(e.target.value)}
-                    onFocus={() => setShowTagDropdown(true)}
-                    placeholder="Search tags..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                  {showTagDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {tags.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">No tags available</div>
-                      ) : (
-                        tags
-                          .filter(t => 
-                            t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
-                            !formData.tagIds.includes(t.id)
-                          )
-                          .map((tag) => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => {
-                                toggleArrayItem('tagIds', tag.id)
-                                setTagSearch('')
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                            >
-                              {tag.name}
-                            </button>
-                          ))
-                      )}
-                      {tags.filter(t => 
-                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
-                        !formData.tagIds.includes(t.id)
-                      ).length === 0 && tags.length > 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
-                      )}
+
+                  {/* Available Items Dropdown */}
+                  {(motivationSearch || tagSearch) && (
+                    <div className="border-t border-gray-200 max-h-32 overflow-y-auto bg-gray-50">
+                      {motivations
+                        .filter(m => 
+                          m.name.toLowerCase().includes((motivationSearch || '').toLowerCase()) &&
+                          !formData.motivationIds.includes(m.id)
+                        )
+                        .map((motivation) => (
+                          <button
+                            key={motivation.id}
+                            type="button"
+                            onClick={() => {
+                              toggleArrayItem('motivationIds', motivation.id)
+                              setMotivationSearch('')
+                              setTagSearch('')
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center gap-2"
+                          >
+                            <span className="text-purple-600 text-xs">M</span>
+                            {motivation.name}
+                          </button>
+                        ))}
+                      {tags
+                        .filter(t => 
+                          t.name.toLowerCase().includes((tagSearch || '').toLowerCase()) &&
+                          !formData.tagIds.includes(t.id)
+                        )
+                        .map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => {
+                              toggleArrayItem('tagIds', tag.id)
+                              setMotivationSearch('')
+                              setTagSearch('')
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center gap-2"
+                          >
+                            <span className="text-blue-600 text-xs">T</span>
+                            {tag.name}
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Assign To */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                <select
-                  value={formData.assignedToId}
-                  onChange={(e) => updateFormData('assignedToId', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="">Unassigned</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name || user.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => updateFormData('notes', e.target.value)}
-                  rows={4}
-                  placeholder="Add any notes about this property..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                />
+                {/* Notes Box */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <span className="text-blue-600">—</span>
+                    <span className="text-sm font-medium text-blue-600">NOTES</span>
+                  </div>
+                  
+                  {/* Notes Textarea */}
+                  <div className="p-3">
+                    <textarea
+                      value={formData.notes}
+                      onChange={(e) => updateFormData('notes', e.target.value)}
+                      rows={8}
+                      placeholder="Add any notes about this property..."
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
