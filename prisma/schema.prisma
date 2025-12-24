@@ -298,3 +298,24 @@ model CustomFieldValue {
   @@index([recordId])
   @@index([fieldId])
 }
+
+// Activity Log - tracks uploads, downloads, and actions
+model ActivityLog {
+  id          String   @id @default(cuid())
+  type        String   // "upload", "download", "action"
+  action      String   // "bulk_import", "export", "owner_vacancy_check", etc.
+  filename    String?  // Original filename for uploads/downloads
+  description String?  // Human-readable description
+  total       Int      @default(0)  // Total items to process
+  processed   Int      @default(0)  // Items processed so far
+  status      String   @default("pending") // pending, processing, completed, failed
+  metadata    Json?    // Extra data (import type, field mapping, errors, etc.)
+  errorMessage String? // Error message if failed
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
