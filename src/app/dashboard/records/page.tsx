@@ -613,16 +613,24 @@ export default function RecordsPage() {
                         />
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 font-medium">
-                          {record.ownerFirstName || record.ownerLastName 
-                            ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
-                            : record.ownerFullName}
-                        </div>
-                        {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
-                          <div className="text-xs text-gray-500">
-                            {record.ownerFullName}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/dashboard/owners/${record.id}`)
+                          }}
+                          className="text-left hover:text-blue-600"
+                        >
+                          <div className="text-sm text-gray-900 font-medium hover:text-blue-600">
+                            {record.ownerFirstName || record.ownerLastName 
+                              ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
+                              : record.ownerFullName}
                           </div>
-                        )}
+                          {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
+                            <div className="text-xs text-gray-500">
+                              {record.ownerFullName}
+                            </div>
+                          )}
+                        </button>
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="text-left hover:text-blue-600">
