@@ -32,7 +32,7 @@ export async function GET() {
     const statuses = await prisma.status.findMany({
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       },
       orderBy: { order: 'asc' }
@@ -45,7 +45,7 @@ export async function GET() {
       isDefault: status.isDefault,
       isActive: status.isActive,
       order: status.order,
-      recordCount: status._count.properties,
+      recordCount: status._count.records,
       createdAt: status.createdAt,
       updatedAt: status.updatedAt
     }))
