@@ -75,7 +75,6 @@ export default function RecordsPage() {
   const [showAddDropdown, setShowAddDropdown] = useState(false)
   const [showSelectDropdown, setShowSelectDropdown] = useState(false)
   const [showLimitDropdown, setShowLimitDropdown] = useState(false)
-  const [activeTab, setActiveTab] = useState<'property' | 'owner'>('property')
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -288,23 +287,12 @@ export default function RecordsPage() {
       <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-4">
         {/* Left: Tab Navigation */}
         <div className="flex items-center gap-6">
-          <button
-            onClick={() => setActiveTab('property')}
-            className={`text-sm font-medium pb-2 border-b-2 transition ${
-              activeTab === 'property'
-                ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700'
-            }`}
-          >
+          <span className="text-sm font-medium pb-2 border-b-2 text-blue-600 border-blue-600">
             Property Records
-          </button>
+          </span>
           <button
-            onClick={() => setActiveTab('owner')}
-            className={`text-sm font-medium pb-2 border-b-2 transition ${
-              activeTab === 'owner'
-                ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700'
-            }`}
+            onClick={() => router.push('/dashboard/owners')}
+            className="text-sm font-medium pb-2 border-b-2 transition text-gray-500 border-transparent hover:text-gray-700"
           >
             Owner Records
           </button>
