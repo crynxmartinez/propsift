@@ -4,6 +4,7 @@ import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 
 interface ImportRequest {
+  activityId?: string;
   importType: 'add' | 'update';
   importOption: 'new_motivation' | 'existing_motivation' | 'property_address' | 'mailing_address';
   motivationIds: string[];
@@ -17,7 +18,15 @@ interface ImportRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: ImportRequest = await request.json();
-    const { importType, importOption, motivationIds, tagIds, fieldMapping, csvHeaders, csvData } = body;
+    const { activityId, importType, importOption, motivationIds, tagIds, fieldMapping, csvHeaders, csvData } = body;
+
+    // Update activity status to processing if activityId provided
+    if (activityId) {
+      await prisma.activityLog.update({
+        where: { id: activityId },
+        data: { status: 'processing' },
+      });
+    }
 
     if (!csvData || csvData.length === 0) {
       return NextResponse.json({ error: 'No data to import' }, { status: 400 });
@@ -495,6 +504,26 @@ export async function POST(request: NextRequest) {
         errors++;
         errorDetails.push({ row: i + 2, reason: 'Processing error' });
       }
+    }
+
+    // Update activity log with final status if activityId provided
+    if (activityId) {
+      await prisma.activityLog.update({
+        where: { id: activityId },
+        data: {
+          processed: added + updated + errors,
+          status: 'completed',
+          metadata: {
+            importType,
+            importOption,
+            added,
+            updated,
+            skipped,
+            errors,
+            errorDetails: errorDetails.slice(0, 10),
+          },
+        },
+      });
     }
 
     return NextResponse.json({

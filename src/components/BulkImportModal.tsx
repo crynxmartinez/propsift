@@ -442,6 +442,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       showToast('Upload started! View progress in Activity > Upload', 'success', 5000)
       
       // 3. Start background import (fire and forget)
+      // API handles activity log updates internally
       fetch('/api/records/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -455,39 +456,10 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
           csvHeaders: state.csvHeaders,
           csvData: state.csvData,
         }),
-      }).then(async (response) => {
-        const result = await response.json()
-        // Update activity log with final status
-        await fetch(`/api/activity/${activity.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            processed: result.added + result.updated + result.errors,
-            status: response.ok ? 'completed' : 'failed',
-            errorMessage: response.ok ? null : result.error,
-            metadata: {
-              importType: state.importType,
-              importOption: state.importOption,
-              motivationIds: state.motivationIds,
-              tagIds: state.tagIds,
-              added: result.added,
-              updated: result.updated,
-              skipped: result.skipped,
-              errors: result.errors,
-            },
-          }),
-        })
+      }).then(() => {
         onSuccess()
-      }).catch(async (error) => {
+      }).catch((error) => {
         console.error('Import error:', error)
-        await fetch(`/api/activity/${activity.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: 'failed',
-            errorMessage: 'Import failed unexpectedly',
-          }),
-        })
       })
       
     } catch (error) {
