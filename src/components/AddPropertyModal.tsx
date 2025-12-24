@@ -768,6 +768,64 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                       >
                         Add
                       </button>
+                      
+                      {/* Dropdown - positioned below search input */}
+                      {activeListTab === 'motivations' && motivationSearch && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
+                          {motivations
+                            .filter(m => 
+                              m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                              !formData.motivationIds.includes(m.id)
+                            )
+                            .map((motivation) => (
+                              <button
+                                key={motivation.id}
+                                type="button"
+                                onClick={() => {
+                                  toggleArrayItem('motivationIds', motivation.id)
+                                  setMotivationSearch('')
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                              >
+                                {motivation.name}
+                              </button>
+                            ))}
+                          {motivations.filter(m => 
+                            m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                            !formData.motivationIds.includes(m.id)
+                          ).length === 0 && (
+                            <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                          )}
+                        </div>
+                      )}
+                      {activeListTab === 'tags' && tagSearch && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
+                          {tags
+                            .filter(t => 
+                              t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                              !formData.tagIds.includes(t.id)
+                            )
+                            .map((tag) => (
+                              <button
+                                key={tag.id}
+                                type="button"
+                                onClick={() => {
+                                  toggleArrayItem('tagIds', tag.id)
+                                  setTagSearch('')
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                              >
+                                {tag.name}
+                              </button>
+                            ))}
+                          {tags.filter(t => 
+                            t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                            !formData.tagIds.includes(t.id)
+                          ).length === 0 && (
+                            <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -827,64 +885,6 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                       </>
                     )}
                   </div>
-
-                  {/* Available Items Dropdown */}
-                  {activeListTab === 'motivations' && motivationSearch && (
-                    <div className="border-t border-gray-200 max-h-32 overflow-y-auto bg-gray-50">
-                      {motivations
-                        .filter(m => 
-                          m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
-                          !formData.motivationIds.includes(m.id)
-                        )
-                        .map((motivation) => (
-                          <button
-                            key={motivation.id}
-                            type="button"
-                            onClick={() => {
-                              toggleArrayItem('motivationIds', motivation.id)
-                              setMotivationSearch('')
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                          >
-                            {motivation.name}
-                          </button>
-                        ))}
-                      {motivations.filter(m => 
-                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
-                        !formData.motivationIds.includes(m.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
-                      )}
-                    </div>
-                  )}
-                  {activeListTab === 'tags' && tagSearch && (
-                    <div className="border-t border-gray-200 max-h-32 overflow-y-auto bg-gray-50">
-                      {tags
-                        .filter(t => 
-                          t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
-                          !formData.tagIds.includes(t.id)
-                        )
-                        .map((tag) => (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => {
-                              toggleArrayItem('tagIds', tag.id)
-                              setTagSearch('')
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                          >
-                            {tag.name}
-                          </button>
-                        ))}
-                      {tags.filter(t => 
-                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
-                        !formData.tagIds.includes(t.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* Notes Box */}
