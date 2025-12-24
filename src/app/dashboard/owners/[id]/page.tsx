@@ -169,7 +169,6 @@ export default function OwnerDetailsPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'phone' | 'email' | null; id: string | null }>({ type: null, id: null })
   
   // Loading states
-  const [savingContact, setSavingContact] = useState(false)
   const [savingPhone, setSavingPhone] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
   const [savingName, setSavingName] = useState(false)
@@ -263,16 +262,6 @@ export default function OwnerDetailsPage() {
       }
     } catch (error) {
       console.error('Error updating record:', error)
-    }
-  }
-
-  const handleContactToggle = async () => {
-    if (!record) return
-    setSavingContact(true)
-    try {
-      await updateRecord({ isContact: !record.isContact })
-    } finally {
-      setSavingContact(false)
     }
   }
 
@@ -486,26 +475,6 @@ export default function OwnerDetailsPage() {
           >
             <Pencil className="w-4 h-4 text-gray-600" />
           </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Mark as Contact Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <span className="text-sm text-gray-600">Mark as a contact</span>
-            <button
-              onClick={handleContactToggle}
-              disabled={savingContact}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                record.isContact ? 'bg-blue-600' : 'bg-gray-300'
-              } ${savingContact ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                  record.isContact ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </label>
         </div>
       </div>
 
