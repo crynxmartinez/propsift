@@ -305,29 +305,73 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
       // Auto-map fields based on column names
       const autoMapping: Record<string, string> = {}
+      const usedHeaders = new Set<string>()
+      
       headers.forEach(header => {
         const normalizedHeader = header.toLowerCase().replace(/[_\s-]/g, '')
+        
+        // Find best match for this header
+        let bestMatchKey: string | null = null
+        let bestMatchScore = 0
         
         SYSTEM_FIELDS.forEach(field => {
           const normalizedField = field.key.toLowerCase()
           const normalizedLabel = field.label.toLowerCase().replace(/[_\s-]/g, '')
           
-          if (normalizedHeader === normalizedField || 
-              normalizedHeader === normalizedLabel ||
-              normalizedHeader.includes(normalizedField) ||
-              normalizedField.includes(normalizedHeader)) {
-            if (!autoMapping[field.key]) {
-              autoMapping[field.key] = header
+          let score = 0
+          
+          // Exact match gets highest score
+          if (normalizedHeader === normalizedField || normalizedHeader === normalizedLabel) {
+            score = 100
+          }
+          // For numbered fields (phone1-15, email1-5), require exact number match
+          else if (/^(phone|email)\d+$/.test(normalizedField)) {
+            const fieldNum = normalizedField.match(/\d+$/)?.[0]
+            const headerNum = normalizedHeader.match(/\d+$/)?.[0]
+            if (fieldNum && headerNum && fieldNum === headerNum) {
+              const fieldBase = normalizedField.replace(/\d+$/, '')
+              const headerBase = normalizedHeader.replace(/\d+$/, '')
+              if (headerBase.includes(fieldBase) || fieldBase.includes(headerBase)) {
+                score = 90
+              }
             }
+          }
+          
+          if (score > 0 && score > bestMatchScore) {
+            bestMatchKey = field.key
+            bestMatchScore = score
           }
         })
         
-        // Special mappings
-        if (normalizedHeader.includes('propertyaddress') || normalizedHeader === 'property_address') {
-          autoMapping['propertyStreet'] = header
+        if (bestMatchKey && !autoMapping[bestMatchKey] && !usedHeaders.has(header)) {
+          autoMapping[bestMatchKey] = header
+          usedHeaders.add(header)
         }
-        if (normalizedHeader.includes('mailingaddress') || normalizedHeader === 'mailing_address') {
-          autoMapping['mailingStreet'] = header
+        
+        // Special mappings for address fields
+        if (!usedHeaders.has(header)) {
+          if (normalizedHeader.includes('propertyaddress') || normalizedHeader === 'property_address') {
+            if (!autoMapping['propertyStreet']) {
+              autoMapping['propertyStreet'] = header
+              usedHeaders.add(header)
+            }
+          }
+          if (normalizedHeader.includes('mailingaddress') || normalizedHeader === 'mailing_address') {
+            if (!autoMapping['mailingStreet']) {
+              autoMapping['mailingStreet'] = header
+              usedHeaders.add(header)
+            }
+          }
+          // Map full_name/company_name/owner_company to ownerFullName
+          if (normalizedHeader === 'fullname' || normalizedHeader === 'companyname' || 
+              normalizedHeader === 'ownercompany' || normalizedHeader === 'ownerfullname' ||
+              normalizedHeader === 'owner_company' || normalizedHeader === 'full_name' ||
+              normalizedHeader === 'company_name' || normalizedHeader === 'owner_full_name') {
+            if (!autoMapping['ownerFullName']) {
+              autoMapping['ownerFullName'] = header
+              usedHeaders.add(header)
+            }
+          }
         }
       })
       
