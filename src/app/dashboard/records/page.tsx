@@ -34,6 +34,12 @@ interface RecordItem {
       name: string
     }
   }[]
+  recordMotivations: {
+    motivation: {
+      id: string
+      name: string
+    }
+  }[]
   createdAt: string
   updatedAt: string
 }
@@ -631,7 +637,7 @@ export default function RecordsPage() {
                       <td className="px-4 py-4">
                         <span className="inline-flex items-center gap-1 text-sm text-gray-500">
                           <span className="text-lg">📋</span>
-                          {record.recordTags.length}
+                          {record.recordMotivations.length}
                         </span>
                       </td>
                     </tr>
