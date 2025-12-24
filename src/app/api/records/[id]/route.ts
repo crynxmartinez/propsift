@@ -99,6 +99,10 @@ export async function PUT(
       skiptraceDate,
       motivationIds,
       tagIds,
+      addMotivationIds,
+      removeMotivationIds,
+      addTagIds,
+      removeTagIds,
       source,
     } = body;
 
@@ -324,7 +328,7 @@ export async function PUT(
       },
     });
 
-    // Handle motivation updates
+    // Handle motivation updates (full replace)
     if (motivationIds !== undefined) {
       const currentMotivationIds = existingRecord.recordMotivations.map(rm => rm.motivationId);
       const toAdd = motivationIds.filter((id: string) => !currentMotivationIds.includes(id));
@@ -357,7 +361,42 @@ export async function PUT(
       }
     }
 
-    // Handle tag updates
+    // Handle incremental motivation add
+    if (addMotivationIds !== undefined && Array.isArray(addMotivationIds) && addMotivationIds.length > 0) {
+      const currentMotivationIds = existingRecord.recordMotivations.map(rm => rm.motivationId);
+      const toAdd = addMotivationIds.filter((id: string) => !currentMotivationIds.includes(id));
+      
+      if (toAdd.length > 0) {
+        await prisma.recordMotivation.createMany({
+          data: toAdd.map((motivationId: string) => ({
+            recordId: params.id,
+            motivationId,
+          })),
+        });
+        changes.push({
+          field: 'motivations',
+          oldValue: null,
+          newValue: `Added: ${toAdd.join(',')}`,
+        });
+      }
+    }
+
+    // Handle incremental motivation remove
+    if (removeMotivationIds !== undefined && Array.isArray(removeMotivationIds) && removeMotivationIds.length > 0) {
+      await prisma.recordMotivation.deleteMany({
+        where: {
+          recordId: params.id,
+          motivationId: { in: removeMotivationIds },
+        },
+      });
+      changes.push({
+        field: 'motivations',
+        oldValue: `Removed: ${removeMotivationIds.join(',')}`,
+        newValue: null,
+      });
+    }
+
+    // Handle tag updates (full replace)
     if (tagIds !== undefined) {
       const currentTagIds = existingRecord.recordTags.map(rt => rt.tagId);
       const toAdd = tagIds.filter((id: string) => !currentTagIds.includes(id));
@@ -388,6 +427,41 @@ export async function PUT(
           newValue: tagIds.join(','),
         });
       }
+    }
+
+    // Handle incremental tag add
+    if (addTagIds !== undefined && Array.isArray(addTagIds) && addTagIds.length > 0) {
+      const currentTagIds = existingRecord.recordTags.map(rt => rt.tagId);
+      const toAdd = addTagIds.filter((id: string) => !currentTagIds.includes(id));
+      
+      if (toAdd.length > 0) {
+        await prisma.recordTag.createMany({
+          data: toAdd.map((tagId: string) => ({
+            recordId: params.id,
+            tagId,
+          })),
+        });
+        changes.push({
+          field: 'tags',
+          oldValue: null,
+          newValue: `Added: ${toAdd.join(',')}`,
+        });
+      }
+    }
+
+    // Handle incremental tag remove
+    if (removeTagIds !== undefined && Array.isArray(removeTagIds) && removeTagIds.length > 0) {
+      await prisma.recordTag.deleteMany({
+        where: {
+          recordId: params.id,
+          tagId: { in: removeTagIds },
+        },
+      });
+      changes.push({
+        field: 'tags',
+        oldValue: `Removed: ${removeTagIds.join(',')}`,
+        newValue: null,
+      });
     }
 
     // Log activity for each change
