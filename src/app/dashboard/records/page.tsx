@@ -106,6 +106,17 @@ export default function RecordsPage() {
     fetchRecords()
   }, [page, limit, filter])
 
+  // Refetch records when page becomes visible (e.g., returning from property details)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRecords()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [page, limit, filter])
+
   useEffect(() => {
     setPage(1)
     setSelectedIds(new Set())
