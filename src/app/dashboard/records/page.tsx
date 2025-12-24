@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
 
@@ -157,6 +157,70 @@ export default function RecordsPage() {
     setSelectedBulkItems([])
     setSelectedTemperature('')
     if (tags.length === 0) fetchBulkOptions()
+  }
+
+  const handleExportRecords = async () => {
+    setShowManageDropdown(false)
+    
+    try {
+      // Create activity log entry
+      const activityRes = await fetch('/api/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'download',
+          action: 'export',
+          filename: `records_export_${new Date().toISOString().split('T')[0]}.csv`,
+          description: `Export ${selectedIds.size > 0 ? selectedIds.size : 'all'} records`,
+          total: selectedIds.size > 0 ? selectedIds.size : totalCount,
+        }),
+      })
+      
+      if (!activityRes.ok) throw new Error('Failed to create activity log')
+      const activity = await activityRes.json()
+      
+      // Fetch records to export
+      const recordIds = selectedIds.size > 0 ? Array.from(selectedIds) : null
+      const exportRes = await fetch('/api/records/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordIds }),
+      })
+      
+      if (!exportRes.ok) {
+        await fetch(`/api/activity/${activity.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'failed', errorMessage: 'Export failed' }),
+        })
+        throw new Error('Export failed')
+      }
+      
+      const blob = await exportRes.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `records_export_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      // Update activity as completed
+      await fetch(`/api/activity/${activity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'completed',
+          processed: selectedIds.size > 0 ? selectedIds.size : totalCount,
+        }),
+      })
+      
+      alert('Export complete! Check your downloads.')
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Failed to export records')
+    }
   }
 
   const executeBulkAction = async () => {
@@ -446,6 +510,13 @@ export default function RecordsPage() {
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button
+                      onClick={handleExportRecords}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" /> Export properties
                     </button>
                   </div>
                 )}
