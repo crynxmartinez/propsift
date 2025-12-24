@@ -219,8 +219,8 @@ export default function OwnerRecordsPage() {
                       </Link>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-sm ${owner.isCompany ? 'text-gray-600' : 'text-gray-600'}`}>
-                        {owner.isCompany ? 'Company' : 'Person'}
+                      <span className="text-sm text-gray-600">
+                        {owner.isCompany ? '' : 'Person'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
