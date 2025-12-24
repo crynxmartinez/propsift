@@ -290,12 +290,6 @@ export default function RecordsPage() {
           <span className="text-sm font-medium pb-2 border-b-2 text-blue-600 border-blue-600">
             Property Records
           </span>
-          <button
-            onClick={() => router.push('/dashboard/owners')}
-            className="text-sm font-medium pb-2 border-b-2 transition text-gray-500 border-transparent hover:text-gray-700"
-          >
-            Owner Records
-          </button>
         </div>
 
         {/* Right: Search + Add Button */}
@@ -580,22 +574,17 @@ export default function RecordsPage() {
                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => router.push(`/dashboard/owners/${record.id}`)}
-                          className="text-left"
-                        >
-                          <div className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
-                            {record.ownerFirstName || record.ownerLastName 
-                              ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
-                              : record.ownerFullName}
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 font-medium">
+                          {record.ownerFirstName || record.ownerLastName 
+                            ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
+                            : record.ownerFullName}
+                        </div>
+                        {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
+                          <div className="text-xs text-gray-500">
+                            {record.ownerFullName}
                           </div>
-                          {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
-                            <div className="text-xs text-gray-500">
-                              {record.ownerFullName}
-                            </div>
-                          )}
-                        </button>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="text-left hover:text-blue-600">
