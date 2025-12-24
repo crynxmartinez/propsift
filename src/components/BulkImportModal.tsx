@@ -1,0 +1,1020 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { X, Loader2, Check, Upload, FileText, AlertCircle } from 'lucide-react'
+
+interface BulkImportModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+}
+
+interface MotivationItem {
+  id: string
+  name: string
+}
+
+interface TagItem {
+  id: string
+  name: string
+}
+
+interface FieldMapping {
+  csvColumn: string
+  systemField: string
+}
+
+interface ImportState {
+  // Step 1
+  importType: 'add' | 'update'
+  importOption: 'new_motivation' | 'existing_motivation' | 'property_address' | 'mailing_address'
+  
+  // Step 2
+  motivationIds: string[]
+  tagIds: string[]
+  
+  // Step 3
+  csvFile: File | null
+  csvData: string[][]
+  csvHeaders: string[]
+  rowCount: number
+  
+  // Step 4
+  fieldMapping: Record<string, string> // systemField -> csvColumn
+}
+
+const initialState: ImportState = {
+  importType: 'add',
+  importOption: 'new_motivation',
+  motivationIds: [],
+  tagIds: [],
+  csvFile: null,
+  csvData: [],
+  csvHeaders: [],
+  rowCount: 0,
+  fieldMapping: {},
+}
+
+const SYSTEM_FIELDS = [
+  { key: 'propertyStreet', label: 'Property Street', group: 'property' },
+  { key: 'propertyCity', label: 'Property City', group: 'property' },
+  { key: 'propertyState', label: 'Property State', group: 'property' },
+  { key: 'propertyZip', label: 'Property ZIP', group: 'property' },
+  { key: 'mailingStreet', label: 'Mailing Street', group: 'mailing' },
+  { key: 'mailingCity', label: 'Mailing City', group: 'mailing' },
+  { key: 'mailingState', label: 'Mailing State', group: 'mailing' },
+  { key: 'mailingZip', label: 'Mailing ZIP', group: 'mailing' },
+  { key: 'ownerFirstName', label: 'Owner First Name', group: 'owner' },
+  { key: 'ownerLastName', label: 'Owner Last Name', group: 'owner' },
+  { key: 'ownerFullName', label: 'Owner Full Name', group: 'owner' },
+  { key: 'phone', label: 'Phone', group: 'contact' },
+  { key: 'email', label: 'Email', group: 'contact' },
+]
+
+export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalProps) {
+  const [step, setStep] = useState(1)
+  const [state, setState] = useState<ImportState>(initialState)
+  const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
+  
+  // Data fetching
+  const [motivations, setMotivations] = useState<MotivationItem[]>([])
+  const [tags, setTags] = useState<TagItem[]>([])
+  
+  // Search states for Step 2
+  const [motivationSearch, setMotivationSearch] = useState('')
+  const [tagSearch, setTagSearch] = useState('')
+  const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
+  
+  // File input ref
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false)
+
+  // Fetch motivations and tags
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/motivations')
+        .then(res => res.json())
+        .then(data => setMotivations(data))
+        .catch(console.error)
+      
+      fetch('/api/tags')
+        .then(res => res.json())
+        .then(data => setTags(data))
+        .catch(console.error)
+    }
+  }, [isOpen])
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStep(1)
+      setState(initialState)
+      setMotivationSearch('')
+      setTagSearch('')
+      setActiveListTab('motivations')
+    }
+  }, [isOpen])
+
+  // Get required fields based on import type and option
+  const getRequiredFields = useCallback(() => {
+    if (state.importType === 'update' && state.importOption === 'mailing_address') {
+      return ['mailingStreet', 'mailingCity', 'mailingState', 'mailingZip']
+    }
+    return ['propertyStreet', 'propertyCity', 'propertyState', 'propertyZip']
+  }, [state.importType, state.importOption])
+
+  // Check if all required fields are mapped
+  const areRequiredFieldsMapped = useCallback(() => {
+    const required = getRequiredFields()
+    return required.every(field => state.fieldMapping[field])
+  }, [getRequiredFields, state.fieldMapping])
+
+  // Toggle array item (for motivations/tags)
+  const toggleArrayItem = (field: 'motivationIds' | 'tagIds', id: string) => {
+    setState(prev => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter(i => i !== id)
+        : [...prev[field], id]
+    }))
+  }
+
+  // Parse CSV file
+  const parseCSV = (text: string): { headers: string[], data: string[][] } => {
+    const lines = text.split('\n').filter(line => line.trim())
+    if (lines.length === 0) return { headers: [], data: [] }
+    
+    const parseRow = (row: string): string[] => {
+      const result: string[] = []
+      let current = ''
+      let inQuotes = false
+      
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i]
+        if (char === '"') {
+          inQuotes = !inQuotes
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      result.push(current.trim())
+      return result
+    }
+    
+    const headers = parseRow(lines[0])
+    const data = lines.slice(1).map(parseRow)
+    
+    return { headers, data }
+  }
+
+  // Handle file upload
+  const handleFileUpload = (file: File) => {
+    if (!file.name.endsWith('.csv')) {
+      alert('Please upload a CSV file')
+      return
+    }
+    
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      const { headers, data } = parseCSV(text)
+      
+      // Auto-map fields based on column names
+      const autoMapping: Record<string, string> = {}
+      headers.forEach(header => {
+        const normalizedHeader = header.toLowerCase().replace(/[_\s-]/g, '')
+        
+        SYSTEM_FIELDS.forEach(field => {
+          const normalizedField = field.key.toLowerCase()
+          const normalizedLabel = field.label.toLowerCase().replace(/[_\s-]/g, '')
+          
+          if (normalizedHeader === normalizedField || 
+              normalizedHeader === normalizedLabel ||
+              normalizedHeader.includes(normalizedField) ||
+              normalizedField.includes(normalizedHeader)) {
+            if (!autoMapping[field.key]) {
+              autoMapping[field.key] = header
+            }
+          }
+        })
+        
+        // Special mappings
+        if (normalizedHeader.includes('propertyaddress') || normalizedHeader === 'property_address') {
+          autoMapping['propertyStreet'] = header
+        }
+        if (normalizedHeader.includes('mailingaddress') || normalizedHeader === 'mailing_address') {
+          autoMapping['mailingStreet'] = header
+        }
+      })
+      
+      setState(prev => ({
+        ...prev,
+        csvFile: file,
+        csvHeaders: headers,
+        csvData: data,
+        rowCount: data.length,
+        fieldMapping: autoMapping,
+      }))
+    }
+    reader.readAsText(file)
+  }
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFileUpload(file)
+  }
+
+  // Handle import
+  const handleImport = async () => {
+    setImporting(true)
+    
+    try {
+      const response = await fetch('/api/records/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          importType: state.importType,
+          importOption: state.importOption,
+          motivationIds: state.motivationIds,
+          tagIds: state.tagIds,
+          fieldMapping: state.fieldMapping,
+          csvHeaders: state.csvHeaders,
+          csvData: state.csvData,
+        }),
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        onSuccess()
+        onClose()
+        // Show success notification (will be handled by parent)
+        alert(`Import complete! ${result.added || 0} added, ${result.updated || 0} updated, ${result.errors || 0} errors`)
+      } else {
+        alert(`Import failed: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Import error:', error)
+      alert('Import failed. Please try again.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // Navigation
+  const canProceed = () => {
+    switch (step) {
+      case 1:
+        return state.importType && state.importOption
+      case 2:
+        return true // Motivations/tags are optional
+      case 3:
+        return state.csvFile && state.rowCount > 0
+      case 4:
+        return areRequiredFieldsMapped()
+      case 5:
+        return true
+      default:
+        return false
+    }
+  }
+
+  const handleNext = () => {
+    if (canProceed() && step < 5) {
+      setStep(step + 1)
+    }
+  }
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1)
+    }
+  }
+
+  const handleClose = () => {
+    if (!importing) {
+      onClose()
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      
+      {/* Modal */}
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Bulk Import Properties</h2>
+          <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Step Indicator */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-center">
+            {/* Step 1 */}
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 1 ? <Check className="w-4 h-4" /> : '1'}
+              </div>
+              <span className={`ml-2 text-sm ${step >= 1 ? 'text-gray-900' : 'text-gray-500'}`}>
+                Import Type
+              </span>
+            </div>
+            
+            {/* Line 1-2 */}
+            <div className={`w-12 h-0.5 mx-2 ${step > 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            
+            {/* Step 2 */}
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 2 ? <Check className="w-4 h-4" /> : '2'}
+              </div>
+              <span className={`ml-2 text-sm ${step >= 2 ? 'text-gray-900' : 'text-gray-500'}`}>
+                Motivations
+              </span>
+            </div>
+            
+            {/* Line 2-3 */}
+            <div className={`w-12 h-0.5 mx-2 ${step > 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            
+            {/* Step 3 */}
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 3 ? <Check className="w-4 h-4" /> : '3'}
+              </div>
+              <span className={`ml-2 text-sm ${step >= 3 ? 'text-gray-900' : 'text-gray-500'}`}>
+                Upload
+              </span>
+            </div>
+            
+            {/* Line 3-4 */}
+            <div className={`w-12 h-0.5 mx-2 ${step > 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            
+            {/* Step 4 */}
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 4 ? <Check className="w-4 h-4" /> : '4'}
+              </div>
+              <span className={`ml-2 text-sm ${step >= 4 ? 'text-gray-900' : 'text-gray-500'}`}>
+                Map Fields
+              </span>
+            </div>
+            
+            {/* Line 4-5 */}
+            <div className={`w-12 h-0.5 mx-2 ${step > 4 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            
+            {/* Step 5 */}
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step >= 5 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                5
+              </div>
+              <span className={`ml-2 text-sm ${step >= 5 ? 'text-gray-900' : 'text-gray-500'}`}>
+                Review
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6 overflow-y-auto flex-1">
+          {/* Step 1: Import Type */}
+          {step === 1 && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  What would you like to do?
+                </label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setState(prev => ({ 
+                      ...prev, 
+                      importType: 'add',
+                      importOption: 'new_motivation'
+                    }))}
+                    className={`flex-1 p-4 border-2 rounded-lg text-center transition ${
+                      state.importType === 'add'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <div className="font-medium">Add Data</div>
+                    <div className="text-sm text-gray-500 mt-1">Import new records</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setState(prev => ({ 
+                      ...prev, 
+                      importType: 'update',
+                      importOption: 'property_address'
+                    }))}
+                    className={`flex-1 p-4 border-2 rounded-lg text-center transition ${
+                      state.importType === 'update'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <div className="font-medium">Update Data</div>
+                    <div className="text-sm text-gray-500 mt-1">Update existing records</div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select an option
+                </label>
+                <select
+                  value={state.importOption}
+                  onChange={(e) => setState(prev => ({ 
+                    ...prev, 
+                    importOption: e.target.value as ImportState['importOption']
+                  }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  {state.importType === 'add' ? (
+                    <>
+                      <option value="new_motivation">Upload new list to a motivation</option>
+                      <option value="existing_motivation">Upload new list to an existing motivation</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="property_address">Update records using Property Address</option>
+                      <option value="mailing_address">Update records using Mailing Address</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    {state.importType === 'add' ? (
+                      <>
+                        <strong>Add Data:</strong> New records will be created. If a record with the same property address already exists, it will be overwritten with the new data.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Update Data:</strong> Only existing records will be updated. Only non-empty fields from the CSV will overwrite existing data. Records not found will be skipped.
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Motivations & Tags */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Select motivations and tags to apply to all imported records.
+              </p>
+              
+              {/* Motivations & Tags Box */}
+              <div className="border border-gray-200 rounded-lg flex flex-col h-72">
+                {/* Header */}
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                  <span className="text-blue-600">—</span>
+                  <span className="text-sm font-medium text-blue-600">MOTIVATIONS & TAGS</span>
+                </div>
+                
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveListTab('motivations')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                      activeListTab === 'motivations'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Motivations ({state.motivationIds.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveListTab('tags')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                      activeListTab === 'tags'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Tags ({state.tagIds.length})
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="p-3 border-b border-gray-100 flex-shrink-0">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={activeListTab === 'motivations' ? motivationSearch : tagSearch}
+                      onChange={(e) => {
+                        if (activeListTab === 'motivations') {
+                          setMotivationSearch(e.target.value)
+                        } else {
+                          setTagSearch(e.target.value)
+                        }
+                      }}
+                      placeholder={`Search ${activeListTab}...`}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+                
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {/* Dropdown - when searching */}
+                  {activeListTab === 'motivations' && motivationSearch ? (
+                    <div className="bg-gray-50">
+                      {motivations
+                        .filter(m => 
+                          m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                          !state.motivationIds.includes(m.id)
+                        )
+                        .map((motivation) => (
+                          <button
+                            key={motivation.id}
+                            type="button"
+                            onClick={() => {
+                              toggleArrayItem('motivationIds', motivation.id)
+                              setMotivationSearch('')
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                          >
+                            {motivation.name}
+                          </button>
+                        ))}
+                      {motivations.filter(m => 
+                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                        !state.motivationIds.includes(m.id)
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                      )}
+                    </div>
+                  ) : activeListTab === 'tags' && tagSearch ? (
+                    <div className="bg-gray-50">
+                      {tags
+                        .filter(t => 
+                          t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                          !state.tagIds.includes(t.id)
+                        )
+                        .map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => {
+                              toggleArrayItem('tagIds', tag.id)
+                              setTagSearch('')
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
+                      {tags.filter(t => 
+                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                        !state.tagIds.includes(t.id)
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Selected Items List - when not searching */
+                    activeListTab === 'motivations' ? (
+                      <>
+                        {state.motivationIds.map((id) => {
+                          const motivation = motivations.find(m => m.id === id)
+                          return motivation ? (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                            >
+                              <span className="text-sm text-gray-700">{motivation.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleArrayItem('motivationIds', id)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : null
+                        })}
+                        {state.motivationIds.length === 0 && (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            No motivations selected
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {state.tagIds.map((id) => {
+                          const tag = tags.find(t => t.id === id)
+                          return tag ? (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                            >
+                              <span className="text-sm text-gray-700">{tag.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleArrayItem('tagIds', id)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : null
+                        })}
+                        {state.tagIds.length === 0 && (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            No tags selected
+                          </div>
+                        )}
+                      </>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Upload CSV */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Upload a CSV file containing your property data.
+              </p>
+              
+              {!state.csvFile ? (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-12 text-center transition ${
+                    isDragging
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">
+                    Drag and drop your CSV file here
+                  </p>
+                  <p className="text-gray-400 text-sm mb-4">or</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Browse Files
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileUpload(file)
+                    }}
+                    className="hidden"
+                  />
+                  <p className="text-gray-400 text-xs mt-4">
+                    Accepted format: .csv
+                  </p>
+                </div>
+              ) : (
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <FileText className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{state.csvFile.name}</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {state.rowCount} rows detected • {state.csvHeaders.length} columns
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setState(prev => ({
+                            ...prev,
+                            csvFile: null,
+                            csvData: [],
+                            csvHeaders: [],
+                            rowCount: 0,
+                            fieldMapping: {},
+                          }))
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = ''
+                          }
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-700 mt-2 font-medium"
+                      >
+                        REUPLOAD FILE
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Preview first few columns */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2">Columns detected:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {state.csvHeaders.slice(0, 10).map((header, i) => (
+                        <span key={i} className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
+                          {header}
+                        </span>
+                      ))}
+                      {state.csvHeaders.length > 10 && (
+                        <span className="px-2 py-1 text-xs text-gray-400">
+                          +{state.csvHeaders.length - 10} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Map Fields */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Map your CSV columns to the system fields. Click a CSV column, then click a system field to map them.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-6">
+                {/* Left: CSV Columns */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">CSV Columns</span>
+                    </div>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {state.csvHeaders.map((header, index) => {
+                      const mappedTo = Object.entries(state.fieldMapping).find(([_, csv]) => csv === header)?.[0]
+                      const sampleValue = state.csvData[0]?.[index] || ''
+                      
+                      return (
+                        <div
+                          key={header}
+                          className={`px-4 py-3 border-b border-gray-100 last:border-0 ${
+                            mappedTo ? 'bg-green-50' : ''
+                          }`}
+                        >
+                          <div className="font-medium text-sm text-gray-900">{header}</div>
+                          <div className="text-xs text-gray-500 truncate mt-1">{sampleValue}</div>
+                          {mappedTo && (
+                            <div className="text-xs text-green-600 mt-1">
+                              → {SYSTEM_FIELDS.find(f => f.key === mappedTo)?.label}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Right: System Fields */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <span className="text-sm font-medium text-gray-700">System Fields</span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {SYSTEM_FIELDS.map((field) => {
+                      const isRequired = getRequiredFields().includes(field.key)
+                      const mappedFrom = state.fieldMapping[field.key]
+                      
+                      return (
+                        <div
+                          key={field.key}
+                          className={`px-4 py-3 border-b border-gray-100 last:border-0 flex items-center justify-between ${
+                            mappedFrom ? 'bg-green-50' : ''
+                          }`}
+                        >
+                          <div>
+                            <div className="font-medium text-sm text-gray-900">{field.label}</div>
+                            {mappedFrom && (
+                              <div className="text-xs text-green-600 mt-1">
+                                ← {mappedFrom}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isRequired && (
+                              <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded">
+                                Required
+                              </span>
+                            )}
+                            {mappedFrom && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setState(prev => {
+                                    const newMapping = { ...prev.fieldMapping }
+                                    delete newMapping[field.key]
+                                    return { ...prev, fieldMapping: newMapping }
+                                  })
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                ×
+                              </button>
+                            )}
+                            {!mappedFrom && (
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setState(prev => ({
+                                      ...prev,
+                                      fieldMapping: {
+                                        ...prev.fieldMapping,
+                                        [field.key]: e.target.value
+                                      }
+                                    }))
+                                  }
+                                }}
+                                className="text-xs border border-gray-300 rounded px-2 py-1"
+                              >
+                                <option value="">Select column</option>
+                                {state.csvHeaders
+                                  .filter(h => !Object.values(state.fieldMapping).includes(h))
+                                  .map(header => (
+                                    <option key={header} value={header}>{header}</option>
+                                  ))
+                                }
+                              </select>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {!areRequiredFieldsMapped() && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-yellow-800">
+                      Please map all required fields before proceeding.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 5: Review */}
+          {step === 5 && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="font-medium text-gray-900 mb-4">Import Summary</h3>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Import Type:</span>
+                    <span className="text-gray-900 font-medium">
+                      {state.importType === 'add' ? 'Add Data' : 'Update Data'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Option:</span>
+                    <span className="text-gray-900 font-medium">
+                      {state.importOption === 'new_motivation' && 'Upload new list to a motivation'}
+                      {state.importOption === 'existing_motivation' && 'Upload new list to an existing motivation'}
+                      {state.importOption === 'property_address' && 'Update using Property Address'}
+                      {state.importOption === 'mailing_address' && 'Update using Mailing Address'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Motivations:</span>
+                    <span className="text-gray-900 font-medium">
+                      {state.motivationIds.length > 0
+                        ? state.motivationIds.map(id => motivations.find(m => m.id === id)?.name).join(', ')
+                        : 'None'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Tags:</span>
+                    <span className="text-gray-900 font-medium">
+                      {state.tagIds.length > 0
+                        ? state.tagIds.map(id => tags.find(t => t.id === id)?.name).join(', ')
+                        : 'None'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">File:</span>
+                    <span className="text-gray-900 font-medium">{state.csvFile?.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total Records:</span>
+                    <span className="text-gray-900 font-medium">{state.rowCount}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="font-medium text-gray-900 mb-4">Field Mapping</h3>
+                <div className="space-y-2">
+                  {Object.entries(state.fieldMapping).map(([systemField, csvColumn]) => (
+                    <div key={systemField} className="flex items-center text-sm">
+                      <span className="text-gray-500 w-40">{csvColumn}</span>
+                      <span className="text-gray-400 mx-2">→</span>
+                      <span className="text-gray-900 font-medium">
+                        {SYSTEM_FIELDS.find(f => f.key === systemField)?.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-between">
+          <button
+            type="button"
+            onClick={step === 1 ? handleClose : handleBack}
+            disabled={importing}
+            className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50"
+          >
+            {step === 1 ? 'Cancel' : '← Back'}
+          </button>
+          
+          {step < 5 ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Next Step →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-2"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                `Import ${state.rowCount} Records`
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

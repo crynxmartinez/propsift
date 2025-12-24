@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
+import BulkImportModal from '@/components/BulkImportModal'
 
 interface RecordItem {
   id: string
@@ -78,6 +79,7 @@ export default function RecordsPage() {
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false)
   const [showManageDropdown, setShowManageDropdown] = useState(false)
   const [bulkActionModal, setBulkActionModal] = useState<string | null>(null)
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
@@ -328,7 +330,14 @@ export default function RecordsPage() {
                 >
                   Add Single Property
                 </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                <button 
+                  onClick={() => {
+                    setShowBulkImportModal(true)
+                    setShowAddDropdown(false)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
                   Bulk Import
                 </button>
               </div>
@@ -691,6 +700,15 @@ export default function RecordsPage() {
       <AddPropertyModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          fetchRecords()
+        }}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
         onSuccess={() => {
           fetchRecords()
         }}
