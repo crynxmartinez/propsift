@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
     const recordDataForCheck = {
       ownerFirstName: ownerFirstName || null,
       ownerLastName: ownerLastName || null,
+      ownerFullName: ownerFullName || null,
       isCompany,
       isCompanyOverride: null,
       propertyStreet: propertyStreet || null,

@@ -2,17 +2,15 @@
  * Completeness Check Utility
  * Determines if a record is complete based on business rules
  * 
- * Complete = ALL of these must be true:
- * - Owner is a person (not a company)
+ * For PERSON (isCompany = false):
  * - Has first name AND last name
- * - Has full property address (street, city, state, zip)
- * - Has full mailing address (street, city, state, zip)
+ * - Has property address (street)
+ * - Has mailing address (street)
  * 
- * Incomplete = ANY of these:
- * - Owner is a company name
- * - Missing first name OR last name
- * - Missing any property address field
- * - Missing any mailing address field
+ * For COMPANY (isCompany = true):
+ * - Has ownerFullName (company name)
+ * - Has property address (street)
+ * - Has mailing address (street)
  */
 
 import { getEffectiveCompanyStatus } from './companyDetection';
@@ -20,6 +18,7 @@ import { getEffectiveCompanyStatus } from './companyDetection';
 interface RecordData {
   ownerFirstName?: string | null;
   ownerLastName?: string | null;
+  ownerFullName?: string | null;
   isCompany: boolean;
   isCompanyOverride?: boolean | null;
   propertyStreet?: string | null;
@@ -76,32 +75,36 @@ export function isOwnerNameComplete(record: RecordData): boolean {
  * @returns boolean - true if complete, false if incomplete
  */
 export function isRecordComplete(record: RecordData): boolean {
-  // Check if owner is a company (companies are always incomplete)
   const isCompany = getEffectiveCompanyStatus(
     record.isCompany,
     record.isCompanyOverride ?? null
   );
   
   if (isCompany) {
-    return false;
+    // Company: needs ownerFullName (company name) + property street + mailing street
+    if (!hasValue(record.ownerFullName)) {
+      return false;
+    }
+    if (!hasValue(record.propertyStreet)) {
+      return false;
+    }
+    if (!hasValue(record.mailingStreet)) {
+      return false;
+    }
+    return true;
+  } else {
+    // Person: needs firstName + lastName + property street + mailing street
+    if (!hasValue(record.ownerFirstName) || !hasValue(record.ownerLastName)) {
+      return false;
+    }
+    if (!hasValue(record.propertyStreet)) {
+      return false;
+    }
+    if (!hasValue(record.mailingStreet)) {
+      return false;
+    }
+    return true;
   }
-
-  // Check if owner has both first and last name
-  if (!isOwnerNameComplete(record)) {
-    return false;
-  }
-
-  // Check if property address is complete
-  if (!isPropertyAddressComplete(record)) {
-    return false;
-  }
-
-  // Check if mailing address is complete
-  if (!isMailingAddressComplete(record)) {
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -117,47 +120,27 @@ export function getIncompleteReasons(record: RecordData): string[] {
   );
 
   if (isCompany) {
-    reasons.push('Owner is a company');
+    // Company requirements
+    if (!hasValue(record.ownerFullName)) {
+      reasons.push('Missing company name');
+    }
+  } else {
+    // Person requirements
+    if (!hasValue(record.ownerFirstName)) {
+      reasons.push('Missing owner first name');
+    }
+    if (!hasValue(record.ownerLastName)) {
+      reasons.push('Missing owner last name');
+    }
   }
 
-  if (!hasValue(record.ownerFirstName)) {
-    reasons.push('Missing owner first name');
-  }
-
-  if (!hasValue(record.ownerLastName)) {
-    reasons.push('Missing owner last name');
-  }
-
+  // Common requirements for both
   if (!hasValue(record.propertyStreet)) {
     reasons.push('Missing property street');
   }
 
-  if (!hasValue(record.propertyCity)) {
-    reasons.push('Missing property city');
-  }
-
-  if (!hasValue(record.propertyState)) {
-    reasons.push('Missing property state');
-  }
-
-  if (!hasValue(record.propertyZip)) {
-    reasons.push('Missing property zip');
-  }
-
   if (!hasValue(record.mailingStreet)) {
     reasons.push('Missing mailing street');
-  }
-
-  if (!hasValue(record.mailingCity)) {
-    reasons.push('Missing mailing city');
-  }
-
-  if (!hasValue(record.mailingState)) {
-    reasons.push('Missing mailing state');
-  }
-
-  if (!hasValue(record.mailingZip)) {
-    reasons.push('Missing mailing zip');
   }
 
   return reasons;

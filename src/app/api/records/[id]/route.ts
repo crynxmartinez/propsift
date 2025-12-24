@@ -284,6 +284,7 @@ export async function PUT(
     updateData.isComplete = isRecordComplete({
       ownerFirstName: mergedData.ownerFirstName as string | null,
       ownerLastName: mergedData.ownerLastName as string | null,
+      ownerFullName: mergedData.ownerFullName as string | null,
       isCompany: mergedData.isCompany as boolean,
       isCompanyOverride: mergedData.isCompanyOverride as boolean | null,
       propertyStreet: mergedData.propertyStreet as string | null,
