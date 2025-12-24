@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { 
   ChevronRight, 
   Pencil, 
-  Zap, 
   Phone, 
   Mail, 
   Plus, 
@@ -25,8 +24,7 @@ import {
   ChevronDown,
   MessageSquare,
   Clock,
-  Info,
-  ExternalLink
+  Info
 } from 'lucide-react'
 
 interface RecordData {
@@ -183,7 +181,7 @@ export default function PropertyDetailsPage() {
   
   // Dropdowns
   const [showUserDropdown, setShowUserDropdown] = useState(false)
-  const [showLightningDropdown, setShowLightningDropdown] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [showAddPhoneModal, setShowAddPhoneModal] = useState(false)
   const [showAddEmailModal, setShowAddEmailModal] = useState(false)
   
@@ -519,20 +517,62 @@ export default function PropertyDetailsPage() {
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {record.propertyStreet || 'No Address'}
-          </h1>
-          <p className="text-gray-500">
-            {[record.propertyCity, record.propertyState, record.propertyZip].filter(Boolean).join(', ')}
-          </p>
+        <div className="flex items-start gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {record.propertyStreet || 'No Address'}
+            </h1>
+            <p className="text-gray-500">
+              {[record.propertyCity, record.propertyState, record.propertyZip].filter(Boolean).join(', ')}
+            </p>
+          </div>
+          {/* Edit Button - beside address */}
+          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-1">
+            <Pencil className="w-4 h-4 text-gray-600" />
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Edit Button */}
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Pencil className="w-5 h-5 text-gray-600" />
-          </button>
+          {/* Status Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              style={record.status ? { backgroundColor: record.status.color + '20', borderColor: record.status.color } : {}}
+            >
+              {record.status ? (
+                <span className="text-sm font-medium" style={{ color: record.status.color }}>
+                  {record.status.name}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">Set Status</span>
+              )}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {showStatusDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                <button
+                  onClick={() => { updateRecord({ statusId: null }); setShowStatusDropdown(false) }}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-gray-500"
+                >
+                  No Status
+                </button>
+                {statuses.map((status) => (
+                  <button
+                    key={status.id}
+                    onClick={() => { updateRecord({ statusId: status.id }); setShowStatusDropdown(false) }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: status.color }}
+                    />
+                    {status.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Choose User Dropdown */}
           <div className="relative">
@@ -540,6 +580,7 @@ export default function PropertyDetailsPage() {
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
+              <User className="w-4 h-4 text-gray-400" />
               <span className="text-sm">
                 {record.assignedTo?.name || record.assignedTo?.email || 'Choose user'}
               </span>
@@ -566,27 +607,16 @@ export default function PropertyDetailsPage() {
             )}
           </div>
 
-          {/* Lightning Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowLightningDropdown(!showLightningDropdown)}
-              className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-            >
-              <Zap className="w-5 h-5" />
-            </button>
-            {showLightningDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                <a
-                  href={getZillowUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Check Zillow <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            )}
-          </div>
+          {/* Zillow Button */}
+          <a
+            href={getZillowUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+            title="View on Zillow"
+          >
+            <span className="text-xs font-bold">Z</span>
+          </a>
         </div>
       </div>
 
@@ -687,40 +717,69 @@ export default function PropertyDetailsPage() {
 
                   {/* Property Stats */}
                   <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="text-2xl font-bold text-gray-900">{formatCurrency(record.estimatedValue)}</p>
                       <p className="text-sm text-gray-500">Estimated Value</p>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="text-2xl font-bold text-gray-900">{record.bedrooms ?? '—'}</p>
                       <p className="text-sm text-gray-500">Bedrooms</p>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="text-2xl font-bold text-gray-900">{record.sqft ? `${record.sqft} sqft` : '—'}</p>
                       <p className="text-sm text-gray-500">Sqft</p>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="text-2xl font-bold text-gray-900">{record.yearBuilt ?? '—'}</p>
                       <p className="text-sm text-gray-500">Year</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="font-medium text-gray-900">{record.structureType || '—'}</p>
                       <p className="text-sm text-gray-500">Structure Type</p>
                     </div>
-                    <div className="text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="font-medium text-gray-900">{record.heatingType || '—'}</p>
                       <p className="text-sm text-gray-500">Heating Type</p>
                     </div>
-                    <div className="text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="font-medium text-gray-900">{record.airConditioner || '—'}</p>
                       <p className="text-sm text-gray-500">Air Conditioner</p>
                     </div>
-                    <div className="text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                        <Pencil className="w-3 h-3 text-gray-400" />
+                      </button>
                       <p className="font-medium text-gray-900">{record.bathrooms ?? '—'}</p>
                       <p className="text-sm text-gray-500">Bathrooms</p>
+                    </div>
+                    {/* Add Custom Field Button */}
+                    <div className="text-center p-4 border border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition flex flex-col items-center justify-center">
+                      <Plus className="w-5 h-5 text-gray-400 mb-1" />
+                      <p className="text-sm text-gray-500">Add Field</p>
                     </div>
                   </div>
 

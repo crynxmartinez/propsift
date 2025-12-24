@@ -183,6 +183,7 @@ model Record {
   emails              RecordEmail[]
   comments            RecordComment[]
   activityLogs        RecordActivityLog[]
+  customFieldValues   CustomFieldValue[]
 }
 
 model RecordTag {
@@ -261,4 +262,36 @@ model RecordActivityLog {
   @@index([recordId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// Custom Fields - user-defined fields for tracking
+model CustomFieldDefinition {
+  id          String   @id @default(cuid())
+  name        String   // Field name (e.g., "Pool", "Garage Size")
+  fieldType   String   // text, number, boolean, date, select
+  displayType String   @default("card") // card or row
+  options     String?  // JSON array for select type options
+  isRequired  Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  values      CustomFieldValue[]
+}
+
+model CustomFieldValue {
+  id         String   @id @default(cuid())
+  value      String?  // Stored as string, parsed based on fieldType
+  
+  fieldId    String
+  field      CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  recordId   String
+  record     Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([fieldId, recordId])
+  @@index([recordId])
+  @@index([fieldId])
 }
