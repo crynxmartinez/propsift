@@ -405,15 +405,46 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     if (file) handleFileUpload(file)
   }
 
-  // Handle import
+  // Handle import - now runs in background
   const handleImport = async () => {
     setImporting(true)
     
     try {
-      const response = await fetch('/api/records/bulk-import', {
+      // 1. Create activity log entry first
+      const activityRes = await fetch('/api/activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          type: 'upload',
+          action: 'bulk_import',
+          filename: state.csvFile?.name || 'Unknown file',
+          description: `${state.importType === 'add' ? 'Add new properties' : 'Update existing'} - ${state.importOption}`,
+          total: state.rowCount,
+          metadata: {
+            importType: state.importType,
+            importOption: state.importOption,
+            motivationIds: state.motivationIds,
+            tagIds: state.tagIds,
+          },
+        }),
+      })
+      
+      if (!activityRes.ok) {
+        throw new Error('Failed to create activity log')
+      }
+      
+      const activity = await activityRes.json()
+      
+      // 2. Close modal immediately and show toast
+      onClose()
+      alert('Upload started! View progress in Activity > Upload')
+      
+      // 3. Start background import (fire and forget)
+      fetch('/api/records/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityId: activity.id,
           importType: state.importType,
           importOption: state.importOption,
           motivationIds: state.motivationIds,
@@ -422,21 +453,44 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
           csvHeaders: state.csvHeaders,
           csvData: state.csvData,
         }),
+      }).then(async (response) => {
+        const result = await response.json()
+        // Update activity log with final status
+        await fetch(`/api/activity/${activity.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            processed: result.added + result.updated + result.errors,
+            status: response.ok ? 'completed' : 'failed',
+            errorMessage: response.ok ? null : result.error,
+            metadata: {
+              importType: state.importType,
+              importOption: state.importOption,
+              motivationIds: state.motivationIds,
+              tagIds: state.tagIds,
+              added: result.added,
+              updated: result.updated,
+              skipped: result.skipped,
+              errors: result.errors,
+            },
+          }),
+        })
+        onSuccess()
+      }).catch(async (error) => {
+        console.error('Import error:', error)
+        await fetch(`/api/activity/${activity.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'failed',
+            errorMessage: 'Import failed unexpectedly',
+          }),
+        })
       })
       
-      const result = await response.json()
-      
-      if (response.ok) {
-        onSuccess()
-        onClose()
-        // Show success notification (will be handled by parent)
-        alert(`Import complete! ${result.added || 0} added, ${result.updated || 0} updated, ${result.errors || 0} errors`)
-      } else {
-        alert(`Import failed: ${result.error}`)
-      }
     } catch (error) {
       console.error('Import error:', error)
-      alert('Import failed. Please try again.')
+      alert('Failed to start import. Please try again.')
     } finally {
       setImporting(false)
     }
