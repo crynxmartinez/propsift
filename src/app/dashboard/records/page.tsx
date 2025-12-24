@@ -575,10 +575,13 @@ export default function RecordsPage() {
                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-4 py-4">
-                        <span className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium">
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => router.push(`/dashboard/owners/${record.id}`)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
+                        >
                           {record.ownerFullName}
-                        </span>
+                        </button>
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="text-left hover:text-blue-600">
