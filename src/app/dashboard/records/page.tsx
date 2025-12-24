@@ -91,6 +91,7 @@ export default function RecordsPage() {
   const [users, setUsers] = useState<{id: string, name: string | null, email: string}[]>([])
   const [selectedBulkItems, setSelectedBulkItems] = useState<string[]>([])
   const [selectedTemperature, setSelectedTemperature] = useState<string>('')
+  const [bulkSearchQuery, setBulkSearchQuery] = useState('')
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -723,7 +724,7 @@ export default function RecordsPage() {
                 {bulkActionModal === 'deletePhones' && 'Delete Phones'}
                 {bulkActionModal === 'deleteRecords' && 'Delete Records'}
               </h3>
-              <button onClick={() => setBulkActionModal(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setBulkActionModal(null); setBulkSearchQuery('') }} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -734,73 +735,127 @@ export default function RecordsPage() {
 
             {/* Tags selection */}
             {(bulkActionModal === 'addTags' || bulkActionModal === 'removeTags') && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {tags.map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedBulkItems.includes(tag.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedBulkItems([...selectedBulkItems, tag.id])
-                        } else {
-                          setSelectedBulkItems(selectedBulkItems.filter(id => id !== tag.id))
-                        }
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
-                    />
-                    <span className="text-sm">{tag.name}</span>
-                  </label>
-                ))}
-                {tags.length === 0 && <p className="text-sm text-gray-400">No tags available</p>}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search tags..."
+                    value={bulkSearchQuery}
+                    onChange={(e) => setBulkSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                  {tags
+                    .filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
+                    .map((tag) => (
+                      <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedBulkItems.includes(tag.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBulkItems([...selectedBulkItems, tag.id])
+                            } else {
+                              setSelectedBulkItems(selectedBulkItems.filter(id => id !== tag.id))
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                        />
+                        <span className="text-sm">{tag.name}</span>
+                      </label>
+                    ))}
+                  {tags.filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No tags found</p>
+                  )}
+                </div>
+                {selectedBulkItems.length > 0 && (
+                  <p className="text-xs text-gray-500">{selectedBulkItems.length} selected</p>
+                )}
               </div>
             )}
 
             {/* Motivations selection */}
             {(bulkActionModal === 'addMotivations' || bulkActionModal === 'removeMotivations') && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {motivations.map((motivation) => (
-                  <label key={motivation.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedBulkItems.includes(motivation.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedBulkItems([...selectedBulkItems, motivation.id])
-                        } else {
-                          setSelectedBulkItems(selectedBulkItems.filter(id => id !== motivation.id))
-                        }
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
-                    />
-                    <span className="text-sm">{motivation.name}</span>
-                  </label>
-                ))}
-                {motivations.length === 0 && <p className="text-sm text-gray-400">No motivations available</p>}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search motivations..."
+                    value={bulkSearchQuery}
+                    onChange={(e) => setBulkSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                  {motivations
+                    .filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
+                    .map((motivation) => (
+                      <label key={motivation.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedBulkItems.includes(motivation.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBulkItems([...selectedBulkItems, motivation.id])
+                            } else {
+                              setSelectedBulkItems(selectedBulkItems.filter(id => id !== motivation.id))
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                        />
+                        <span className="text-sm">{motivation.name}</span>
+                      </label>
+                    ))}
+                  {motivations.filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No motivations found</p>
+                  )}
+                </div>
+                {selectedBulkItems.length > 0 && (
+                  <p className="text-xs text-gray-500">{selectedBulkItems.length} selected</p>
+                )}
               </div>
             )}
 
             {/* Status selection */}
             {bulkActionModal === 'updateStatus' && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {statuses.map((status) => (
-                  <label key={status.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status"
-                      checked={selectedBulkItems[0] === status.id}
-                      onChange={() => setSelectedBulkItems([status.id])}
-                      className="w-4 h-4 border-gray-300 text-blue-600"
-                    />
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                      style={{ backgroundColor: status.color }}
-                    >
-                      {status.name}
-                    </span>
-                  </label>
-                ))}
-                {statuses.length === 0 && <p className="text-sm text-gray-400">No statuses available</p>}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search statuses..."
+                    value={bulkSearchQuery}
+                    onChange={(e) => setBulkSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                  {statuses
+                    .filter(s => s.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
+                    .map((status) => (
+                      <label key={status.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="radio"
+                          name="status"
+                          checked={selectedBulkItems[0] === status.id}
+                          onChange={() => setSelectedBulkItems([status.id])}
+                          className="w-4 h-4 border-gray-300 text-blue-600"
+                        />
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: status.color }}
+                        >
+                          {status.name}
+                        </span>
+                      </label>
+                    ))}
+                  {statuses.filter(s => s.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No statuses found</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -810,6 +865,7 @@ export default function RecordsPage() {
                 {['COLD', 'WARM', 'HOT'].map((temp) => (
                   <button
                     key={temp}
+                    type="button"
                     onClick={() => setSelectedTemperature(temp)}
                     className={`flex-1 py-3 rounded-lg border transition ${
                       selectedTemperature === temp
@@ -831,29 +887,46 @@ export default function RecordsPage() {
 
             {/* User selection */}
             {bulkActionModal === 'assignToUser' && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="radio"
-                    name="user"
-                    checked={selectedBulkItems.length === 0}
-                    onChange={() => setSelectedBulkItems([])}
-                    className="w-4 h-4 border-gray-300 text-blue-600"
+                    type="text"
+                    placeholder="Search users..."
+                    value={bulkSearchQuery}
+                    onChange={(e) => setBulkSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <span className="text-sm text-gray-500">Unassigned</span>
-                </label>
-                {users.map((user) => (
-                  <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
                     <input
                       type="radio"
                       name="user"
-                      checked={selectedBulkItems[0] === user.id}
-                      onChange={() => setSelectedBulkItems([user.id])}
+                      checked={selectedBulkItems.length === 0}
+                      onChange={() => setSelectedBulkItems([])}
                       className="w-4 h-4 border-gray-300 text-blue-600"
                     />
-                    <span className="text-sm">{user.name || user.email}</span>
+                    <span className="text-sm text-gray-500">Unassigned</span>
                   </label>
-                ))}
+                  {users
+                    .filter(u => (u.name || u.email).toLowerCase().includes(bulkSearchQuery.toLowerCase()))
+                    .map((user) => (
+                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="radio"
+                          name="user"
+                          checked={selectedBulkItems[0] === user.id}
+                          onChange={() => setSelectedBulkItems([user.id])}
+                          className="w-4 h-4 border-gray-300 text-blue-600"
+                        />
+                        <span className="text-sm">{user.name || user.email}</span>
+                      </label>
+                    ))}
+                  {users.filter(u => (u.name || u.email).toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && bulkSearchQuery && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No users found</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -894,7 +967,7 @@ export default function RecordsPage() {
             {/* Action buttons */}
             <div className="flex justify-end gap-3 mt-6">
               <button
-                onClick={() => setBulkActionModal(null)}
+                onClick={() => { setBulkActionModal(null); setBulkSearchQuery('') }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Cancel
