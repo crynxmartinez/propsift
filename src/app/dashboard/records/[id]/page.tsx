@@ -121,6 +121,24 @@ interface ActivityLog {
   } | null
 }
 
+interface CustomFieldDefinition {
+  id: string
+  name: string
+  fieldType: string
+  displayType: string
+  options: string | null
+  isRequired: boolean
+  order: number
+}
+
+interface CustomFieldValue {
+  id: string
+  value: string | null
+  fieldId: string
+  recordId: string
+  field: CustomFieldDefinition
+}
+
 interface UserItem {
   id: string
   name: string | null
@@ -216,9 +234,15 @@ export default function PropertyDetailsPage() {
   // Add custom field modal
   const [showAddFieldModal, setShowAddFieldModal] = useState(false)
   const [newFieldData, setNewFieldData] = useState({ name: '', fieldType: 'text', displayType: 'card' })
+  
+  // Custom fields
+  const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([])
+  const [customFieldValues, setCustomFieldValues] = useState<CustomFieldValue[]>([])
+  const [editCustomFieldModal, setEditCustomFieldModal] = useState<{ fieldId: string; name: string; value: string; fieldType: string } | null>(null)
 
   useEffect(() => {
     fetchRecord()
+    fetchCustomFields()
     fetchOptions()
   }, [recordId])
 
@@ -246,6 +270,73 @@ export default function PropertyDetailsPage() {
       console.error('Error fetching record:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCustomFields = async () => {
+    try {
+      const [fieldsRes, valuesRes] = await Promise.all([
+        fetch('/api/custom-fields'),
+        fetch(`/api/records/${recordId}/custom-fields`),
+      ])
+      if (fieldsRes.ok) {
+        const fields = await fieldsRes.json()
+        setCustomFields(fields)
+      }
+      if (valuesRes.ok) {
+        const values = await valuesRes.json()
+        setCustomFieldValues(values)
+      }
+    } catch (error) {
+      console.error('Error fetching custom fields:', error)
+    }
+  }
+
+  const createCustomField = async () => {
+    if (!newFieldData.name.trim()) return
+    try {
+      const res = await fetch('/api/custom-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFieldData),
+      })
+      if (res.ok) {
+        const field = await res.json()
+        setCustomFields([...customFields, field])
+        setShowAddFieldModal(false)
+        setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' })
+      }
+    } catch (error) {
+      console.error('Error creating custom field:', error)
+    }
+  }
+
+  const saveCustomFieldValue = async () => {
+    if (!editCustomFieldModal) return
+    try {
+      const res = await fetch(`/api/records/${recordId}/custom-fields`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fieldId: editCustomFieldModal.fieldId,
+          value: editCustomFieldModal.value,
+        }),
+      })
+      if (res.ok) {
+        const savedValue = await res.json()
+        setCustomFieldValues(prev => {
+          const existing = prev.findIndex(v => v.fieldId === savedValue.fieldId)
+          if (existing >= 0) {
+            const updated = [...prev]
+            updated[existing] = savedValue
+            return updated
+          }
+          return [...prev, savedValue]
+        })
+        setEditCustomFieldModal(null)
+      }
+    } catch (error) {
+      console.error('Error saving custom field value:', error)
     }
   }
 
@@ -1064,18 +1155,81 @@ export default function PropertyDetailsPage() {
 
               {/* Additional Info Tab - Custom Fields */}
               {activeTab === 'additional' && (
-                <div className="py-8">
-                  <div className="flex flex-col items-center justify-center text-center">
+                <div className="space-y-6">
+                  {/* Display existing custom fields */}
+                  {customFields.length > 0 && (
+                    <>
+                      {/* Card style fields */}
+                      {customFields.filter(f => f.displayType === 'card').length > 0 && (
+                        <div className="grid grid-cols-4 gap-4">
+                          {customFields.filter(f => f.displayType === 'card').map(field => {
+                            const fieldValue = customFieldValues.find(v => v.fieldId === field.id)
+                            return (
+                              <div key={field.id} className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                                <button 
+                                  onClick={() => setEditCustomFieldModal({ 
+                                    fieldId: field.id, 
+                                    name: field.name, 
+                                    value: fieldValue?.value || '', 
+                                    fieldType: field.fieldType 
+                                  })}
+                                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                                >
+                                  <Pencil className="w-3 h-3 text-gray-400" />
+                                </button>
+                                <p className="font-medium text-gray-900">
+                                  {field.fieldType === 'boolean' 
+                                    ? (fieldValue?.value === 'true' ? 'Yes' : fieldValue?.value === 'false' ? 'No' : '—')
+                                    : fieldValue?.value || '—'}
+                                </p>
+                                <p className="text-sm text-gray-500">{field.name}</p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Row style fields */}
+                      {customFields.filter(f => f.displayType === 'row').map(field => {
+                        const fieldValue = customFieldValues.find(v => v.fieldId === field.id)
+                        return (
+                          <div key={field.id} className="relative group flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                            <div>
+                              <p className="text-sm text-gray-500">{field.name}</p>
+                              <p className="font-medium text-gray-900">
+                                {field.fieldType === 'boolean' 
+                                  ? (fieldValue?.value === 'true' ? 'Yes' : fieldValue?.value === 'false' ? 'No' : '—')
+                                  : fieldValue?.value || '—'}
+                              </p>
+                            </div>
+                            <button 
+                              onClick={() => setEditCustomFieldModal({ 
+                                fieldId: field.id, 
+                                name: field.name, 
+                                value: fieldValue?.value || '', 
+                                fieldType: field.fieldType 
+                              })}
+                              className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 rounded"
+                            >
+                              <Pencil className="w-4 h-4 text-gray-400" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </>
+                  )}
+
+                  {/* Add new field button */}
+                  <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
                     <button 
                       onClick={() => setShowAddFieldModal(true)}
-                      className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-4"
+                      className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-3"
                     >
-                      <Plus className="w-8 h-8 text-gray-400" />
+                      <Plus className="w-6 h-6 text-gray-400" />
                     </button>
-                    <h3 className="text-lg font-medium text-gray-700 mb-2">Add Custom Field</h3>
-                    <p className="text-sm text-gray-500 max-w-md">
-                      Create custom fields to track additional information for this property. 
-                      Choose between card style or full row display.
+                    <h3 className="text-sm font-medium text-gray-700 mb-1">Add Custom Field</h3>
+                    <p className="text-xs text-gray-500 max-w-sm">
+                      Custom fields apply to all records
                     </p>
                   </div>
                 </div>
@@ -1466,11 +1620,63 @@ export default function PropertyDetailsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => { setShowAddFieldModal(false); setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' }) }}
+                onClick={createCustomField}
                 disabled={!newFieldData.name.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
               >
                 Create Field
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Custom Field Value Modal */}
+      {editCustomFieldModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-4">Edit {editCustomFieldModal.name}</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{editCustomFieldModal.name}</label>
+              {editCustomFieldModal.fieldType === 'boolean' ? (
+                <select
+                  value={editCustomFieldModal.value}
+                  onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="">Select...</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              ) : editCustomFieldModal.fieldType === 'date' ? (
+                <input
+                  type="date"
+                  value={editCustomFieldModal.value}
+                  onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              ) : (
+                <input
+                  type={editCustomFieldModal.fieldType === 'number' ? 'number' : 'text'}
+                  value={editCustomFieldModal.value}
+                  onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
+                  placeholder={`Enter ${editCustomFieldModal.name.toLowerCase()}`}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setEditCustomFieldModal(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveCustomFieldValue}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Save
               </button>
             </div>
           </div>
