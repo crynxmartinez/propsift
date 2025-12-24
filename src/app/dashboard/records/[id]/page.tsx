@@ -209,6 +209,13 @@ export default function PropertyDetailsPage() {
   
   // Confirmation dialogs
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'phone' | 'email' | null; id: string | null }>({ type: null, id: null })
+  
+  // Edit field modal
+  const [editFieldModal, setEditFieldModal] = useState<{ field: string; label: string; value: string; type: 'text' | 'number' | 'currency' } | null>(null)
+  
+  // Add custom field modal
+  const [showAddFieldModal, setShowAddFieldModal] = useState(false)
+  const [newFieldData, setNewFieldData] = useState({ name: '', fieldType: 'text', displayType: 'card' })
 
   useEffect(() => {
     fetchRecord()
@@ -298,6 +305,16 @@ export default function PropertyDetailsPage() {
     } catch (error) {
       console.error('Error fetching activity logs:', error)
     }
+  }
+
+  const saveFieldEdit = async () => {
+    if (!editFieldModal) return
+    let value: string | number | null = editFieldModal.value
+    if (editFieldModal.type === 'number' || editFieldModal.type === 'currency') {
+      value = editFieldModal.value ? parseFloat(editFieldModal.value.replace(/[^0-9.-]/g, '')) : null
+    }
+    await updateRecord({ [editFieldModal.field]: value })
+    setEditFieldModal(null)
   }
 
   const updateRecord = async (updates: Partial<RecordData>) => {
@@ -718,28 +735,40 @@ export default function PropertyDetailsPage() {
                   {/* Property Stats */}
                   <div className="grid grid-cols-4 gap-4">
                     <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'estimatedValue', label: 'Estimated Value', value: record.estimatedValue?.toString() || '', type: 'currency' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="text-2xl font-bold text-gray-900">{formatCurrency(record.estimatedValue)}</p>
                       <p className="text-sm text-gray-500">Estimated Value</p>
                     </div>
                     <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'bedrooms', label: 'Bedrooms', value: record.bedrooms?.toString() || '', type: 'number' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="text-2xl font-bold text-gray-900">{record.bedrooms ?? '—'}</p>
                       <p className="text-sm text-gray-500">Bedrooms</p>
                     </div>
                     <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'sqft', label: 'Square Feet', value: record.sqft?.toString() || '', type: 'number' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="text-2xl font-bold text-gray-900">{record.sqft ? `${record.sqft} sqft` : '—'}</p>
                       <p className="text-sm text-gray-500">Sqft</p>
                     </div>
                     <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'yearBuilt', label: 'Year Built', value: record.yearBuilt?.toString() || '', type: 'number' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="text-2xl font-bold text-gray-900">{record.yearBuilt ?? '—'}</p>
@@ -749,28 +778,40 @@ export default function PropertyDetailsPage() {
 
                   <div className="grid grid-cols-4 gap-4">
                     <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'structureType', label: 'Structure Type', value: record.structureType || '', type: 'text' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="font-medium text-gray-900">{record.structureType || '—'}</p>
                       <p className="text-sm text-gray-500">Structure Type</p>
                     </div>
                     <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'heatingType', label: 'Heating Type', value: record.heatingType || '', type: 'text' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="font-medium text-gray-900">{record.heatingType || '—'}</p>
                       <p className="text-sm text-gray-500">Heating Type</p>
                     </div>
                     <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'airConditioner', label: 'Air Conditioner', value: record.airConditioner || '', type: 'text' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="font-medium text-gray-900">{record.airConditioner || '—'}</p>
                       <p className="text-sm text-gray-500">Air Conditioner</p>
                     </div>
                     <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
-                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'bathrooms', label: 'Bathrooms', value: record.bathrooms?.toString() || '', type: 'number' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                      >
                         <Pencil className="w-3 h-3 text-gray-400" />
                       </button>
                       <p className="font-medium text-gray-900">{record.bathrooms ?? '—'}</p>
@@ -1025,7 +1066,10 @@ export default function PropertyDetailsPage() {
               {activeTab === 'additional' && (
                 <div className="py-8">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <button className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-4">
+                    <button 
+                      onClick={() => setShowAddFieldModal(true)}
+                      className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-4"
+                    >
                       <Plus className="w-8 h-8 text-gray-400" />
                     </button>
                     <h3 className="text-lg font-medium text-gray-700 mb-2">Add Custom Field</h3>
@@ -1318,6 +1362,115 @@ export default function PropertyDetailsPage() {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Field Modal */}
+      {editFieldModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-4">Edit {editFieldModal.label}</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{editFieldModal.label}</label>
+              <input
+                type={editFieldModal.type === 'currency' || editFieldModal.type === 'number' ? 'text' : 'text'}
+                value={editFieldModal.value}
+                onChange={(e) => setEditFieldModal({ ...editFieldModal, value: e.target.value })}
+                placeholder={`Enter ${editFieldModal.label.toLowerCase()}`}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setEditFieldModal(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveFieldEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Custom Field Modal */}
+      {showAddFieldModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Custom Field</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Field Name</label>
+                <input
+                  type="text"
+                  value={newFieldData.name}
+                  onChange={(e) => setNewFieldData({ ...newFieldData, name: e.target.value })}
+                  placeholder="e.g., Pool, Garage Size, HOA Fee"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Field Type</label>
+                <select
+                  value={newFieldData.fieldType}
+                  onChange={(e) => setNewFieldData({ ...newFieldData, fieldType: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="boolean">Yes/No</option>
+                  <option value="date">Date</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Display Style</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="displayType"
+                      value="card"
+                      checked={newFieldData.displayType === 'card'}
+                      onChange={(e) => setNewFieldData({ ...newFieldData, displayType: e.target.value })}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm">Card (compact)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="displayType"
+                      value="row"
+                      checked={newFieldData.displayType === 'row'}
+                      onChange={(e) => setNewFieldData({ ...newFieldData, displayType: e.target.value })}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm">Full Row</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowAddFieldModal(false); setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' }) }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowAddFieldModal(false); setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' }) }}
+                disabled={!newFieldData.name.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+              >
+                Create Field
               </button>
             </div>
           </div>
