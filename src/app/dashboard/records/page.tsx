@@ -163,24 +163,10 @@ export default function RecordsPage() {
     setShowManageDropdown(false)
     
     try {
-      // Create activity log entry
-      const activityRes = await fetch('/api/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'download',
-          action: 'export',
-          filename: `records_export_${new Date().toISOString().split('T')[0]}.csv`,
-          description: `Export ${selectedIds.size > 0 ? selectedIds.size : 'all'} records`,
-          total: selectedIds.size > 0 ? selectedIds.size : totalCount,
-        }),
-      })
-      
-      if (!activityRes.ok) throw new Error('Failed to create activity log')
-      const activity = await activityRes.json()
-      
-      // Fetch records to export
       const recordIds = selectedIds.size > 0 ? Array.from(selectedIds) : null
+      const recordCount = selectedIds.size > 0 ? selectedIds.size : totalCount
+      
+      // Call export API which creates activity log and stores CSV
       const exportRes = await fetch('/api/records/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -188,35 +174,10 @@ export default function RecordsPage() {
       })
       
       if (!exportRes.ok) {
-        await fetch(`/api/activity/${activity.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'failed', errorMessage: 'Export failed' }),
-        })
         throw new Error('Export failed')
       }
       
-      const blob = await exportRes.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `records_export_${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      
-      // Update activity as completed
-      await fetch(`/api/activity/${activity.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: 'completed',
-          processed: selectedIds.size > 0 ? selectedIds.size : totalCount,
-        }),
-      })
-      
-      alert('Export complete! Check your downloads.')
+      alert(`Export started! ${recordCount} records queued. Go to Activity > Download to download your file.`)
     } catch (error) {
       console.error('Export error:', error)
       alert('Failed to export records')

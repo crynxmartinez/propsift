@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// POST /api/records/export - Export records to CSV
+// POST /api/records/export - Export records to CSV and store in activity log
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -9,6 +9,23 @@ export async function POST(request: Request) {
 
     // Build where clause
     const where = recordIds ? { id: { in: recordIds } } : {}
+
+    // Count records first
+    const totalRecords = await prisma.record.count({ where })
+    const filename = `records_export_${new Date().toISOString().split('T')[0]}.csv`
+
+    // Create activity log entry first
+    const activity = await prisma.activityLog.create({
+      data: {
+        type: 'download',
+        action: 'export',
+        filename,
+        description: `Export ${totalRecords} records`,
+        total: totalRecords,
+        processed: 0,
+        status: 'processing',
+      },
+    })
 
     // Fetch records with all related data
     const records = await prisma.record.findMany({
@@ -133,13 +150,25 @@ export async function POST(request: Request) {
       ...rows.map(row => row.map(escapeCSV).join(','))
     ].join('\n')
 
-    // Return as downloadable file
-    return new NextResponse(csvContent, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="records_export_${new Date().toISOString().split('T')[0]}.csv"`,
+    // Store CSV content in activity log metadata and mark as completed
+    await prisma.activityLog.update({
+      where: { id: activity.id },
+      data: {
+        processed: records.length,
+        status: 'completed',
+        metadata: {
+          csvContent,
+          recordCount: records.length,
+        },
       },
+    })
+
+    // Return success response (no auto-download)
+    return NextResponse.json({
+      success: true,
+      activityId: activity.id,
+      recordCount: records.length,
+      message: 'Export completed. Go to Activity > Download to download your file.',
     })
   } catch (error) {
     console.error('Error exporting records:', error)

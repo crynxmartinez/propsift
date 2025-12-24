@@ -56,6 +56,31 @@ export default function ActivityPage() {
     }
   }, [activities])
 
+  // Handle download from activity
+  const handleDownload = async (activityId: string, filename: string | null) => {
+    try {
+      const res = await fetch(`/api/activity/${activityId}/download`)
+      if (!res.ok) {
+        const error = await res.json()
+        alert(error.error || 'Download failed')
+        return
+      }
+      
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || 'export.csv'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Failed to download file')
+    }
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -311,7 +336,12 @@ export default function ActivityPage() {
                       <td className="px-6 py-4">{getStatusBadge(activity.status)}</td>
                       <td className="px-6 py-4">
                         {activity.status === 'completed' && (
-                          <button className="text-sm text-blue-600 hover:text-blue-800">Download</button>
+                          <button 
+                            onClick={() => handleDownload(activity.id, activity.filename)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Download
+                          </button>
                         )}
                       </td>
                     </tr>

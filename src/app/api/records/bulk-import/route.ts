@@ -163,61 +163,71 @@ export async function POST(request: NextRequest) {
           });
 
           if (existingRecord) {
-            // Overwrite existing record
+            // Overwrite existing record with non-empty fields, append notes
+            const appendedNotes = notes 
+              ? (existingRecord.notes ? `${existingRecord.notes}\n${notes}` : notes)
+              : existingRecord.notes;
+            
             await prisma.record.update({
               where: { id: existingRecord.id },
               data: {
-                ownerFirstName,
-                ownerLastName,
-                ownerFullName,
+                ownerFirstName: ownerFirstName || existingRecord.ownerFirstName,
+                ownerLastName: ownerLastName || existingRecord.ownerLastName,
+                ownerFullName: ownerFullName || existingRecord.ownerFullName,
                 isCompany,
-                propertyStreet,
-                propertyCity,
-                propertyState,
-                propertyZip,
-                mailingStreet,
-                mailingCity,
-                mailingState,
-                mailingZip,
-                callAttempts,
-                directMailAttempts,
-                smsAttempts,
-                rvmAttempts,
-                estimatedValue,
-                bedrooms,
-                bathrooms,
-                sqft,
-                lotSize,
-                yearBuilt,
-                structureType,
-                heatingType,
-                airConditioner,
-                notes,
-                description,
-                temperature,
+                propertyStreet: propertyStreet || existingRecord.propertyStreet,
+                propertyCity: propertyCity || existingRecord.propertyCity,
+                propertyState: propertyState || existingRecord.propertyState,
+                propertyZip: propertyZip || existingRecord.propertyZip,
+                mailingStreet: mailingStreet || existingRecord.mailingStreet,
+                mailingCity: mailingCity || existingRecord.mailingCity,
+                mailingState: mailingState || existingRecord.mailingState,
+                mailingZip: mailingZip || existingRecord.mailingZip,
+                callAttempts: callAttempts > 0 ? callAttempts : existingRecord.callAttempts,
+                directMailAttempts: directMailAttempts > 0 ? directMailAttempts : existingRecord.directMailAttempts,
+                smsAttempts: smsAttempts > 0 ? smsAttempts : existingRecord.smsAttempts,
+                rvmAttempts: rvmAttempts > 0 ? rvmAttempts : existingRecord.rvmAttempts,
+                estimatedValue: estimatedValue ?? existingRecord.estimatedValue,
+                bedrooms: bedrooms ?? existingRecord.bedrooms,
+                bathrooms: bathrooms ?? existingRecord.bathrooms,
+                sqft: sqft ?? existingRecord.sqft,
+                lotSize: lotSize ?? existingRecord.lotSize,
+                yearBuilt: yearBuilt ?? existingRecord.yearBuilt,
+                structureType: structureType || existingRecord.structureType,
+                heatingType: heatingType || existingRecord.heatingType,
+                airConditioner: airConditioner || existingRecord.airConditioner,
+                notes: appendedNotes,
+                description: description || existingRecord.description,
+                temperature: temperature || existingRecord.temperature,
                 isComplete,
               },
             });
 
-            // Delete existing phones and emails for overwrite
-            await prisma.recordPhoneNumber.deleteMany({ where: { recordId: existingRecord.id } });
-            await prisma.recordEmail.deleteMany({ where: { recordId: existingRecord.id } });
-
-            // Add phones (max 15)
+            // Append phones (don't delete existing, just add new ones)
             for (const phone of phones) {
-              await prisma.recordPhoneNumber.create({
-                data: { recordId: existingRecord.id, number: phone },
+              const existingPhone = await prisma.recordPhoneNumber.findFirst({
+                where: { recordId: existingRecord.id, number: phone },
               });
+              if (!existingPhone) {
+                await prisma.recordPhoneNumber.create({
+                  data: { recordId: existingRecord.id, number: phone },
+                });
+              }
             }
 
-            // Add emails (max 5)
+            // Append emails (don't delete existing, just add new ones)
             for (const emailAddress of emails) {
-              await prisma.recordEmail.create({
-                data: { recordId: existingRecord.id, email: emailAddress },
+              const existingEmail = await prisma.recordEmail.findFirst({
+                where: { recordId: existingRecord.id, email: emailAddress },
               });
+              if (!existingEmail) {
+                await prisma.recordEmail.create({
+                  data: { recordId: existingRecord.id, email: emailAddress },
+                });
+              }
             }
 
-            // Add motivations
+            // Append motivations (don't remove existing)
             for (const motivationId of motivationIds) {
               await prisma.recordMotivation.upsert({
                 where: { recordId_motivationId: { recordId: existingRecord.id, motivationId } },
@@ -226,7 +236,7 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // Add tags
+            // Append tags (don't remove existing)
             for (const tagId of tagIds) {
               await prisma.recordTag.upsert({
                 where: { recordId_tagId: { recordId: existingRecord.id, tagId } },
@@ -382,8 +392,12 @@ export async function POST(request: NextRequest) {
           if (structureType) updateData.structureType = structureType;
           if (heatingType) updateData.heatingType = heatingType;
           if (airConditioner) updateData.airConditioner = airConditioner;
-          // Other fields
-          if (notes) updateData.notes = notes;
+          // Other fields - append notes instead of overwriting
+          if (notes) {
+            updateData.notes = existingRecord.notes 
+              ? `${existingRecord.notes}\n${notes}` 
+              : notes;
+          }
           if (description) updateData.description = description;
           if (temperature) updateData.temperature = temperature;
 
