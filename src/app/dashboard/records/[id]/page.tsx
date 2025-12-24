@@ -226,8 +226,8 @@ export default function PropertyDetailsPage() {
   const [listSearch, setListSearch] = useState('')
   const [showMotivationDropdown, setShowMotivationDropdown] = useState(false)
   const [showTagDropdown, setShowTagDropdown] = useState(false)
-  const [addingMotivation, setAddingMotivation] = useState(false)
-  const [addingTag, setAddingTag] = useState(false)
+  const [addingMotivationId, setAddingMotivationId] = useState<string | null>(null)
+  const [addingTagId, setAddingTagId] = useState<string | null>(null)
   const [removingMotivation, setRemovingMotivation] = useState<string | null>(null)
   const [removingTag, setRemovingTag] = useState<string | null>(null)
   const [creatingMotivation, setCreatingMotivation] = useState(false)
@@ -586,7 +586,7 @@ export default function PropertyDetailsPage() {
   }
 
   const addMotivation = async (motivationId: string) => {
-    setAddingMotivation(true)
+    setAddingMotivationId(motivationId)
     try {
       const res = await fetch(`/api/records/${recordId}`, {
         method: 'PUT',
@@ -603,7 +603,7 @@ export default function PropertyDetailsPage() {
     } catch (error) {
       console.error('Error adding motivation:', error)
     } finally {
-      setAddingMotivation(false)
+      setAddingMotivationId(null)
     }
   }
 
@@ -628,7 +628,7 @@ export default function PropertyDetailsPage() {
   }
 
   const addTag = async (tagId: string) => {
-    setAddingTag(true)
+    setAddingTagId(tagId)
     try {
       const res = await fetch(`/api/records/${recordId}`, {
         method: 'PUT',
@@ -645,7 +645,7 @@ export default function PropertyDetailsPage() {
     } catch (error) {
       console.error('Error adding tag:', error)
     } finally {
-      setAddingTag(false)
+      setAddingTagId(null)
     }
   }
 
@@ -1211,10 +1211,10 @@ export default function PropertyDetailsPage() {
                                     key={motivation.id}
                                     type="button"
                                     onClick={() => addMotivation(motivation.id)}
-                                    disabled={addingMotivation}
+                                    disabled={addingMotivationId !== null}
                                     className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2"
                                   >
-                                    {addingMotivation && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    {addingMotivationId === motivation.id && <Loader2 className="w-3 h-3 animate-spin" />}
                                     {motivation.name}
                                   </button>
                                 ))}
@@ -1246,10 +1246,10 @@ export default function PropertyDetailsPage() {
                                     key={tag.id}
                                     type="button"
                                     onClick={() => addTag(tag.id)}
-                                    disabled={addingTag}
+                                    disabled={addingTagId !== null}
                                     className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2"
                                   >
-                                    {addingTag && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    {addingTagId === tag.id && <Loader2 className="w-3 h-3 animate-spin" />}
                                     {tag.name}
                                   </button>
                                 ))}
