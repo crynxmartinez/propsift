@@ -118,6 +118,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
   const [tagSearch, setTagSearch] = useState('')
   const [showMotivationDropdown, setShowMotivationDropdown] = useState(false)
   const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
 
   // Fetch options on mount
   useEffect(() => {
@@ -723,9 +724,9 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                   <div className="flex border-b border-gray-200">
                     <button
                       type="button"
-                      onClick={() => setMotivationSearch('')}
+                      onClick={() => setActiveListTab('motivations')}
                       className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
-                        !showTagDropdown && !tagSearch
+                        activeListTab === 'motivations'
                           ? 'border-blue-600 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
@@ -734,9 +735,9 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                     </button>
                     <button
                       type="button"
-                      onClick={() => setTagSearch('')}
+                      onClick={() => setActiveListTab('tags')}
                       className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
-                        showTagDropdown || tagSearch
+                        activeListTab === 'tags'
                           ? 'border-blue-600 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
@@ -750,12 +751,15 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                     <div className="relative" data-motivation-dropdown data-tag-dropdown>
                       <input
                         type="text"
-                        value={motivationSearch || tagSearch}
+                        value={activeListTab === 'motivations' ? motivationSearch : tagSearch}
                         onChange={(e) => {
-                          setMotivationSearch(e.target.value)
-                          setTagSearch(e.target.value)
+                          if (activeListTab === 'motivations') {
+                            setMotivationSearch(e.target.value)
+                          } else {
+                            setTagSearch(e.target.value)
+                          }
                         }}
-                        placeholder="Search or add..."
+                        placeholder={`Search ${activeListTab}...`}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                       <button
@@ -769,57 +773,67 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
 
                   {/* Selected Items List */}
                   <div className="max-h-48 overflow-y-auto">
-                    {/* Motivations */}
-                    {formData.motivationIds.map((id) => {
-                      const motivation = motivations.find(m => m.id === id)
-                      return motivation ? (
-                        <div
-                          key={id}
-                          className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                        >
-                          <span className="text-sm text-gray-700">{motivation.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => toggleArrayItem('motivationIds', id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null
-                    })}
-                    {/* Tags */}
-                    {formData.tagIds.map((id) => {
-                      const tag = tags.find(t => t.id === id)
-                      return tag ? (
-                        <div
-                          key={id}
-                          className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                        >
-                          <span className="text-sm text-gray-700">{tag.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => toggleArrayItem('tagIds', id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null
-                    })}
-                    {formData.motivationIds.length === 0 && formData.tagIds.length === 0 && (
-                      <div className="px-4 py-6 text-center text-sm text-gray-400">
-                        No motivations or tags selected
-                      </div>
+                    {activeListTab === 'motivations' ? (
+                      <>
+                        {formData.motivationIds.map((id) => {
+                          const motivation = motivations.find(m => m.id === id)
+                          return motivation ? (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                            >
+                              <span className="text-sm text-gray-700">{motivation.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleArrayItem('motivationIds', id)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : null
+                        })}
+                        {formData.motivationIds.length === 0 && (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            No motivations selected
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {formData.tagIds.map((id) => {
+                          const tag = tags.find(t => t.id === id)
+                          return tag ? (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                            >
+                              <span className="text-sm text-gray-700">{tag.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleArrayItem('tagIds', id)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : null
+                        })}
+                        {formData.tagIds.length === 0 && (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            No tags selected
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   {/* Available Items Dropdown */}
-                  {(motivationSearch || tagSearch) && (
+                  {activeListTab === 'motivations' && motivationSearch && (
                     <div className="border-t border-gray-200 max-h-32 overflow-y-auto bg-gray-50">
                       {motivations
                         .filter(m => 
-                          m.name.toLowerCase().includes((motivationSearch || '').toLowerCase()) &&
+                          m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                           !formData.motivationIds.includes(m.id)
                         )
                         .map((motivation) => (
@@ -829,17 +843,25 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                             onClick={() => {
                               toggleArrayItem('motivationIds', motivation.id)
                               setMotivationSearch('')
-                              setTagSearch('')
                             }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
-                            <span className="text-purple-600 text-xs">M</span>
                             {motivation.name}
                           </button>
                         ))}
+                      {motivations.filter(m => 
+                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                        !formData.motivationIds.includes(m.id)
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                      )}
+                    </div>
+                  )}
+                  {activeListTab === 'tags' && tagSearch && (
+                    <div className="border-t border-gray-200 max-h-32 overflow-y-auto bg-gray-50">
                       {tags
                         .filter(t => 
-                          t.name.toLowerCase().includes((tagSearch || '').toLowerCase()) &&
+                          t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                           !formData.tagIds.includes(t.id)
                         )
                         .map((tag) => (
@@ -848,15 +870,19 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                             type="button"
                             onClick={() => {
                               toggleArrayItem('tagIds', tag.id)
-                              setMotivationSearch('')
                               setTagSearch('')
                             }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
-                            <span className="text-blue-600 text-xs">T</span>
                             {tag.name}
                           </button>
                         ))}
+                      {tags.filter(t => 
+                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                        !formData.tagIds.includes(t.id)
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
+                      )}
                     </div>
                   )}
                 </div>
