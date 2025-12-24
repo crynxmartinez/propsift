@@ -204,6 +204,10 @@ export default function PropertyDetailsPage() {
   // Activity filters
   const [activityEventType, setActivityEventType] = useState('all')
   const [activityUserId, setActivityUserId] = useState('all')
+  
+  // Motivations & Tags tab
+  const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
+  const [listSearch, setListSearch] = useState('')
 
   useEffect(() => {
     fetchRecord()
@@ -712,42 +716,124 @@ export default function PropertyDetailsPage() {
                     </div>
                   </div>
 
-                  {/* Motivations & Tags */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">
-                        Motivations ({record.recordMotivations.length})
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {record.recordMotivations.map((rm) => (
-                          <span
-                            key={rm.motivation.id}
-                            className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                  {/* Motivations & Tags + Notes */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Motivations & Tags Box */}
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <span className="text-blue-600">—</span>
+                        <span className="text-sm font-medium text-blue-600">MOTIVATIONS & TAGS</span>
+                      </div>
+                      
+                      {/* Tabs */}
+                      <div className="flex border-b border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => setActiveListTab('motivations')}
+                          className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                            activeListTab === 'motivations'
+                              ? 'border-blue-600 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Motivations ({record.recordMotivations.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveListTab('tags')}
+                          className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
+                            activeListTab === 'tags'
+                              ? 'border-blue-600 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Tags ({record.recordTags.length})
+                        </button>
+                      </div>
+
+                      {/* Search Input */}
+                      <div className="p-3 border-b border-gray-100">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={listSearch}
+                            onChange={(e) => setListSearch(e.target.value)}
+                            placeholder={`Search ${activeListTab}...`}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 text-sm font-medium hover:text-blue-700"
                           >
-                            {rm.motivation.name}
-                          </span>
-                        ))}
-                        {record.recordMotivations.length === 0 && (
-                          <span className="text-sm text-gray-400">No motivations</span>
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Selected Items List */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {activeListTab === 'motivations' ? (
+                          <>
+                            {record.recordMotivations.map((rm) => (
+                              <div
+                                key={rm.motivation.id}
+                                className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                              >
+                                <span className="text-sm text-gray-700">{rm.motivation.name}</span>
+                                <button
+                                  type="button"
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                            {record.recordMotivations.length === 0 && (
+                              <div className="px-4 py-6 text-center text-sm text-gray-400">
+                                No motivations selected
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {record.recordTags.map((rt) => (
+                              <div
+                                key={rt.tag.id}
+                                className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                              >
+                                <span className="text-sm text-gray-700">{rt.tag.name}</span>
+                                <button
+                                  type="button"
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                            {record.recordTags.length === 0 && (
+                              <div className="px-4 py-6 text-center text-sm text-gray-400">
+                                No tags selected
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">
-                        Tags ({record.recordTags.length})
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {record.recordTags.map((rt) => (
-                          <span
-                            key={rt.tag.id}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                          >
-                            {rt.tag.name}
-                          </span>
-                        ))}
-                        {record.recordTags.length === 0 && (
-                          <span className="text-sm text-gray-400">No tags</span>
-                        )}
+
+                    {/* Notes Box */}
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <span className="text-blue-600">—</span>
+                        <span className="text-sm font-medium text-blue-600">NOTES</span>
+                      </div>
+                      
+                      {/* Notes Content */}
+                      <div className="p-4">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap min-h-[120px]">
+                          {record.notes || <span className="text-gray-400">No notes added</span>}
+                        </div>
                       </div>
                     </div>
                   </div>
