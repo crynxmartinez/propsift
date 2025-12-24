@@ -578,9 +578,18 @@ export default function RecordsPage() {
                       <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => router.push(`/dashboard/owners/${record.id}`)}
-                          className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
+                          className="text-left"
                         >
-                          {record.ownerFullName}
+                          <div className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                            {record.ownerFirstName || record.ownerLastName 
+                              ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
+                              : record.ownerFullName}
+                          </div>
+                          {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
+                            <div className="text-xs text-gray-500">
+                              {record.ownerFullName}
+                            </div>
+                          )}
                         </button>
                       </td>
                       <td className="px-4 py-4 text-sm">
