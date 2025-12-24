@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { ToastProvider } from '@/components/Toast'
 
 export default function DashboardLayout({
   children,
@@ -30,11 +31,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        {children}
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="flex min-h-screen bg-gray-100">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          {children}
+        </main>
+      </div>
+    </ToastProvider>
   )
 }

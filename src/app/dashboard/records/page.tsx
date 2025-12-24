@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
+import { useToast } from '@/components/Toast'
 
 interface RecordItem {
   id: string
@@ -64,6 +65,7 @@ type FilterType = 'all' | 'complete' | 'incomplete'
 
 export default function RecordsPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const [records, setRecords] = useState<RecordItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
@@ -177,10 +179,10 @@ export default function RecordsPage() {
         throw new Error('Export failed')
       }
       
-      alert(`Export started! ${recordCount} records queued. Go to Activity > Download to download your file.`)
+      showToast(`Export started! ${recordCount} records queued. Go to Activity > Download to download your file.`, 'success', 5000)
     } catch (error) {
       console.error('Export error:', error)
-      alert('Failed to export records')
+      showToast('Failed to export records', 'error')
     }
   }
 
@@ -225,13 +227,14 @@ export default function RecordsPage() {
         setBulkActionModal(null)
         setSelectedIds(new Set())
         fetchRecords()
+        showToast('Bulk action completed successfully', 'success')
       } else {
         const error = await res.json()
-        alert(error.error || 'Bulk action failed')
+        showToast(error.error || 'Bulk action failed', 'error')
       }
     } catch (error) {
       console.error('Error executing bulk action:', error)
-      alert('Failed to execute bulk action')
+      showToast('Failed to execute bulk action', 'error')
     } finally {
       setBulkActionLoading(false)
     }

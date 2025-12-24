@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Activity, Upload, Download, RefreshCw, FileText, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/Toast'
 
 interface ActivityLog {
   id: string
@@ -21,6 +22,7 @@ interface ActivityLog {
 type TabType = 'actions' | 'upload' | 'download'
 
 export default function ActivityPage() {
+  const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('actions')
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +64,7 @@ export default function ActivityPage() {
       const res = await fetch(`/api/activity/${activityId}/download`)
       if (!res.ok) {
         const error = await res.json()
-        alert(error.error || 'Download failed')
+        showToast(error.error || 'Download failed', 'error')
         return
       }
       
@@ -75,9 +77,10 @@ export default function ActivityPage() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+      showToast('Download started!', 'success')
     } catch (error) {
       console.error('Download error:', error)
-      alert('Failed to download file')
+      showToast('Failed to download file', 'error')
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search } from 'lucide-react'
+import { useToast } from '@/components/Toast'
 
 interface BulkImportModalProps {
   isOpen: boolean
@@ -132,6 +133,7 @@ interface CustomField {
 }
 
 export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalProps) {
+  const { showToast } = useToast()
   const [step, setStep] = useState(1)
   const [state, setState] = useState<ImportState>(initialState)
   const [loading, setLoading] = useState(false)
@@ -294,7 +296,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Handle file upload
   const handleFileUpload = (file: File) => {
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file')
+      showToast('Please upload a CSV file', 'error')
       return
     }
     
@@ -437,7 +439,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
       // 2. Close modal immediately and show toast
       onClose()
-      alert('Upload started! View progress in Activity > Upload')
+      showToast('Upload started! View progress in Activity > Upload', 'success', 5000)
       
       // 3. Start background import (fire and forget)
       fetch('/api/records/bulk-import', {
@@ -490,7 +492,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
     } catch (error) {
       console.error('Import error:', error)
-      alert('Failed to start import. Please try again.')
+      showToast('Failed to start import. Please try again.', 'error')
     } finally {
       setImporting(false)
     }
