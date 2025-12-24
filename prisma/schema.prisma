@@ -17,6 +17,7 @@ model User {
   assignedRecords Record[]
   comments        RecordComment[]
   activityLogs    RecordActivityLog[]
+  systemLogs      ActivityLog[]
 }
 
 model Property {
@@ -299,18 +300,21 @@ model CustomFieldValue {
   @@index([fieldId])
 }
 
-// Activity Log - tracks uploads, downloads, and actions
+// System Log - tracks uploads, downloads, and system-wide actions
 model ActivityLog {
   id          String   @id @default(cuid())
-  type        String   // "upload", "download", "action"
-  action      String   // "bulk_import", "export", "owner_vacancy_check", etc.
+  type        String   // "upload", "download", "log"
+  action      String   // "bulk_import", "export", "bulk_delete", "bulk_update_status", etc.
   filename    String?  // Original filename for uploads/downloads
-  description String?  // Human-readable description
+  description String?  // Human-readable description e.g. "User uploaded file.csv"
   total       Int      @default(0)  // Total items to process
   processed   Int      @default(0)  // Items processed so far
   status      String   @default("pending") // pending, processing, completed, failed
   metadata    Json?    // Extra data (import type, field mapping, errors, etc.)
   errorMessage String? // Error message if failed
+  
+  userId      String?  // User who performed the action
+  user        User?    @relation(fields: [userId], references: [id])
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -318,4 +322,5 @@ model ActivityLog {
   @@index([type])
   @@index([status])
   @@index([createdAt])
+  @@index([userId])
 }

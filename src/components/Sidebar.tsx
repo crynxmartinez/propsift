@@ -20,7 +20,7 @@ const menuItems = [
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
-  { name: 'Activity', href: '/dashboard/activity', icon: Activity },
+  { name: 'System', href: '/dashboard/activity', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 

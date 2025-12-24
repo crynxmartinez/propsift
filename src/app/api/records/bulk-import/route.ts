@@ -263,6 +263,17 @@ export async function POST(request: NextRequest) {
               });
             }
 
+            // Log record update
+            await prisma.recordActivityLog.create({
+              data: {
+                recordId: existingRecord.id,
+                action: 'updated',
+                field: 'record',
+                newValue: 'Bulk import update',
+                source: 'Bulk Import',
+              },
+            });
+
             updated++;
           } else {
             // Create new record
@@ -334,6 +345,17 @@ export async function POST(request: NextRequest) {
                 data: { recordId: newRecord.id, fieldId, value },
               });
             }
+
+            // Log record creation
+            await prisma.recordActivityLog.create({
+              data: {
+                recordId: newRecord.id,
+                action: 'created',
+                field: 'record',
+                newValue: 'Created via bulk import',
+                source: 'Bulk Import',
+              },
+            });
 
             added++;
           }
@@ -494,6 +516,17 @@ export async function POST(request: NextRequest) {
               });
             }
 
+            // Log record update (UPDATE mode)
+            await prisma.recordActivityLog.create({
+              data: {
+                recordId: existingRecord.id,
+                action: 'updated',
+                field: 'record',
+                newValue: 'Bulk import update',
+                source: 'Bulk Import',
+              },
+            });
+
             updated++;
           } else {
             skipped++;
@@ -508,6 +541,9 @@ export async function POST(request: NextRequest) {
 
     // Update activity log with final status if activityId provided
     if (activityId) {
+      // Get the activity to get filename
+      const activity = await prisma.activityLog.findUnique({ where: { id: activityId } });
+      
       await prisma.activityLog.update({
         where: { id: activityId },
         data: {
@@ -522,6 +558,18 @@ export async function POST(request: NextRequest) {
             errors,
             errorDetails: errorDetails.slice(0, 10),
           },
+        },
+      });
+      
+      // Create system log entry
+      await prisma.activityLog.create({
+        data: {
+          type: 'log',
+          action: 'bulk_import',
+          description: `User uploaded "${activity?.filename || 'file'}" (${added} added, ${updated} updated, ${errors} errors)`,
+          total: csvData.length,
+          processed: added + updated + errors,
+          status: 'completed',
         },
       });
     }

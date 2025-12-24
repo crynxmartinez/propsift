@@ -20,10 +20,22 @@ export async function POST(request: Request) {
         type: 'download',
         action: 'export',
         filename,
-        description: `Export ${totalRecords} records`,
+        description: `User created a download (${totalRecords} records)`,
         total: totalRecords,
         processed: 0,
         status: 'processing',
+      },
+    })
+    
+    // Also create a system log entry
+    await prisma.activityLog.create({
+      data: {
+        type: 'log',
+        action: 'export',
+        description: `User created a download "${filename}"`,
+        total: totalRecords,
+        processed: totalRecords,
+        status: 'completed',
       },
     })
 
