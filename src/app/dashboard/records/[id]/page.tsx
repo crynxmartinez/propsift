@@ -776,11 +776,6 @@ export default function PropertyDetailsPage() {
                       <p className="font-medium text-gray-900">{record.bathrooms ?? '—'}</p>
                       <p className="text-sm text-gray-500">Bathrooms</p>
                     </div>
-                    {/* Add Custom Field Button */}
-                    <div className="text-center p-4 border border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition flex flex-col items-center justify-center">
-                      <Plus className="w-5 h-5 text-gray-400 mb-1" />
-                      <p className="text-sm text-gray-500">Add Field</p>
-                    </div>
                   </div>
 
                   {/* Motivations & Tags + Notes */}
@@ -1026,29 +1021,19 @@ export default function PropertyDetailsPage() {
                 </div>
               )}
 
-              {/* Additional Info Tab */}
+              {/* Additional Info Tab - Custom Fields */}
               {activeTab === 'additional' && (
-                <div className="space-y-2">
-                  {ADDITIONAL_INFO_SECTIONS.map((section) => (
-                    <div key={section} className="border-b border-gray-200">
-                      <button
-                        onClick={() => toggleSection(section)}
-                        className="w-full flex items-center justify-between py-3 text-left"
-                      >
-                        <span className="text-sm font-medium text-gray-700 uppercase">{section}</span>
-                        <ChevronDown
-                          className={`w-5 h-5 text-gray-400 transition ${
-                            expandedSections.has(section) ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
-                      {expandedSections.has(section) && (
-                        <div className="pb-4 text-sm text-gray-500">
-                          No data available for this section.
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                <div className="py-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <button className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-4">
+                      <Plus className="w-8 h-8 text-gray-400" />
+                    </button>
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">Add Custom Field</h3>
+                    <p className="text-sm text-gray-500 max-w-md">
+                      Create custom fields to track additional information for this property. 
+                      Choose between card style or full row display.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
