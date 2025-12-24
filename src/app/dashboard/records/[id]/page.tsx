@@ -230,6 +230,8 @@ export default function PropertyDetailsPage() {
   const [addingTag, setAddingTag] = useState(false)
   const [removingMotivation, setRemovingMotivation] = useState<string | null>(null)
   const [removingTag, setRemovingTag] = useState<string | null>(null)
+  const [creatingMotivation, setCreatingMotivation] = useState(false)
+  const [creatingTag, setCreatingTag] = useState(false)
   
   // Notes editing
   const [showEditNotesModal, setShowEditNotesModal] = useState(false)
@@ -664,6 +666,72 @@ export default function PropertyDetailsPage() {
       console.error('Error removing tag:', error)
     } finally {
       setRemovingTag(null)
+    }
+  }
+
+  const createAndAddMotivation = async (name: string) => {
+    if (!name.trim()) return
+    setCreatingMotivation(true)
+    try {
+      // First create the motivation
+      const createRes = await fetch('/api/motivations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (createRes.ok) {
+        const newMotivation = await createRes.json()
+        // Add to local motivations list
+        setMotivations([...motivations, newMotivation])
+        // Then add it to the record
+        const addRes = await fetch(`/api/records/${recordId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addMotivationIds: [newMotivation.id] }),
+        })
+        if (addRes.ok) {
+          fetchRecord()
+          setShowMotivationDropdown(false)
+          setListSearch('')
+        }
+      }
+    } catch (error) {
+      console.error('Error creating motivation:', error)
+    } finally {
+      setCreatingMotivation(false)
+    }
+  }
+
+  const createAndAddTag = async (name: string) => {
+    if (!name.trim()) return
+    setCreatingTag(true)
+    try {
+      // First create the tag
+      const createRes = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (createRes.ok) {
+        const newTag = await createRes.json()
+        // Add to local tags list
+        setTags([...tags, newTag])
+        // Then add it to the record
+        const addRes = await fetch(`/api/records/${recordId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addTagIds: [newTag.id] }),
+        })
+        if (addRes.ok) {
+          fetchRecord()
+          setShowTagDropdown(false)
+          setListSearch('')
+        }
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error)
+    } finally {
+      setCreatingTag(false)
     }
   }
 
@@ -1150,7 +1218,18 @@ export default function PropertyDetailsPage() {
                                     {motivation.name}
                                   </button>
                                 ))}
-                              {motivations.filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id)).filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && (
+                              {motivations.filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id)).filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && listSearch.trim() && (
+                                <button
+                                  type="button"
+                                  onClick={() => createAndAddMotivation(listSearch)}
+                                  disabled={creatingMotivation}
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2 text-blue-600"
+                                >
+                                  {creatingMotivation ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                  Create &quot;{listSearch}&quot;
+                                </button>
+                              )}
+                              {motivations.filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id)).filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && !listSearch.trim() && (
                                 <div className="px-4 py-2 text-sm text-gray-400">No motivations available</div>
                               )}
                             </div>
@@ -1174,7 +1253,18 @@ export default function PropertyDetailsPage() {
                                     {tag.name}
                                   </button>
                                 ))}
-                              {tags.filter(t => !record.recordTags.some(rt => rt.tag.id === t.id)).filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && (
+                              {tags.filter(t => !record.recordTags.some(rt => rt.tag.id === t.id)).filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && listSearch.trim() && (
+                                <button
+                                  type="button"
+                                  onClick={() => createAndAddTag(listSearch)}
+                                  disabled={creatingTag}
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 flex items-center gap-2 text-blue-600"
+                                >
+                                  {creatingTag ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                  Create &quot;{listSearch}&quot;
+                                </button>
+                              )}
+                              {tags.filter(t => !record.recordTags.some(rt => rt.tag.id === t.id)).filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && !listSearch.trim() && (
                                 <div className="px-4 py-2 text-sm text-gray-400">No tags available</div>
                               )}
                             </div>
