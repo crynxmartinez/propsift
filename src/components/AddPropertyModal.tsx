@@ -713,15 +713,15 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
               {/* Lists & Tags + Notes Side by Side */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Lists & Tags Box */}
-                <div className="border border-gray-200 rounded-lg">
+                <div className="border border-gray-200 rounded-lg flex flex-col h-64">
                   {/* Header */}
-                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                     <span className="text-blue-600">—</span>
                     <span className="text-sm font-medium text-blue-600">MOTIVATIONS & TAGS</span>
                   </div>
                   
                   {/* Tabs */}
-                  <div className="flex border-b border-gray-200">
+                  <div className="flex border-b border-gray-200 flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setActiveListTab('motivations')}
@@ -747,7 +747,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                   </div>
 
                   {/* Search Input */}
-                  <div className="p-3 border-b border-gray-100">
+                  <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -771,118 +771,118 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                     </div>
                   </div>
                   
-                  {/* Dropdown - below search, above selected items */}
-                  {activeListTab === 'motivations' && motivationSearch && (
-                    <div className="border-b border-gray-200 max-h-40 overflow-y-auto bg-gray-50">
-                      {motivations
-                        .filter(m => 
+                  {/* Scrollable Content Area - shows either dropdown or selected items */}
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    {/* Dropdown - when searching */}
+                    {activeListTab === 'motivations' && motivationSearch ? (
+                      <div className="bg-gray-50">
+                        {motivations
+                          .filter(m => 
+                            m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
+                            !formData.motivationIds.includes(m.id)
+                          )
+                          .map((motivation) => (
+                            <button
+                              key={motivation.id}
+                              type="button"
+                              onClick={() => {
+                                toggleArrayItem('motivationIds', motivation.id)
+                                setMotivationSearch('')
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            >
+                              {motivation.name}
+                            </button>
+                          ))}
+                        {motivations.filter(m => 
                           m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                           !formData.motivationIds.includes(m.id)
-                        )
-                        .map((motivation) => (
-                          <button
-                            key={motivation.id}
-                            type="button"
-                            onClick={() => {
-                              toggleArrayItem('motivationIds', motivation.id)
-                              setMotivationSearch('')
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                          >
-                            {motivation.name}
-                          </button>
-                        ))}
-                      {motivations.filter(m => 
-                        m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
-                        !formData.motivationIds.includes(m.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
-                      )}
-                    </div>
-                  )}
-                  {activeListTab === 'tags' && tagSearch && (
-                    <div className="border-b border-gray-200 max-h-40 overflow-y-auto bg-gray-50">
-                      {tags
-                        .filter(t => 
+                        ).length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                        )}
+                      </div>
+                    ) : activeListTab === 'tags' && tagSearch ? (
+                      <div className="bg-gray-50">
+                        {tags
+                          .filter(t => 
+                            t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                            !formData.tagIds.includes(t.id)
+                          )
+                          .map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => {
+                                toggleArrayItem('tagIds', tag.id)
+                                setTagSearch('')
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            >
+                              {tag.name}
+                            </button>
+                          ))}
+                        {tags.filter(t => 
                           t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                           !formData.tagIds.includes(t.id)
-                        )
-                        .map((tag) => (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => {
-                              toggleArrayItem('tagIds', tag.id)
-                              setTagSearch('')
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                          >
-                            {tag.name}
-                          </button>
-                        ))}
-                      {tags.filter(t => 
-                        t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
-                        !formData.tagIds.includes(t.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Selected Items List */}
-                  <div className="max-h-48 overflow-y-auto">
-                    {activeListTab === 'motivations' ? (
-                      <>
-                        {formData.motivationIds.map((id) => {
-                          const motivation = motivations.find(m => m.id === id)
-                          return motivation ? (
-                            <div
-                              key={id}
-                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                            >
-                              <span className="text-sm text-gray-700">{motivation.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => toggleArrayItem('motivationIds', id)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : null
-                        })}
-                        {formData.motivationIds.length === 0 && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-400">
-                            No motivations selected
-                          </div>
+                        ).length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
                         )}
-                      </>
+                      </div>
                     ) : (
-                      <>
-                        {formData.tagIds.map((id) => {
-                          const tag = tags.find(t => t.id === id)
-                          return tag ? (
-                            <div
-                              key={id}
-                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                            >
-                              <span className="text-sm text-gray-700">{tag.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => toggleArrayItem('tagIds', id)}
-                                className="text-gray-400 hover:text-gray-600"
+                      /* Selected Items List - when not searching */
+                      activeListTab === 'motivations' ? (
+                        <>
+                          {formData.motivationIds.map((id) => {
+                            const motivation = motivations.find(m => m.id === id)
+                            return motivation ? (
+                              <div
+                                key={id}
+                                className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
                               >
-                                ×
-                              </button>
+                                <span className="text-sm text-gray-700">{motivation.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleArrayItem('motivationIds', id)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ) : null
+                          })}
+                          {formData.motivationIds.length === 0 && (
+                            <div className="px-4 py-6 text-center text-sm text-gray-400">
+                              No motivations selected
                             </div>
-                          ) : null
-                        })}
-                        {formData.tagIds.length === 0 && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-400">
-                            No tags selected
-                          </div>
-                        )}
-                      </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {formData.tagIds.map((id) => {
+                            const tag = tags.find(t => t.id === id)
+                            return tag ? (
+                              <div
+                                key={id}
+                                className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
+                              >
+                                <span className="text-sm text-gray-700">{tag.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleArrayItem('tagIds', id)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ) : null
+                          })}
+                          {formData.tagIds.length === 0 && (
+                            <div className="px-4 py-6 text-center text-sm text-gray-400">
+                              No tags selected
+                            </div>
+                          )}
+                        </>
+                      )
                     )}
                   </div>
                 </div>
