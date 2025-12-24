@@ -67,8 +67,28 @@ const SYSTEM_FIELDS = [
   { key: 'ownerFirstName', label: 'Owner First Name', group: 'owner' },
   { key: 'ownerLastName', label: 'Owner Last Name', group: 'owner' },
   { key: 'ownerFullName', label: 'Owner Full Name', group: 'owner' },
-  { key: 'phone', label: 'Phone', group: 'contact' },
-  { key: 'email', label: 'Email', group: 'contact' },
+  // Phone fields (max 15)
+  { key: 'phone1', label: 'Phone 1', group: 'phone' },
+  { key: 'phone2', label: 'Phone 2', group: 'phone' },
+  { key: 'phone3', label: 'Phone 3', group: 'phone' },
+  { key: 'phone4', label: 'Phone 4', group: 'phone' },
+  { key: 'phone5', label: 'Phone 5', group: 'phone' },
+  { key: 'phone6', label: 'Phone 6', group: 'phone' },
+  { key: 'phone7', label: 'Phone 7', group: 'phone' },
+  { key: 'phone8', label: 'Phone 8', group: 'phone' },
+  { key: 'phone9', label: 'Phone 9', group: 'phone' },
+  { key: 'phone10', label: 'Phone 10', group: 'phone' },
+  { key: 'phone11', label: 'Phone 11', group: 'phone' },
+  { key: 'phone12', label: 'Phone 12', group: 'phone' },
+  { key: 'phone13', label: 'Phone 13', group: 'phone' },
+  { key: 'phone14', label: 'Phone 14', group: 'phone' },
+  { key: 'phone15', label: 'Phone 15', group: 'phone' },
+  // Email fields (max 5)
+  { key: 'email1', label: 'Email 1', group: 'email' },
+  { key: 'email2', label: 'Email 2', group: 'email' },
+  { key: 'email3', label: 'Email 3', group: 'email' },
+  { key: 'email4', label: 'Email 4', group: 'email' },
+  { key: 'email5', label: 'Email 5', group: 'email' },
 ]
 
 export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalProps) {

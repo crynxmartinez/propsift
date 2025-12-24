@@ -63,8 +63,20 @@ export async function POST(request: NextRequest) {
         const ownerFullName = getValue(row, 'ownerFullName') || 
           [ownerFirstName, ownerLastName].filter(Boolean).join(' ') || 
           'Unknown Owner';
-        const phone = getValue(row, 'phone');
-        const email = getValue(row, 'email');
+        
+        // Extract phones (max 15)
+        const phones: string[] = [];
+        for (let p = 1; p <= 15; p++) {
+          const phone = getValue(row, `phone${p}`);
+          if (phone) phones.push(phone);
+        }
+        
+        // Extract emails (max 5)
+        const emails: string[] = [];
+        for (let e = 1; e <= 5; e++) {
+          const email = getValue(row, `email${e}`);
+          if (email) emails.push(email);
+        }
 
         // Validate required fields based on import option
         if (importType === 'update' && importOption === 'mailing_address') {
@@ -133,11 +145,27 @@ export async function POST(request: NextRequest) {
                 mailingCity,
                 mailingState,
                 mailingZip,
-                phone,
-                email,
                 isComplete,
               },
             });
+
+            // Delete existing phones and emails for overwrite
+            await prisma.recordPhoneNumber.deleteMany({ where: { recordId: existingRecord.id } });
+            await prisma.recordEmail.deleteMany({ where: { recordId: existingRecord.id } });
+
+            // Add phones (max 15)
+            for (const phone of phones) {
+              await prisma.recordPhoneNumber.create({
+                data: { recordId: existingRecord.id, number: phone },
+              });
+            }
+
+            // Add emails (max 5)
+            for (const emailAddress of emails) {
+              await prisma.recordEmail.create({
+                data: { recordId: existingRecord.id, email: emailAddress },
+              });
+            }
 
             // Add motivations
             for (const motivationId of motivationIds) {
@@ -174,11 +202,23 @@ export async function POST(request: NextRequest) {
                 mailingCity,
                 mailingState,
                 mailingZip,
-                phone,
-                email,
                 isComplete,
               },
             });
+
+            // Add phones (max 15)
+            for (const phone of phones) {
+              await prisma.recordPhoneNumber.create({
+                data: { recordId: newRecord.id, number: phone },
+              });
+            }
+
+            // Add emails (max 5)
+            for (const emailAddress of emails) {
+              await prisma.recordEmail.create({
+                data: { recordId: newRecord.id, email: emailAddress },
+              });
+            }
 
             // Add motivations
             for (const motivationId of motivationIds) {
@@ -245,8 +285,6 @@ export async function POST(request: NextRequest) {
           if (mailingCity) updateData.mailingCity = mailingCity;
           if (mailingState) updateData.mailingState = mailingState;
           if (mailingZip) updateData.mailingZip = mailingZip;
-          if (phone) updateData.phone = phone;
-          if (email) updateData.email = email;
 
           // Recalculate completeness with merged data
           const mergedData = {
@@ -266,11 +304,43 @@ export async function POST(request: NextRequest) {
           };
           updateData.isComplete = isRecordComplete(mergedData);
 
-          if (Object.keys(updateData).length > 1) { // More than just isComplete
-            await prisma.record.update({
-              where: { id: existingRecord.id },
-              data: updateData,
-            });
+          // Check if we have data to update (more than just isComplete) or phones/emails to add
+          const hasDataToUpdate = Object.keys(updateData).length > 1;
+          const hasPhonesOrEmails = phones.length > 0 || emails.length > 0;
+
+          if (hasDataToUpdate || hasPhonesOrEmails) {
+            if (hasDataToUpdate) {
+              await prisma.record.update({
+                where: { id: existingRecord.id },
+                data: updateData,
+              });
+            }
+
+            // Add phones (don't remove existing, just add new ones)
+            for (const phone of phones) {
+              // Check if phone already exists
+              const existingPhone = await prisma.recordPhoneNumber.findFirst({
+                where: { recordId: existingRecord.id, number: phone },
+              });
+              if (!existingPhone) {
+                await prisma.recordPhoneNumber.create({
+                  data: { recordId: existingRecord.id, number: phone },
+                });
+              }
+            }
+
+            // Add emails (don't remove existing, just add new ones)
+            for (const emailAddress of emails) {
+              // Check if email already exists
+              const existingEmail = await prisma.recordEmail.findFirst({
+                where: { recordId: existingRecord.id, email: emailAddress },
+              });
+              if (!existingEmail) {
+                await prisma.recordEmail.create({
+                  data: { recordId: existingRecord.id, email: emailAddress },
+                });
+              }
+            }
 
             // Add motivations (don't remove existing)
             for (const motivationId of motivationIds) {
