@@ -443,13 +443,16 @@ export default function PropertyDetailsPage() {
 
   const formatPhoneNumber = (phone: string) => {
     const digits = phone.replace(/\D/g, '')
-    if (digits.length === 10) {
+    if (digits.length <= 3) {
+      return digits
+    } else if (digits.length <= 6) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+    } else if (digits.length <= 10) {
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
-    }
-    if (digits.length === 11) {
+    } else if (digits.length === 11) {
       return `+${digits.slice(0, 1)} (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
     }
-    return phone
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
   }
 
   const formatDate = (dateString: string) => {
@@ -1171,8 +1174,9 @@ export default function PropertyDetailsPage() {
                 <input
                   type="tel"
                   value={newPhone.number}
-                  onChange={(e) => setNewPhone({ ...newPhone, number: e.target.value })}
+                  onChange={(e) => setNewPhone({ ...newPhone, number: formatPhoneNumber(e.target.value) })}
                   placeholder="(555) 123-4567"
+                  maxLength={14}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
