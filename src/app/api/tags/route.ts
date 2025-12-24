@@ -6,7 +6,7 @@ export async function GET() {
     const tags = await prisma.tag.findMany({
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       },
       orderBy: { name: 'asc' }
@@ -15,7 +15,7 @@ export async function GET() {
     const formattedTags = tags.map(tag => ({
       id: tag.id,
       name: tag.name,
-      recordCount: tag._count.properties,
+      recordCount: tag._count.records,
       createdAt: tag.createdAt,
       updatedAt: tag.updatedAt
     }))

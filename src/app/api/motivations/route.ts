@@ -6,7 +6,7 @@ export async function GET() {
     const motivations = await prisma.motivation.findMany({
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       },
       orderBy: { name: 'asc' }
@@ -15,7 +15,7 @@ export async function GET() {
     const formattedMotivations = motivations.map(motivation => ({
       id: motivation.id,
       name: motivation.name,
-      recordCount: motivation._count.properties,
+      recordCount: motivation._count.records,
       createdAt: motivation.createdAt,
       updatedAt: motivation.updatedAt
     }))
