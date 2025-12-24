@@ -115,6 +115,8 @@ interface OwnerStats {
   totalRvmAttempts: number
   verifiedNumbersPercent: number
   totalPhones: number
+  totalEmails: number
+  totalMotivations: number
   verifiedPhones: number
 }
 
@@ -478,26 +480,27 @@ export default function OwnerDetailsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Row 1 */}
       <div className="grid grid-cols-4 gap-4 mb-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
           <p className="text-3xl font-bold text-gray-900">{stats?.propertyCount || 1}</p>
-          <p className="text-sm text-gray-500">Property</p>
+          <p className="text-sm text-gray-500">Properties</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">0</p>
-          <p className="text-sm text-gray-500">Sold Properties</p>
+          <p className="text-3xl font-bold text-gray-900">{stats?.totalPhones || 0}</p>
+          <p className="text-sm text-gray-500">Total Phones</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">0</p>
-          <p className="text-sm text-gray-500">Leads</p>
+          <p className="text-3xl font-bold text-gray-900">{stats?.totalEmails || 0}</p>
+          <p className="text-sm text-gray-500">Total Emails</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">0</p>
-          <p className="text-sm text-gray-500">Offers</p>
+          <p className="text-3xl font-bold text-gray-900">{stats?.totalMotivations || 0}</p>
+          <p className="text-sm text-gray-500">Motivations</p>
         </div>
       </div>
 
+      {/* Stats Cards - Row 2 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
           <p className="text-3xl font-bold text-gray-900">{stats?.totalCallAttempts || 0}</p>
@@ -508,8 +511,8 @@ export default function OwnerDetailsPage() {
           <p className="text-sm text-gray-500">Verified Numbers</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">$0</p>
-          <p className="text-sm text-gray-500">Total Investment</p>
+          <p className="text-3xl font-bold text-gray-900">{stats?.totalSmsAttempts || 0}</p>
+          <p className="text-sm text-gray-500">SMS Sent</p>
         </div>
       </div>
 

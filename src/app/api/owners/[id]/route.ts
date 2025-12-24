@@ -54,13 +54,21 @@ export async function GET(
       totalRvmAttempts: ownerRecords.reduce((sum, r) => sum + r.rvmAttempts, 0),
     }
 
-    // Calculate verified numbers percentage
+    // Get all phones across owner's records
     const allPhones = await prisma.recordPhoneNumber.findMany({
       where: {
         recordId: { in: ownerRecords.map(r => r.id) }
       }
     })
     
+    // Get all emails across owner's records
+    const allEmails = await prisma.recordEmail.findMany({
+      where: {
+        recordId: { in: ownerRecords.map(r => r.id) }
+      }
+    })
+    
+    // Calculate verified numbers percentage
     const verifiedPhones = allPhones.filter(p => 
       p.statuses.includes('CORRECT') || p.statuses.includes('PRIMARY')
     ).length
@@ -69,6 +77,9 @@ export async function GET(
       ? Math.round((verifiedPhones / allPhones.length) * 100) 
       : 0
 
+    // Count total motivations across all records
+    const totalMotivations = ownerRecords.reduce((sum, r) => sum + r.recordMotivations.length, 0)
+
     return NextResponse.json({
       record,
       ownerRecords,
@@ -76,6 +87,8 @@ export async function GET(
         ...stats,
         verifiedNumbersPercent,
         totalPhones: allPhones.length,
+        totalEmails: allEmails.length,
+        totalMotivations,
         verifiedPhones,
       }
     })
