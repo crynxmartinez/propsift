@@ -29,7 +29,7 @@ export async function POST() {
             recordId: record.id,
             number: record.phone,
             type: 'MOBILE',
-            status: 'NONE',
+            statuses: [],
           },
         });
         phonesCreated++;

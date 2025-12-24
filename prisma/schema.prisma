@@ -213,7 +213,7 @@ model RecordPhoneNumber {
   record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   number    String
   type      String   @default("MOBILE") // MOBILE, LANDLINE
-  status    String   @default("NONE")   // NONE, PRIMARY, CORRECT, WRONG, NO_ANSWER, DNC, DEAD
+  statuses  String[] @default([])       // Array of: PRIMARY, CORRECT, WRONG, NO_ANSWER, DNC, DEAD
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

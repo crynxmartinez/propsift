@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
           create: {
             number: phone,
             type: 'MOBILE',
-            status: 'NONE',
+            statuses: [],
           },
         } : undefined,
         // Create email entry if provided

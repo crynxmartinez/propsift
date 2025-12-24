@@ -29,7 +29,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json();
-    const { number, type, status } = body;
+    const { number, type, statuses } = body;
 
     if (!number) {
       return NextResponse.json(
@@ -67,7 +67,7 @@ export async function POST(
         recordId: params.id,
         number,
         type: type || 'MOBILE',
-        status: status || 'NONE',
+        statuses: statuses || [],
       },
     });
 

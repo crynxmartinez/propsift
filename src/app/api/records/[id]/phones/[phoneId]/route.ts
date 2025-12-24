@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { number, type, status } = body;
+    const { number, type, statuses } = body;
 
     // Check if phone exists
     const existingPhone = await prisma.recordPhoneNumber.findUnique({
@@ -22,25 +22,25 @@ export async function PUT(
       );
     }
 
-    const updateData: Record<string, string> = {};
+    const updateData: Record<string, unknown> = {};
     if (number !== undefined) updateData.number = number;
     if (type !== undefined) updateData.type = type;
-    if (status !== undefined) updateData.status = status;
+    if (statuses !== undefined) updateData.statuses = statuses;
 
     const phone = await prisma.recordPhoneNumber.update({
       where: { id: params.phoneId },
       data: updateData,
     });
 
-    // Log activity if status changed
-    if (status !== undefined && status !== existingPhone.status) {
+    // Log activity if statuses changed
+    if (statuses !== undefined) {
       await prisma.recordActivityLog.create({
         data: {
           recordId: params.id,
           action: 'updated',
-          field: 'phoneStatus',
-          oldValue: existingPhone.status,
-          newValue: status,
+          field: 'phoneStatuses',
+          oldValue: existingPhone.statuses.join(', '),
+          newValue: statuses.join(', '),
           source: 'Property Details Page',
         },
       });

@@ -86,7 +86,7 @@ interface PhoneNumber {
   id: string
   number: string
   type: string
-  status: string
+  statuses: string[]
   createdAt: string
 }
 
@@ -345,16 +345,24 @@ export default function PropertyDetailsPage() {
     }
   }
 
-  const updatePhoneStatus = async (phoneId: string, status: string) => {
+  const togglePhoneStatus = async (phoneId: string, statusValue: string, currentStatuses: string[]) => {
     try {
+      let newStatuses: string[]
+      if (currentStatuses.includes(statusValue)) {
+        // Remove the status
+        newStatuses = currentStatuses.filter(s => s !== statusValue)
+      } else {
+        // Add the status
+        newStatuses = [...currentStatuses, statusValue]
+      }
       await fetch(`/api/records/${recordId}/phones/${phoneId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ statuses: newStatuses }),
       })
       fetchRecord()
     } catch (error) {
-      console.error('Error updating phone status:', error)
+      console.error('Error updating phone statuses:', error)
     }
   }
 
@@ -984,13 +992,13 @@ export default function PropertyDetailsPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {PHONE_STATUSES.map((status) => {
-                      const isActive = phone.status === status.value
+                    {PHONE_STATUSES.filter(s => s.value !== 'NONE').map((status) => {
+                      const isActive = phone.statuses.includes(status.value)
                       const StatusIcon = status.icon
                       return (
                         <button
                           key={status.value}
-                          onClick={() => updatePhoneStatus(phone.id, status.value)}
+                          onClick={() => togglePhoneStatus(phone.id, status.value, phone.statuses)}
                           title={status.label}
                           className={`w-6 h-6 rounded-full flex items-center justify-center ${
                             isActive
