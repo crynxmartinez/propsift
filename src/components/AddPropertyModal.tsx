@@ -441,15 +441,22 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                   {/* Address Dropdown */}
                   {showAddressDropdown && addressResults.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {addressResults.map((result, index) => (
-                        <button
-                          key={index}
-                          onClick={() => selectAddress(result)}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
-                        >
-                          {result.display_name}
-                        </button>
-                      ))}
+                      {addressResults.map((result, index) => {
+                        const street = [result.address.house_number, result.address.road].filter(Boolean).join(' ')
+                        const city = result.address.city || result.address.town || result.address.village || ''
+                        const state = result.address.state || ''
+                        const zip = result.address.postcode || ''
+                        const displayAddress = [street, city, state, zip].filter(Boolean).join(', ')
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => selectAddress(result)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                          >
+                            {displayAddress || result.display_name}
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
