@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // GET /api/filter-templates/[id] - Get a single template
 export async function GET(
@@ -21,8 +22,13 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const template = await prisma.filterTemplate.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
       include: {
         folder: true,
       },
@@ -64,12 +70,17 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, filters, folderId } = body;
 
-    // Check template exists and belongs to user
+    // Check template exists and belongs to team
     const existing = await prisma.filterTemplate.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     });
 
     if (!existing) {
@@ -104,9 +115,9 @@ export async function PUT(
 
     if (folderId !== undefined) {
       if (folderId !== null) {
-        // Verify folder exists and belongs to user
+        // Verify folder exists and belongs to team
         const folder = await prisma.filterFolder.findFirst({
-          where: { id: folderId, createdById: decoded.userId },
+          where: { id: folderId, createdById: authUser.ownerId },
         });
         if (!folder) {
           return NextResponse.json(
@@ -155,9 +166,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Check template exists and belongs to user
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
+    // Check template exists and belongs to team
     const existing = await prisma.filterTemplate.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     });
 
     if (!existing) {

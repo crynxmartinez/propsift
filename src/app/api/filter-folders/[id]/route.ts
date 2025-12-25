@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // GET /api/filter-folders/[id] - Get a single folder
 export async function GET(
@@ -21,11 +22,16 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const folder = await prisma.filterFolder.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
       include: {
         templates: {
-          where: { createdById: decoded.userId },
+          where: { createdById: authUser.ownerId },
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -70,6 +76,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name } = body;
 
@@ -80,9 +91,9 @@ export async function PUT(
       );
     }
 
-    // Check folder exists and belongs to user
+    // Check folder exists and belongs to team
     const existing = await prisma.filterFolder.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     });
 
     if (!existing) {
@@ -92,11 +103,11 @@ export async function PUT(
       );
     }
 
-    // Check for duplicate name (excluding current folder) for this user
+    // Check for duplicate name (excluding current folder) for this team
     const duplicate = await prisma.filterFolder.findFirst({
       where: {
         name: name.trim(),
-        createdById: decoded.userId,
+        createdById: authUser.ownerId,
         id: { not: params.id },
       },
     });
@@ -147,9 +158,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Check folder exists and belongs to user
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
+    // Check folder exists and belongs to team
     const existing = await prisma.filterFolder.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     });
 
     if (!existing) {

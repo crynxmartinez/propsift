@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // GET /api/filter-folders - List all folders with template count
 export async function GET(request: NextRequest) {
@@ -18,8 +19,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const folders = await prisma.filterFolder.findMany({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       orderBy: { order: 'asc' },
       include: {
         _count: {
@@ -54,6 +60,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name } = body;
 
@@ -64,9 +75,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate name for this user
+    // Check for duplicate name for this team
     const existing = await prisma.filterFolder.findFirst({
-      where: { name: name.trim(), createdById: decoded.userId },
+      where: { name: name.trim(), createdById: authUser.ownerId },
     });
 
     if (existing) {
@@ -76,9 +87,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get max order for this user
+    // Get max order for this team
     const maxOrder = await prisma.filterFolder.aggregate({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       _max: { order: true },
     });
 
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         order: (maxOrder._max.order ?? -1) + 1,
-        createdById: decoded.userId,
+        createdById: authUser.ownerId,
       },
       include: {
         _count: {
