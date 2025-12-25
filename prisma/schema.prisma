@@ -14,6 +14,33 @@ model User {
   name                 String?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+  
+  // Role & Status
+  role                 String                @default("owner")   // owner, super_admin, admin, member
+  status               String                @default("active")  // active, inactive
+  
+  // Account ownership (for team members)
+  accountOwnerId       String?
+  accountOwner         User?                 @relation("TeamMembers", fields: [accountOwnerId], references: [id])
+  teamMembers          User[]                @relation("TeamMembers")
+  
+  // Profile fields
+  firstName            String?
+  lastName             String?
+  phone                String?
+  timezone             String?               @default("America/Chicago")
+  
+  // Company info (typically only for owner)
+  companyName          String?
+  companyEmail         String?
+  companyPhone         String?
+  billingAddress       String?
+  billingCity          String?
+  billingState         String?
+  billingZip           String?
+  billingCountry       String?               @default("United States")
+  
+  // Relations
   systemLogs           ActivityLog[]
   notifications        Notification[]
   assignedRecords      Record[]
