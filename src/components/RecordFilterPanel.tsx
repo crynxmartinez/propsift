@@ -636,7 +636,7 @@ export default function RecordFilterPanel({
       
       {/* Panel */}
       <div 
-        className={`fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden transform transition-transform duration-300 ease-out ${
           isAnimating ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
