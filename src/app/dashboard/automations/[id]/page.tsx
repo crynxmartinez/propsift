@@ -422,10 +422,21 @@ export default function AutomationBuilderPage() {
 
   const addNode = (type: string, label: string, nodeType: string = 'action') => {
     const nodeId = `${nodeType}-${Date.now()}`
+    
+    // Find the last node to connect from (node without outgoing edges)
+    const nodesWithoutOutgoing = nodes.filter(
+      (n) => !edges.some((e) => e.source === n.id)
+    )
+    const lastNode = nodesWithoutOutgoing[nodesWithoutOutgoing.length - 1]
+    
+    // Calculate position below the last node
+    const yPosition = lastNode ? lastNode.position.y + 200 : nodes.length * 150 + 100
+    const xPosition = lastNode ? lastNode.position.x : 250
+
     const newNode: Node = {
       id: nodeId,
       type: nodeType,
-      position: { x: 250, y: nodes.length * 150 + 100 },
+      position: { x: xPosition, y: yPosition },
       data: { 
         label, 
         type,
@@ -436,6 +447,21 @@ export default function AutomationBuilderPage() {
       },
     }
     setNodes((nds) => [...nds, newNode])
+    
+    // Create edge from last node to new node
+    if (lastNode) {
+      const newEdge: Edge = {
+        id: `edge-${lastNode.id}-${nodeId}`,
+        source: lastNode.id,
+        target: nodeId,
+        type: 'addButton',
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
+        style: { strokeWidth: 2, stroke: '#6366f1' },
+        data: { onAddAction: openAddActionPanel },
+      }
+      setEdges((eds) => [...eds, newEdge])
+    }
+    
     setShowPanel(false)
   }
 
@@ -565,7 +591,7 @@ export default function AutomationBuilderPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {automation.isDraft && (
+          {automation.isDraft && !automation.isActive && (
             <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">Draft</span>
           )}
           
