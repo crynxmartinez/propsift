@@ -8,6 +8,8 @@ interface ConditionNodeData {
   label: string
   type: string
   config: Record<string, unknown>
+  hasYesEdge?: boolean
+  hasNoEdge?: boolean
   onAddAction?: (branch: 'yes' | 'no') => void
   onDelete?: () => void
   onCopy?: () => void
@@ -102,32 +104,38 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
         />
       </div>
 
-      {/* Add Action Buttons below card for Yes/No branches */}
+      {/* Add Action Buttons below card for Yes/No branches - only show if no edge */}
       <div className="flex justify-between mt-2 px-4">
-        <div className="flex flex-col items-center">
-          <div className="w-px h-6 bg-green-300"></div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              data.onAddAction?.('yes')
-            }}
-            className="w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition"
-          >
-            <Plus className="w-3 h-3" />
-          </button>
-        </div>
-        <div className="flex flex-col items-center">
-          <div className="w-px h-6 bg-red-300"></div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              data.onAddAction?.('no')
-            }}
-            className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition"
-          >
-            <Plus className="w-3 h-3" />
-          </button>
-        </div>
+        {!data.hasYesEdge && (
+          <div className="flex flex-col items-center">
+            <div className="w-px h-6 bg-green-300"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onAddAction?.('yes')
+              }}
+              className="w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        {data.hasYesEdge && <div className="w-6" />}
+        {!data.hasNoEdge && (
+          <div className="flex flex-col items-center">
+            <div className="w-px h-6 bg-red-300"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onAddAction?.('no')
+              }}
+              className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        {data.hasNoEdge && <div className="w-6" />}
       </div>
     </div>
   )

@@ -2,12 +2,13 @@
 
 import { memo, useState } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { Zap, MoreVertical, Plus, Copy, Trash2, Move } from 'lucide-react'
+import { Zap, MoreVertical, Plus, Copy, Trash2 } from 'lucide-react'
 
 interface TriggerNodeData {
   label: string
   type: string
   config: Record<string, unknown>
+  hasOutgoingEdge?: boolean
   onAddAction?: () => void
   onDelete?: () => void
   onCopy?: () => void
@@ -29,8 +30,8 @@ function TriggerNode({ data, selected }: NodeProps<TriggerNodeData>) {
             e.stopPropagation()
             setShowMenu(!showMenu)
           }}
-          className="absolute top-2 right-2 p-1 hover:bg-purple-100 rounded opacity-0 group-hover:opacity-100 transition"
-          style={{ opacity: selected ? 1 : undefined }}
+          className="absolute top-2 right-2 p-1 hover:bg-purple-100 rounded transition"
+          style={{ opacity: selected ? 1 : 0.5 }}
         >
           <MoreVertical className="w-4 h-4 text-gray-400" />
         </button>
@@ -75,21 +76,25 @@ function TriggerNode({ data, selected }: NodeProps<TriggerNodeData>) {
         />
       </div>
 
-      {/* Add Action Button below card */}
-      <div className="flex justify-center mt-2">
-        <div className="w-px h-6 bg-gray-300"></div>
-      </div>
-      <div className="flex justify-center">
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            data.onAddAction?.()
-          }}
-          className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Add Action Button below card - only show if no outgoing edge */}
+      {!data.hasOutgoingEdge && (
+        <>
+          <div className="flex justify-center mt-2">
+            <div className="w-px h-6 bg-gray-300"></div>
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onAddAction?.()
+              }}
+              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

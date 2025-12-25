@@ -8,6 +8,7 @@ interface ActionNodeData {
   label: string
   type: string
   config: Record<string, unknown>
+  hasOutgoingEdge?: boolean
   onAddAction?: () => void
   onDelete?: () => void
   onCopy?: () => void
@@ -104,21 +105,25 @@ function ActionNode({ data, selected }: NodeProps<ActionNodeData>) {
         />
       </div>
 
-      {/* Add Action Button below card */}
-      <div className="flex justify-center mt-2">
-        <div className="w-px h-6 bg-gray-300"></div>
-      </div>
-      <div className="flex justify-center">
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            data.onAddAction?.()
-          }}
-          className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Add Action Button below card - only show if no outgoing edge */}
+      {!data.hasOutgoingEdge && (
+        <>
+          <div className="flex justify-center mt-2">
+            <div className="w-px h-6 bg-gray-300"></div>
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onAddAction?.()
+              }}
+              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ReactFlow, {
   Node,
@@ -44,11 +44,16 @@ import TriggerNode from '@/components/automation/TriggerNode'
 import ActionNode from '@/components/automation/ActionNode'
 import ConditionNode from '@/components/automation/ConditionNode'
 import NodeConfigPanel from '@/components/automation/NodeConfigPanel'
+import AddButtonEdge from '@/components/automation/AddButtonEdge'
 
 const nodeTypes = {
   trigger: TriggerNode,
   action: ActionNode,
   condition: ConditionNode,
+}
+
+const edgeTypes = {
+  addButton: AddButtonEdge,
 }
 
 interface Automation {
@@ -391,10 +396,11 @@ export default function AutomationBuilderPage() {
         addEdge(
           {
             ...connection,
-            type: 'smoothstep',
-            animated: true,
+            type: 'addButton',
+            animated: false,
             markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
             style: { strokeWidth: 2, stroke: '#6366f1' },
+            data: { onAddAction: openAddActionPanel },
           },
           eds
         )
@@ -494,6 +500,31 @@ export default function AutomationBuilderPage() {
     }
     setExpandedCategories(newExpanded)
   }
+
+  // Compute nodes with edge information for showing/hiding (+) buttons
+  const nodesWithEdgeInfo = useMemo(() => {
+    return nodes.map((node) => {
+      // Check if this node has outgoing edges
+      const hasOutgoingEdge = edges.some((edge) => edge.source === node.id)
+      
+      // For condition nodes, check specific handles
+      const hasYesEdge = edges.some((edge) => edge.source === node.id && edge.sourceHandle === 'yes')
+      const hasNoEdge = edges.some((edge) => edge.source === node.id && edge.sourceHandle === 'no')
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          hasOutgoingEdge,
+          hasYesEdge,
+          hasNoEdge,
+          onAddAction: openAddActionPanel,
+          onDelete: () => deleteNode(node.id),
+          onCopy: () => copyNode(node.id),
+        },
+      }
+    })
+  }, [nodes, edges])
 
   if (loading) {
     return (
@@ -800,13 +831,14 @@ export default function AutomationBuilderPage() {
         {activeTab === 'builder' && (
         <div className="flex-1 relative">
           <ReactFlow
-            nodes={nodes}
+            nodes={nodesWithEdgeInfo}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             className="bg-gray-50"
           >
@@ -826,21 +858,6 @@ export default function AutomationBuilderPage() {
               >
                 <Zap className="w-4 h-4" />
                 Add Trigger
-              </button>
-            </div>
-          )}
-
-          {hasTrigger && (
-            <div className="absolute top-4 left-4">
-              <button
-                onClick={() => {
-                  setPanelMode('action')
-                  setShowPanel(true)
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                Add Action
               </button>
             </div>
           )}
