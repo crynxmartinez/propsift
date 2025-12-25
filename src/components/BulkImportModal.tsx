@@ -149,6 +149,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   const [tagSearch, setTagSearch] = useState('')
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [creatingMotivation, setCreatingMotivation] = useState(false)
+  const [creatingTag, setCreatingTag] = useState(false)
   
   // Search state for Step 4 (field mapping)
   const [fieldSearch, setFieldSearch] = useState('')
@@ -278,6 +280,54 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
         ? prev[field].filter(i => i !== id)
         : [...prev[field], id]
     }))
+  }
+
+  // Create new motivation
+  const createMotivation = async (name: string) => {
+    if (!name.trim()) return
+    setCreatingMotivation(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/motivations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (res.ok) {
+        const newMotivation = await res.json()
+        setMotivations(prev => [...prev, newMotivation])
+        toggleArrayItem('motivationIds', newMotivation.id)
+        setMotivationSearch('')
+      }
+    } catch (error) {
+      console.error('Error creating motivation:', error)
+    } finally {
+      setCreatingMotivation(false)
+    }
+  }
+
+  // Create new tag
+  const createTag = async (name: string) => {
+    if (!name.trim()) return
+    setCreatingTag(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (res.ok) {
+        const newTag = await res.json()
+        setTags(prev => [...prev, newTag])
+        toggleArrayItem('tagIds', newTag.id)
+        setTagSearch('')
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error)
+    } finally {
+      setCreatingTag(false)
+    }
   }
 
   // Parse CSV file
@@ -805,8 +855,24 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       {motivations.filter(m => 
                         m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                         !state.motivationIds.includes(m.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
+                      ).length === 0 && !motivationSearch.trim() && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No motivations available</div>
+                      )}
+                      {/* Create new motivation button */}
+                      {motivationSearch.trim() && !motivations.some(m => m.name.toLowerCase() === motivationSearch.toLowerCase()) && (
+                        <button
+                          type="button"
+                          onClick={() => createMotivation(motivationSearch)}
+                          disabled={creatingMotivation}
+                          className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 flex items-center gap-2"
+                        >
+                          {creatingMotivation ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <span>+</span>
+                          )}
+                          Create "{motivationSearch.trim()}"
+                        </button>
                       )}
                     </div>
                   ) : activeListTab === 'tags' && isDropdownOpen ? (
@@ -831,8 +897,24 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       {tags.filter(t => 
                         t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                         !state.tagIds.includes(t.id)
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No matching tags</div>
+                      ).length === 0 && !tagSearch.trim() && (
+                        <div className="px-4 py-2 text-sm text-gray-500">No tags available</div>
+                      )}
+                      {/* Create new tag button */}
+                      {tagSearch.trim() && !tags.some(t => t.name.toLowerCase() === tagSearch.toLowerCase()) && (
+                        <button
+                          type="button"
+                          onClick={() => createTag(tagSearch)}
+                          disabled={creatingTag}
+                          className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 flex items-center gap-2"
+                        >
+                          {creatingTag ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <span>+</span>
+                          )}
+                          Create "{tagSearch.trim()}"
+                        </button>
                       )}
                     </div>
                   ) : (
