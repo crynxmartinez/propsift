@@ -130,23 +130,25 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
 
   const fetchOptions = async () => {
     try {
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
       const [statusRes, motivationRes, tagRes] = await Promise.all([
-        fetch('/api/statuses'),
-        fetch('/api/motivations'),
-        fetch('/api/tags'),
+        fetch('/api/statuses', { headers }),
+        fetch('/api/motivations', { headers }),
+        fetch('/api/tags', { headers }),
       ])
       
       if (statusRes.ok) {
         const data = await statusRes.json()
-        setStatuses(data.filter((s: StatusItem) => s.isActive))
+        setStatuses(Array.isArray(data) ? data.filter((s: StatusItem) => s.isActive) : [])
       }
       if (motivationRes.ok) {
         const data = await motivationRes.json()
-        setMotivations(data)
+        setMotivations(Array.isArray(data) ? data : [])
       }
       if (tagRes.ok) {
         const data = await tagRes.json()
-        setTags(data)
+        setTags(Array.isArray(data) ? data : [])
       }
       
       // For now, set current user as the only option

@@ -326,17 +326,19 @@ export default function PropertyDetailsPage() {
 
   const fetchCustomFields = async () => {
     try {
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
       const [fieldsRes, valuesRes] = await Promise.all([
-        fetch('/api/custom-fields'),
-        fetch(`/api/records/${recordId}/custom-fields`),
+        fetch('/api/custom-fields', { headers }),
+        fetch(`/api/records/${recordId}/custom-fields`, { headers }),
       ])
       if (fieldsRes.ok) {
         const fields = await fieldsRes.json()
-        setCustomFields(fields)
+        setCustomFields(Array.isArray(fields) ? fields : [])
       }
       if (valuesRes.ok) {
         const values = await valuesRes.json()
-        setCustomFieldValues(values)
+        setCustomFieldValues(Array.isArray(values) ? values : [])
       }
     } catch (error) {
       console.error('Error fetching custom fields:', error)
@@ -397,9 +399,10 @@ export default function PropertyDetailsPage() {
     if (!newFieldData.name.trim()) return
     setSavingCustomField(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/custom-fields', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(newFieldData),
       })
       if (res.ok) {
@@ -419,9 +422,10 @@ export default function PropertyDetailsPage() {
     if (!editCustomFieldModal) return
     setSavingCustomFieldValue(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/records/${recordId}/custom-fields`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           fieldId: editCustomFieldModal.fieldId,
           value: editCustomFieldModal.value,
@@ -449,11 +453,13 @@ export default function PropertyDetailsPage() {
 
   const fetchOptions = async () => {
     try {
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
       const [usersRes, statusesRes, motivationsRes, tagsRes] = await Promise.all([
-        fetch('/api/users'),
-        fetch('/api/statuses'),
-        fetch('/api/motivations'),
-        fetch('/api/tags'),
+        fetch('/api/users', { headers }),
+        fetch('/api/statuses', { headers }),
+        fetch('/api/motivations', { headers }),
+        fetch('/api/tags', { headers }),
       ])
       
       if (usersRes.ok) {
@@ -748,10 +754,11 @@ export default function PropertyDetailsPage() {
     if (!name.trim()) return
     setCreatingMotivation(true)
     try {
+      const token = localStorage.getItem('token')
       // First create the motivation
       const createRes = await fetch('/api/motivations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: name.trim() }),
       })
       if (createRes.ok) {
@@ -761,7 +768,7 @@ export default function PropertyDetailsPage() {
         // Then add it to the record
         const addRes = await fetch(`/api/records/${recordId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ addMotivationIds: [newMotivation.id] }),
         })
         if (addRes.ok) {
@@ -781,10 +788,11 @@ export default function PropertyDetailsPage() {
     if (!name.trim()) return
     setCreatingTag(true)
     try {
+      const token = localStorage.getItem('token')
       // First create the tag
       const createRes = await fetch('/api/tags', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: name.trim() }),
       })
       if (createRes.ok) {
@@ -794,7 +802,7 @@ export default function PropertyDetailsPage() {
         // Then add it to the record
         const addRes = await fetch(`/api/records/${recordId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ addTagIds: [newTag.id] }),
         })
         if (addRes.ok) {

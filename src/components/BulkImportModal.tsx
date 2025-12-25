@@ -165,19 +165,22 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Fetch motivations, tags, and custom fields
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/motivations')
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
+      
+      fetch('/api/motivations', { headers })
         .then(res => res.json())
-        .then(data => setMotivations(data))
+        .then(data => Array.isArray(data) ? setMotivations(data) : setMotivations([]))
         .catch(console.error)
       
-      fetch('/api/tags')
+      fetch('/api/tags', { headers })
         .then(res => res.json())
-        .then(data => setTags(data))
+        .then(data => Array.isArray(data) ? setTags(data) : setTags([]))
         .catch(console.error)
       
-      fetch('/api/custom-fields')
+      fetch('/api/custom-fields', { headers })
         .then(res => res.json())
-        .then(data => setCustomFields(data))
+        .then(data => Array.isArray(data) ? setCustomFields(data) : setCustomFields([]))
         .catch(console.error)
     }
   }, [isOpen])
