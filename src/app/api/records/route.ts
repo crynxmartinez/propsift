@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser, canViewAllData } from '@/lib/roles';
 
 // Filter block interface
 interface FilterBlock {
@@ -214,6 +215,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    // Get user with role info
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -225,10 +232,20 @@ export async function GET(request: NextRequest) {
     const safeLimit = validLimits.includes(limit) ? limit : 10;
     const skip = (page - 1) * safeLimit;
 
-    // Build where clause based on completion filter and user
+    // Build where clause based on completion filter and user role
+    // Use ownerId for team data sharing (all team members see same data)
     let whereClause: Record<string, unknown> = {
-      createdById: decoded.userId, // Only show records created by this user
+      createdById: authUser.ownerId, // Show records for the account (team shares data)
     };
+
+    // Members can only see records assigned to them
+    if (!canViewAllData(authUser.role)) {
+      whereClause = {
+        ...whereClause,
+        assignedToId: authUser.id, // Only show records assigned to this member
+      };
+    }
+
     if (filter === 'complete') {
       whereClause = { ...whereClause, isComplete: true };
     } else if (filter === 'incomplete') {
@@ -270,10 +287,13 @@ export async function GET(request: NextRequest) {
       take: safeLimit,
     });
 
-    // Calculate counts for each filter (user-specific)
-    const completeCount = await prisma.record.count({ where: { createdById: decoded.userId, isComplete: true } });
-    const incompleteCount = await prisma.record.count({ where: { createdById: decoded.userId, isComplete: false } });
-    const allCount = await prisma.record.count({ where: { createdById: decoded.userId } });
+    // Calculate counts for each filter (based on same where clause logic)
+    const baseWhere = canViewAllData(authUser.role) 
+      ? { createdById: authUser.ownerId }
+      : { createdById: authUser.ownerId, assignedToId: authUser.id };
+    const completeCount = await prisma.record.count({ where: { ...baseWhere, isComplete: true } });
+    const incompleteCount = await prisma.record.count({ where: { ...baseWhere, isComplete: false } });
+    const allCount = await prisma.record.count({ where: baseWhere });
 
     return NextResponse.json({
       records,
@@ -312,6 +332,12 @@ export async function POST(request: NextRequest) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Get user with role info
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -389,7 +415,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         statusId: statusId || null,
         assignedToId: assignedToId || null,
-        createdById: decoded.userId,
+        createdById: authUser.ownerId, // Use ownerId for team data sharing
         isComplete,
         // Create phone number entry if provided
         phoneNumbers: phone ? {
