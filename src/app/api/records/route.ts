@@ -3,6 +3,200 @@ import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 
+// Filter block interface
+interface FilterBlock {
+  id: string;
+  field: string;
+  fieldLabel: string;
+  fieldType: string;
+  operator: string;
+  value: string | string[] | number | boolean | null;
+  connector: 'AND' | 'OR';
+}
+
+// Build Prisma where clause from filter blocks
+function buildFilterWhereClause(filters: FilterBlock[]): Record<string, unknown> {
+  if (filters.length === 0) return {};
+
+  const conditions: Record<string, unknown>[] = [];
+
+  for (const filter of filters) {
+    const condition = buildSingleFilterCondition(filter);
+    if (condition) {
+      conditions.push(condition);
+    }
+  }
+
+  if (conditions.length === 0) return {};
+
+  // For now, use AND logic between all filters
+  // TODO: Implement proper AND/OR grouping
+  return { AND: conditions };
+}
+
+function buildSingleFilterCondition(filter: FilterBlock): Record<string, unknown> | null {
+  const { field, operator, value } = filter;
+
+  // Handle empty operators
+  if (operator === 'is_empty') {
+    if (field === 'tags') return { recordTags: { none: {} } };
+    if (field === 'motivations') return { recordMotivations: { none: {} } };
+    if (field === 'status') return { statusId: null };
+    if (field === 'assignedTo') return { assignedToId: null };
+    return { [field]: null };
+  }
+
+  if (operator === 'is_not_empty') {
+    if (field === 'tags') return { recordTags: { some: {} } };
+    if (field === 'motivations') return { recordMotivations: { some: {} } };
+    if (field === 'status') return { statusId: { not: null } };
+    if (field === 'assignedTo') return { assignedToId: { not: null } };
+    return { [field]: { not: null } };
+  }
+
+  // Handle multiselect fields (tags, motivations, status)
+  if (field === 'tags' && Array.isArray(value) && value.length > 0) {
+    if (operator === 'contains_any') {
+      return { recordTags: { some: { tagId: { in: value } } } };
+    }
+    if (operator === 'contains_all') {
+      return { AND: value.map(tagId => ({ recordTags: { some: { tagId } } })) };
+    }
+    if (operator === 'not_contains') {
+      return { recordTags: { none: { tagId: { in: value } } } };
+    }
+  }
+
+  if (field === 'motivations' && Array.isArray(value) && value.length > 0) {
+    if (operator === 'contains_any') {
+      return { recordMotivations: { some: { motivationId: { in: value } } } };
+    }
+    if (operator === 'contains_all') {
+      return { AND: value.map(motivationId => ({ recordMotivations: { some: { motivationId } } })) };
+    }
+    if (operator === 'not_contains') {
+      return { recordMotivations: { none: { motivationId: { in: value } } } };
+    }
+  }
+
+  if (field === 'status' && Array.isArray(value) && value.length > 0) {
+    if (operator === 'contains_any' || operator === 'is') {
+      return { statusId: { in: value } };
+    }
+    if (operator === 'not_contains' || operator === 'is_not') {
+      return { statusId: { notIn: value } };
+    }
+  }
+
+  // Handle user fields
+  if (field === 'assignedTo' || field === 'taskAssignedTo') {
+    const dbField = field === 'assignedTo' ? 'assignedToId' : 'tasks';
+    if (operator === 'is_me') {
+      // TODO: Get current user ID from session
+      return {};
+    }
+    if (Array.isArray(value) && value.length > 0) {
+      if (operator === 'is' || operator === 'is_any_of') {
+        return { [dbField]: { in: value } };
+      }
+      if (operator === 'is_not') {
+        return { [dbField]: { notIn: value } };
+      }
+    }
+  }
+
+  // Handle text fields
+  if (filter.fieldType === 'text' && typeof value === 'string' && value) {
+    switch (operator) {
+      case 'is':
+        return { [field]: value };
+      case 'is_not':
+        return { [field]: { not: value } };
+      case 'contains':
+        return { [field]: { contains: value, mode: 'insensitive' } };
+      case 'not_contains':
+        return { NOT: { [field]: { contains: value, mode: 'insensitive' } } };
+      case 'starts_with':
+        return { [field]: { startsWith: value, mode: 'insensitive' } };
+      case 'ends_with':
+        return { [field]: { endsWith: value, mode: 'insensitive' } };
+    }
+  }
+
+  // Handle number fields
+  if (filter.fieldType === 'number' && typeof value === 'number') {
+    switch (operator) {
+      case 'eq':
+        return { [field]: value };
+      case 'neq':
+        return { [field]: { not: value } };
+      case 'gt':
+        return { [field]: { gt: value } };
+      case 'gte':
+        return { [field]: { gte: value } };
+      case 'lt':
+        return { [field]: { lt: value } };
+      case 'lte':
+        return { [field]: { lte: value } };
+    }
+  }
+
+  // Handle date fields
+  if (filter.fieldType === 'date' && value) {
+    if (operator === 'in_last' && typeof value === 'number') {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - value);
+      return { [field]: { gte: daysAgo } };
+    }
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      switch (operator) {
+        case 'is':
+          const nextDay = new Date(date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          return { [field]: { gte: date, lt: nextDay } };
+        case 'is_before':
+          return { [field]: { lt: date } };
+        case 'is_after':
+          return { [field]: { gt: date } };
+      }
+    }
+  }
+
+  // Handle boolean fields
+  if (filter.fieldType === 'boolean') {
+    if (field === 'isComplete') {
+      return { isComplete: value === true };
+    }
+    if (field === 'isCompany') {
+      return { isCompany: value === true };
+    }
+    if (field === 'hasPhone') {
+      return value === true 
+        ? { phones: { some: {} } }
+        : { phones: { none: {} } };
+    }
+    if (field === 'hasEmail') {
+      return value === true
+        ? { emails: { some: {} } }
+        : { emails: { none: {} } };
+    }
+    if (field === 'hasOpenTasks') {
+      return value === true
+        ? { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] } } } }
+        : { tasks: { none: { status: { in: ['PENDING', 'IN_PROGRESS'] } } } };
+    }
+    if (field === 'hasOverdueTasks') {
+      const now = new Date();
+      return value === true
+        ? { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] }, dueDate: { lt: now } } } }
+        : { NOT: { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] }, dueDate: { lt: now } } } } };
+    }
+  }
+
+  return null;
+}
+
 // GET /api/records - List records with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
@@ -10,18 +204,30 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const filter = searchParams.get('filter') || 'all'; // all, complete, incomplete
+    const filtersParam = searchParams.get('filters');
 
     // Validate limit
     const validLimits = [10, 20, 50, 100];
     const safeLimit = validLimits.includes(limit) ? limit : 10;
     const skip = (page - 1) * safeLimit;
 
-    // Build where clause based on filter
-    let whereClause = {};
+    // Build where clause based on completion filter
+    let whereClause: Record<string, unknown> = {};
     if (filter === 'complete') {
       whereClause = { isComplete: true };
     } else if (filter === 'incomplete') {
       whereClause = { isComplete: false };
+    }
+
+    // Parse and apply advanced filters
+    if (filtersParam) {
+      try {
+        const filterBlocks: FilterBlock[] = JSON.parse(filtersParam);
+        const advancedWhere = buildFilterWhereClause(filterBlocks);
+        whereClause = { ...whereClause, ...advancedWhere };
+      } catch (e) {
+        console.error('Error parsing filters:', e);
+      }
     }
 
     // Get total count for pagination

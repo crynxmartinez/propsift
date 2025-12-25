@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
+import RecordFilterPanel, { FilterBlock } from '@/components/RecordFilterPanel'
 import { useToast } from '@/components/Toast'
 
 interface RecordItem {
@@ -82,6 +83,8 @@ export default function RecordsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showBulkImportModal, setShowBulkImportModal] = useState(false)
+  const [showFilterPanel, setShowFilterPanel] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<FilterBlock[]>([])
   const [showManageDropdown, setShowManageDropdown] = useState(false)
   const [bulkActionModal, setBulkActionModal] = useState<string | null>(null)
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
@@ -98,7 +101,18 @@ export default function RecordsPage() {
   const fetchRecords = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/records?page=${page}&limit=${limit}&filter=${filter}`)
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        filter: filter,
+      })
+      
+      // Add active filters to query
+      if (activeFilters.length > 0) {
+        params.set('filters', JSON.stringify(activeFilters))
+      }
+      
+      const res = await fetch(`/api/records?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch records')
       const data: ApiResponse = await res.json()
       setRecords(data.records)
@@ -114,7 +128,7 @@ export default function RecordsPage() {
 
   useEffect(() => {
     fetchRecords()
-  }, [page, limit, filter])
+  }, [page, limit, filter, activeFilters])
 
   useEffect(() => {
     setPage(1)
@@ -509,12 +523,59 @@ export default function RecordsPage() {
           </label>
 
           {/* Filter Records Button */}
-          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition text-sm">
+          <button 
+            onClick={() => {
+              setShowFilterPanel(true)
+              if (tags.length === 0) fetchBulkOptions()
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm ${
+              activeFilters.length > 0 
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+            }`}
+          >
             <Filter className="w-4 h-4" />
             Filter Records
+            {activeFilters.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                {activeFilters.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Active Filters Bar */}
+      {activeFilters.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <span className="text-sm text-blue-700 font-medium">Active Filters:</span>
+          <div className="flex flex-wrap gap-2">
+            {activeFilters.map((filter, index) => (
+              <span
+                key={filter.id}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700"
+              >
+                {filter.fieldLabel}
+                <button
+                  onClick={() => {
+                    const newFilters = activeFilters.filter(f => f.id !== filter.id)
+                    setActiveFilters(newFilters)
+                  }}
+                  className="ml-1 hover:text-blue-900"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => setActiveFilters([])}
+            className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -752,6 +813,21 @@ export default function RecordsPage() {
       />
 
       {/* Bulk Action Modals */}
+      {/* Filter Panel */}
+      <RecordFilterPanel
+        isOpen={showFilterPanel}
+        onClose={() => setShowFilterPanel(false)}
+        onApply={(filters) => {
+          setActiveFilters(filters)
+          setShowFilterPanel(false)
+          setPage(1)
+        }}
+        tags={tags}
+        motivations={motivations}
+        statuses={statuses}
+        users={users}
+      />
+
       {bulkActionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
