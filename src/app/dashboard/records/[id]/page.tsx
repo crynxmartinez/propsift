@@ -1017,7 +1017,7 @@ export default function PropertyDetailsPage() {
               <ChevronDown className="w-4 h-4" />
             </button>
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              <div className="absolute right-0 mt-2 min-w-[200px] max-w-[280px] bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                 <button
                   onClick={() => handleAssignUser('')}
                   className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
@@ -1028,7 +1028,7 @@ export default function PropertyDetailsPage() {
                   <button
                     key={user.id}
                     onClick={() => handleAssignUser(user.id)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 truncate"
                   >
                     {user.name || user.email}
                   </button>
