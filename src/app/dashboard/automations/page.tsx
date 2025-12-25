@@ -16,7 +16,8 @@ import {
   Zap,
   Clock,
   Search,
-  X
+  X,
+  Copy
 } from 'lucide-react'
 
 interface AutomationFolder {
@@ -241,6 +242,24 @@ export default function AutomationsPage() {
     }
   }
 
+  const handleDuplicateAutomation = async (automation: Automation, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/automations/${automation.id}/duplicate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        fetchData()
+      }
+    } catch (error) {
+      console.error('Error duplicating automation:', error)
+    }
+  }
+
   const handleDeleteAutomation = async () => {
     if (!deletingAutomation) return
     setSaving(true)
@@ -333,11 +352,20 @@ export default function AutomationsPage() {
         </button>
 
         <button
+          onClick={(e) => handleDuplicateAutomation(automation, e)}
+          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"
+          title="Duplicate automation"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+
+        <button
           onClick={(e) => {
             e.stopPropagation()
             setDeletingAutomation(automation)
           }}
           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          title="Delete automation"
         >
           <Trash2 className="w-4 h-4" />
         </button>
