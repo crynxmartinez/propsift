@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
+import { verifyToken } from '@/lib/auth';
 
 // Filter block interface
 interface FilterBlock {
@@ -200,6 +201,19 @@ function buildSingleFilterCondition(filter: FilterBlock): Record<string, unknown
 // GET /api/records - List records with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -211,12 +225,14 @@ export async function GET(request: NextRequest) {
     const safeLimit = validLimits.includes(limit) ? limit : 10;
     const skip = (page - 1) * safeLimit;
 
-    // Build where clause based on completion filter
-    let whereClause: Record<string, unknown> = {};
+    // Build where clause based on completion filter and user
+    let whereClause: Record<string, unknown> = {
+      createdById: decoded.userId, // Only show records created by this user
+    };
     if (filter === 'complete') {
-      whereClause = { isComplete: true };
+      whereClause = { ...whereClause, isComplete: true };
     } else if (filter === 'incomplete') {
-      whereClause = { isComplete: false };
+      whereClause = { ...whereClause, isComplete: false };
     }
 
     // Parse and apply advanced filters
@@ -254,10 +270,10 @@ export async function GET(request: NextRequest) {
       take: safeLimit,
     });
 
-    // Calculate counts for each filter
-    const completeCount = await prisma.record.count({ where: { isComplete: true } });
-    const incompleteCount = await prisma.record.count({ where: { isComplete: false } });
-    const allCount = await prisma.record.count();
+    // Calculate counts for each filter (user-specific)
+    const completeCount = await prisma.record.count({ where: { createdById: decoded.userId, isComplete: true } });
+    const incompleteCount = await prisma.record.count({ where: { createdById: decoded.userId, isComplete: false } });
+    const allCount = await prisma.record.count({ where: { createdById: decoded.userId } });
 
     return NextResponse.json({
       records,

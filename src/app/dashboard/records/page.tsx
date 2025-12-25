@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download, CheckSquare, XCircle } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download, CheckSquare, XCircle, LogOut } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
 import RecordFilterPanel, { FilterBlock } from '@/components/RecordFilterPanel'
@@ -112,6 +112,12 @@ export default function RecordsPage() {
   const fetchRecords = async () => {
     setLoading(true)
     try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        window.location.href = '/login'
+        return
+      }
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
@@ -123,8 +129,19 @@ export default function RecordsPage() {
         params.set('filters', JSON.stringify(activeFilters))
       }
       
-      const res = await fetch(`/api/records?${params.toString()}`)
-      if (!res.ok) throw new Error('Failed to fetch records')
+      const res = await fetch(`/api/records?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem('token')
+          window.location.href = '/login'
+          return
+        }
+        throw new Error('Failed to fetch records')
+      }
       const data: ApiResponse = await res.json()
       setRecords(data.records)
       setTotalPages(data.pagination.totalPages)
@@ -380,6 +397,11 @@ export default function RecordsPage() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+  }
+
   return (
     <div className="p-8">
       {/* Row 1: Top Navigation */}
@@ -440,6 +462,15 @@ export default function RecordsPage() {
               </div>
             )}
           </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition text-sm"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ model User {
   systemLogs      ActivityLog[]
   notifications   Notification[]
   assignedRecords Record[]
+  createdRecords  Record[]            @relation("RecordCreator")
   activityLogs    RecordActivityLog[]
   comments        RecordComment[]
   assignedTasks   Task[]              @relation("TaskAssignee")
@@ -149,12 +150,14 @@ model Record {
   isComplete         Boolean             @default(false)
   statusId           String?
   assignedToId       String?
+  createdById        String?
   skiptraceDate      DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   customFieldValues  CustomFieldValue[]
   notifications      Notification[]
   assignedTo         User?               @relation(fields: [assignedToId], references: [id])
+  createdBy          User?               @relation("RecordCreator", fields: [createdById], references: [id])
   status             Status?             @relation(fields: [statusId], references: [id])
   activityLogs       RecordActivityLog[]
   comments           RecordComment[]
