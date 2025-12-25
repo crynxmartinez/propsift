@@ -88,6 +88,19 @@ export async function POST(
         source: 'Property Details Page',
       },
     });
+    
+    // System log
+    const propertyAddress = record.propertyStreet || record.ownerFullName || 'Unknown';
+    await prisma.activityLog.create({
+      data: {
+        type: 'action',
+        action: 'record_update',
+        description: `User added email to "${propertyAddress}"`,
+        total: 1,
+        processed: 1,
+        status: 'completed',
+      },
+    });
 
     return NextResponse.json(email, { status: 201 });
   } catch (error) {

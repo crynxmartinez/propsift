@@ -477,6 +477,20 @@ export async function PUT(
           source: source || 'Property Details Page',
         })),
       });
+      
+      // Also create system log for individual record update
+      const fieldNames = changes.map(c => c.field).join(', ');
+      const propertyAddress = existingRecord.propertyStreet || existingRecord.ownerFullName || 'Unknown';
+      await prisma.activityLog.create({
+        data: {
+          type: 'action',
+          action: 'record_update',
+          description: `User updated ${fieldNames} on "${propertyAddress}"`,
+          total: 1,
+          processed: 1,
+          status: 'completed',
+        },
+      });
     }
 
     // Refetch record with updated relations
