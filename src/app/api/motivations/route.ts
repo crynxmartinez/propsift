@@ -3,6 +3,38 @@ import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import { getAuthUser } from '@/lib/roles'
 
+const DEFAULT_MOTIVATIONS = [
+  'Probate',
+  'Pre-Foreclosure',
+  'Foreclosure',
+  'Tax Lien',
+  'Divorce',
+  'Bankruptcy',
+  'Vacant',
+  'Absentee Owner',
+  'High Equity',
+  'Tired Landlord',
+  'Code Violation',
+  'Inherited',
+  'Downsizing',
+  'Relocation',
+  'Financial Distress',
+]
+
+async function seedDefaultMotivations(userId: string) {
+  const existingCount = await prisma.motivation.count({
+    where: { createdById: userId }
+  })
+  
+  if (existingCount === 0) {
+    for (const name of DEFAULT_MOTIVATIONS) {
+      await prisma.motivation.create({
+        data: { name, createdById: userId }
+      })
+    }
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
@@ -22,6 +54,8 @@ export async function GET(request: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
     }
+
+    await seedDefaultMotivations(authUser.ownerId)
 
     const motivations = await prisma.motivation.findMany({
       where: { createdById: authUser.ownerId },
