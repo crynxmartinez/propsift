@@ -196,7 +196,7 @@ export default function RecordDetailPanel({
   }
 
   const getTasksCompleted = () => {
-    if (!record || record.tasks.length === 0) return { completed: 0, total: 0, percent: 0 }
+    if (!record || !record.tasks || record.tasks.length === 0) return { completed: 0, total: 0, percent: 0 }
     const completed = record.tasks.filter(t => t.status === 'COMPLETED').length
     const total = record.tasks.length
     const percent = Math.round((completed / total) * 100)
