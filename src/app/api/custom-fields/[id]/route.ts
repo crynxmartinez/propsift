@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/roles'
 
 // GET - Fetch a single custom field definition
 export async function GET(
@@ -21,8 +22,13 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const field = await prisma.customFieldDefinition.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     })
     if (!field) {
       return NextResponse.json({ error: 'Field not found' }, { status: 404 })
@@ -53,9 +59,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // Check field exists and belongs to user
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
+    // Check field exists and belongs to team
     const existing = await prisma.customFieldDefinition.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Field not found' }, { status: 404 })
@@ -102,9 +113,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // Check field exists and belongs to user
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
+    // Check field exists and belongs to team
     const existing = await prisma.customFieldDefinition.findFirst({
-      where: { id: params.id, createdById: decoded.userId },
+      where: { id: params.id, createdById: authUser.ownerId },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Field not found' }, { status: 404 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/roles'
 
 // GET - Fetch all custom field definitions
 export async function GET(request: NextRequest) {
@@ -18,8 +19,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const fields = await prisma.customFieldDefinition.findMany({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       orderBy: { order: 'asc' },
     })
     return NextResponse.json(fields)
@@ -45,6 +51,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { name, fieldType, displayType, options, isRequired } = body
 
@@ -54,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Get the max order to add new field at the end for this user
     const maxOrder = await prisma.customFieldDefinition.aggregate({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       _max: { order: true },
     })
 
@@ -66,7 +77,7 @@ export async function POST(request: NextRequest) {
         options: options ? JSON.stringify(options) : null,
         isRequired: isRequired || false,
         order: (maxOrder._max.order ?? -1) + 1,
-        createdById: decoded.userId,
+        createdById: authUser.ownerId,
       },
     })
 

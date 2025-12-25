@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
+import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // GET /api/records/[id] - Get a single record with full details
 export async function GET(
@@ -9,8 +11,26 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const record = await prisma.record.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
+    const record = await prisma.record.findFirst({
+      where: { id: params.id, createdById: authUser.ownerId },
       include: {
         status: true,
         assignedTo: {
@@ -62,6 +82,24 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       ownerFirstName,
@@ -106,9 +144,9 @@ export async function PUT(
       source,
     } = body;
 
-    // Check if record exists
-    const existingRecord = await prisma.record.findUnique({
-      where: { id: params.id },
+    // Check if record exists and belongs to team
+    const existingRecord = await prisma.record.findFirst({
+      where: { id: params.id, createdById: authUser.ownerId },
       include: {
         recordMotivations: true,
         recordTags: true,
@@ -540,9 +578,27 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if record exists
-    const existingRecord = await prisma.record.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
+    // Check if record exists and belongs to team
+    const existingRecord = await prisma.record.findFirst({
+      where: { id: params.id, createdById: authUser.ownerId },
     });
 
     if (!existingRecord) {
