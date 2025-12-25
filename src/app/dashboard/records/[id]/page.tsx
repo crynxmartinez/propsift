@@ -307,7 +307,10 @@ export default function PropertyDetailsPage() {
 
   const fetchRecord = async () => {
     try {
-      const res = await fetch(`/api/records/${recordId}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/records/${recordId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (!res.ok) {
         if (res.status === 404) {
           router.push('/dashboard/records')
