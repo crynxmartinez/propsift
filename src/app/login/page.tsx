@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react'
+import { LogIn, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -100,6 +100,19 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a
+              href="/register"
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 inline-flex"
+            >
+              <UserPlus className="w-3 h-3" />
+              Sign up
+            </a>
+          </p>
+        </div>
         </div>
       </div>
     </div>
