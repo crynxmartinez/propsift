@@ -375,7 +375,7 @@ export default function RecordDetailPanel({
               </button>
             </div>
             
-            {record.tasks.length === 0 ? (
+            {(!record.tasks || record.tasks.length === 0) ? (
               <p className="text-sm text-gray-500">No tasks yet</p>
             ) : (
               <div className="space-y-2">
@@ -406,9 +406,9 @@ export default function RecordDetailPanel({
                     </div>
                   </div>
                 ))}
-                {record.tasks.length > 3 && (
+                {record.tasks?.length > 3 && (
                   <p className="text-sm text-gray-500 pl-7">
-                    +{record.tasks.length - 3} more tasks
+                    +{(record.tasks?.length || 0) - 3} more tasks
                   </p>
                 )}
               </div>
@@ -463,7 +463,7 @@ export default function RecordDetailPanel({
             </button>
             
             {/* Phone numbers */}
-            {record.phoneNumbers.length > 0 && (
+            {record.phoneNumbers?.length > 0 && (
               <div className="mt-3 space-y-2">
                 {record.phoneNumbers.map(phone => (
                   <div key={phone.id} className="flex items-center gap-2">
@@ -478,7 +478,7 @@ export default function RecordDetailPanel({
             )}
             
             {/* Emails */}
-            {record.emails.length > 0 && (
+            {record.emails?.length > 0 && (
               <div className="mt-3 space-y-2">
                 {record.emails.map(email => (
                   <div key={email.id} className="flex items-center gap-2">
@@ -500,11 +500,11 @@ export default function RecordDetailPanel({
                 Lists (0)
               </button>
               <button className="pb-2 text-sm text-blue-600 border-b-2 border-blue-600">
-                Tags ({record.recordTags.length})
+                Tags ({record.recordTags?.length || 0})
               </button>
             </div>
             
-            {record.recordTags.length === 0 ? (
+            {(!record.recordTags || record.recordTags.length === 0) ? (
               <p className="text-sm text-gray-500">No tags</p>
             ) : (
               <div className="flex flex-wrap gap-2">
