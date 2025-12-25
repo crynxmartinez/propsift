@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
     let whereClause: Record<string, unknown> = {
       OR: [
         { createdById: authUser.ownerId },
-        { createdById: null }
+        { createdById: { equals: null } }
       ]
     };
 

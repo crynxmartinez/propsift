@@ -34,7 +34,7 @@ export async function GET(
         id: params.id, 
         OR: [
           { createdById: authUser.ownerId },
-          { createdById: null }
+          { createdById: { equals: null } }
         ]
       },
       include: {
@@ -156,7 +156,7 @@ export async function PUT(
         id: params.id, 
         OR: [
           { createdById: authUser.ownerId },
-          { createdById: null }
+          { createdById: { equals: null } }
         ]
       },
       include: {
@@ -614,7 +614,7 @@ export async function DELETE(
         id: params.id, 
         OR: [
           { createdById: authUser.ownerId },
-          { createdById: null }
+          { createdById: { equals: null } }
         ]
       },
     });
