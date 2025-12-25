@@ -37,6 +37,14 @@ interface RecordTag {
   }
 }
 
+interface RecordMotivation {
+  id: string
+  motivation: {
+    id: string
+    name: string
+  }
+}
+
 interface PhoneNumber {
   id: string
   number: string
@@ -75,6 +83,7 @@ interface RecordDetail {
   assignedTo: AssignedTo | null
   assignedToId: string | null
   recordTags: RecordTag[]
+  recordMotivations: RecordMotivation[]
   phoneNumbers: PhoneNumber[]
   emails: Email[]
   tasks: Task[]
@@ -492,33 +501,48 @@ export default function RecordDetailPanel({
             )}
           </div>
 
-          {/* Tags */}
+          {/* Motivations & Tags */}
           <div className="p-4">
-            <h3 className="font-medium text-gray-900 mb-3">Lists & Tags</h3>
-            <div className="flex gap-4 border-b border-gray-200 mb-3">
-              <button className="pb-2 text-sm text-gray-500 hover:text-gray-900">
-                Lists (0)
-              </button>
-              <button className="pb-2 text-sm text-blue-600 border-b-2 border-blue-600">
-                Tags ({record.recordTags?.length || 0})
-              </button>
+            <h3 className="font-medium text-gray-900 mb-3">Motivations & Tags</h3>
+            
+            {/* Motivations */}
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Motivations ({record.recordMotivations?.length || 0})</p>
+              {(!record.recordMotivations || record.recordMotivations.length === 0) ? (
+                <p className="text-sm text-gray-400">No motivations</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {record.recordMotivations.map(rm => (
+                    <span 
+                      key={rm.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-sm rounded"
+                    >
+                      {rm.motivation.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             
-            {(!record.recordTags || record.recordTags.length === 0) ? (
-              <p className="text-sm text-gray-500">No tags</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {record.recordTags.map(rt => (
-                  <span 
-                    key={rt.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded"
-                  >
-                    <Tag className="w-3 h-3" />
-                    {rt.tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Tags */}
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Tags ({record.recordTags?.length || 0})</p>
+              {(!record.recordTags || record.recordTags.length === 0) ? (
+                <p className="text-sm text-gray-400">No tags</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {record.recordTags.map(rt => (
+                    <span 
+                      key={rt.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded"
+                    >
+                      <Tag className="w-3 h-3" />
+                      {rt.tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
