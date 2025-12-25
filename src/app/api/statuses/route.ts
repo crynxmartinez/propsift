@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/roles'
 
 const DEFAULT_STATUSES = [
   { name: 'New Lead', color: '#3B82F6', isDefault: true, order: 0 },
@@ -44,10 +45,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    await seedDefaultStatuses(decoded.userId)
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
+    await seedDefaultStatuses(authUser.ownerId)
 
     const statuses = await prisma.status.findMany({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       include: {
         _count: {
           select: { records: true }
@@ -90,6 +96,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const { name, color } = await request.json()
 
     if (!name || !name.trim()) {
@@ -103,7 +114,7 @@ export async function POST(request: NextRequest) {
     const existingStatus = await prisma.status.findFirst({
       where: { 
         name: name.trim(),
-        createdById: decoded.userId
+        createdById: authUser.ownerId
       }
     })
 
@@ -112,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     const maxOrder = await prisma.status.aggregate({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       _max: { order: true }
     })
     const newOrder = (maxOrder._max.order ?? -1) + 1
@@ -124,7 +135,7 @@ export async function POST(request: NextRequest) {
         isDefault: false,
         isActive: true,
         order: newOrder,
-        createdById: decoded.userId
+        createdById: authUser.ownerId
       }
     })
 

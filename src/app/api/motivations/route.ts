@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/roles'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,8 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const motivations = await prisma.motivation.findMany({
-      where: { createdById: decoded.userId },
+      where: { createdById: authUser.ownerId },
       include: {
         _count: {
           select: { records: true }
@@ -57,6 +63,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const { name } = await request.json()
 
     if (!name || !name.trim()) {
@@ -66,7 +77,7 @@ export async function POST(request: NextRequest) {
     const existingMotivation = await prisma.motivation.findFirst({
       where: { 
         name: name.trim(),
-        createdById: decoded.userId
+        createdById: authUser.ownerId
       }
     })
 
@@ -77,7 +88,7 @@ export async function POST(request: NextRequest) {
     const motivation = await prisma.motivation.create({
       data: { 
         name: name.trim(),
-        createdById: decoded.userId
+        createdById: authUser.ownerId
       }
     })
 

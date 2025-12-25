@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/roles'
 
 export async function PATCH(
   request: NextRequest,
@@ -20,6 +21,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const { id } = params
     const { name } = await request.json()
 
@@ -28,7 +34,7 @@ export async function PATCH(
     }
 
     const existingTag = await prisma.tag.findFirst({
-      where: { id, createdById: decoded.userId }
+      where: { id, createdById: authUser.ownerId }
     })
 
     if (!existingTag) {
@@ -38,7 +44,7 @@ export async function PATCH(
     const duplicateTag = await prisma.tag.findFirst({
       where: {
         name: name.trim(),
-        createdById: decoded.userId,
+        createdById: authUser.ownerId,
         NOT: { id }
       }
     })
@@ -77,10 +83,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    const authUser = await getAuthUser(decoded.userId)
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 })
+    }
+
     const { id } = params
 
     const tag = await prisma.tag.findFirst({
-      where: { id, createdById: decoded.userId },
+      where: { id, createdById: authUser.ownerId },
       include: {
         _count: {
           select: { records: true }

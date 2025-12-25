@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
+import { getAuthUser, canViewAllData } from '@/lib/roles';
 
 // GET /api/tasks - Get all tasks with filters
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const assignedToId = searchParams.get('assignedToId');
@@ -13,8 +33,15 @@ export async function GET(request: NextRequest) {
     const dueDateTo = searchParams.get('dueDateTo');
     const includeNoDueDate = searchParams.get('includeNoDueDate') === 'true';
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    // Build where clause - filter by team's tasks
+    const where: Record<string, unknown> = {
+      createdById: authUser.ownerId, // Team data sharing
+    };
+
+    // Members can only see tasks assigned to them
+    if (!canViewAllData(authUser.role)) {
+      where.assignedToId = authUser.id;
+    }
 
     if (status) {
       if (status === 'ACTIVE') {
@@ -113,6 +140,24 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Create a new task
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       title,
@@ -130,7 +175,6 @@ export async function POST(request: NextRequest) {
       assignmentType,
       assignedToId,
       recordId,
-      createdById,
       templateId,
       saveAsTemplate,
       templateName,
@@ -145,12 +189,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!createdById) {
-      return NextResponse.json(
-        { error: 'Creator ID is required' },
-        { status: 400 }
-      );
-    }
+    // Use ownerId for team data sharing
+    const createdById = authUser.ownerId;
 
     // Handle round robin assignment
     let finalAssignedToId = assignedToId;
