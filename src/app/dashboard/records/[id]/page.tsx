@@ -279,6 +279,7 @@ export default function PropertyDetailsPage() {
   const [boards, setBoards] = useState<Board[]>([])
   const [recordBoardPositions, setRecordBoardPositions] = useState<RecordBoardPosition[]>([])
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
+  const [expandedBoards, setExpandedBoards] = useState<Set<string>>(new Set())
   
   // Loading states
   const [savingField, setSavingField] = useState(false)
@@ -1078,34 +1079,55 @@ export default function PropertyDetailsPage() {
                   {boards.length === 0 ? (
                     <p className="text-sm text-gray-400 px-2 py-1">No boards available</p>
                   ) : (
-                    boards.map((board) => (
-                      <div key={board.id} className="mb-2">
-                        <p className="text-xs font-medium text-gray-600 px-2 py-1">{board.name}</p>
-                        {board.columns.map((column) => {
-                          const alreadyAdded = recordBoardPositions.some(
-                            p => p.column.board.id === board.id
-                          )
-                          return (
-                            <button
-                              key={column.id}
-                              onClick={() => handleAddToBoard(board.id, column.id)}
-                              disabled={alreadyAdded}
-                              className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm rounded ${
-                                alreadyAdded 
-                                  ? 'text-gray-400 cursor-not-allowed' 
-                                  : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              <span
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: column.color }}
-                              />
-                              {column.name}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    ))
+                    boards.map((board) => {
+                      const isExpanded = expandedBoards.has(board.id)
+                      const alreadyOnBoard = recordBoardPositions.some(
+                        p => p.column.board.id === board.id
+                      )
+                      return (
+                        <div key={board.id} className="mb-1">
+                          <button
+                            onClick={() => {
+                              const newExpanded = new Set(expandedBoards)
+                              if (isExpanded) {
+                                newExpanded.delete(board.id)
+                              } else {
+                                newExpanded.add(board.id)
+                              }
+                              setExpandedBoards(newExpanded)
+                            }}
+                            className={`w-full flex items-center justify-between px-2 py-1.5 text-left text-sm rounded hover:bg-gray-100 ${
+                              alreadyOnBoard ? 'text-green-600' : 'text-gray-700'
+                            }`}
+                          >
+                            <span className="font-medium">{board.name}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isExpanded && (
+                            <div className="ml-2 border-l-2 border-gray-200 pl-2 mt-1">
+                              {board.columns.map((column) => (
+                                <button
+                                  key={column.id}
+                                  onClick={() => handleAddToBoard(board.id, column.id)}
+                                  disabled={alreadyOnBoard}
+                                  className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded ${
+                                    alreadyOnBoard 
+                                      ? 'text-gray-400 cursor-not-allowed' 
+                                      : 'text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{ backgroundColor: column.color }}
+                                  />
+                                  {column.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
                   )}
                 </div>
               </div>
