@@ -50,6 +50,17 @@ export async function POST(request: NextRequest) {
         }
         result.affected = recordIds.length;
         
+        // Log activity per record
+        await prisma.recordActivityLog.createMany({
+          data: recordIds.map((recordId: string) => ({
+            recordId,
+            action: 'updated',
+            field: 'tags',
+            newValue: tagNamesToAdd,
+            source: 'Bulk Actions',
+          })),
+        });
+        
         await createSystemLog(
           `User added tag "${tagNamesToAdd}" to ${recordIds.length} ${recordIds.length === 1 ? 'property' : 'properties'}`,
           'bulk_add_tags',
@@ -71,6 +82,17 @@ export async function POST(request: NextRequest) {
           },
         });
         result.affected = deleteTagsResult.count;
+        
+        // Log activity per record
+        await prisma.recordActivityLog.createMany({
+          data: recordIds.map((recordId: string) => ({
+            recordId,
+            action: 'updated',
+            field: 'tags',
+            newValue: `Removed: ${tagNamesToRemove}`,
+            source: 'Bulk Actions',
+          })),
+        });
         
         await createSystemLog(
           `User removed tag "${tagNamesToRemove}" from ${recordIds.length} ${recordIds.length === 1 ? 'property' : 'properties'}`,
@@ -97,6 +119,17 @@ export async function POST(request: NextRequest) {
         }
         result.affected = recordIds.length;
         
+        // Log activity per record
+        await prisma.recordActivityLog.createMany({
+          data: recordIds.map((recordId: string) => ({
+            recordId,
+            action: 'updated',
+            field: 'motivations',
+            newValue: motivationNamesToAdd,
+            source: 'Bulk Actions',
+          })),
+        });
+        
         await createSystemLog(
           `User added motivation "${motivationNamesToAdd}" to ${recordIds.length} ${recordIds.length === 1 ? 'property' : 'properties'}`,
           'bulk_add_motivations',
@@ -118,6 +151,17 @@ export async function POST(request: NextRequest) {
           },
         });
         result.affected = deleteMotivationsResult.count;
+        
+        // Log activity per record
+        await prisma.recordActivityLog.createMany({
+          data: recordIds.map((recordId: string) => ({
+            recordId,
+            action: 'updated',
+            field: 'motivations',
+            newValue: `Removed: ${motivationNamesToRemove}`,
+            source: 'Bulk Actions',
+          })),
+        });
         
         await createSystemLog(
           `User removed motivation "${motivationNamesToRemove}" from ${recordIds.length} ${recordIds.length === 1 ? 'property' : 'properties'}`,
@@ -142,7 +186,7 @@ export async function POST(request: NextRequest) {
             recordId,
             action: 'updated',
             field: 'status',
-            newValue: statusId || 'null',
+            newValue: statusName,
             source: 'Bulk Actions',
           })),
         });
@@ -198,7 +242,7 @@ export async function POST(request: NextRequest) {
             recordId,
             action: 'updated',
             field: 'assignedTo',
-            newValue: userId || 'null',
+            newValue: userName,
             source: 'Bulk Actions',
           })),
         });
