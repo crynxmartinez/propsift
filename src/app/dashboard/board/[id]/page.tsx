@@ -10,7 +10,13 @@ import {
   Trash2, 
   Phone,
   GripVertical,
-  X
+  X,
+  Eye,
+  Snowflake,
+  Package,
+  Pencil,
+  CheckSquare,
+  Square
 } from 'lucide-react'
 import {
   DndContext,
@@ -69,6 +75,9 @@ interface Record {
   assignedTo: AssignedTo | null
   recordTags: RecordTag[]
   phoneNumbers: PhoneNumber[]
+  isComplete: boolean
+  temperature: string | null
+  tasks?: { id: string; status: string }[]
 }
 
 interface RecordPosition {
@@ -97,10 +106,12 @@ interface Board {
 // Sortable Card Component
 function SortableCard({ 
   position, 
-  onClick 
+  onClick,
+  onToggleComplete
 }: { 
   position: RecordPosition
-  onClick: () => void 
+  onClick: () => void
+  onToggleComplete: (recordId: string, isComplete: boolean) => void
 }) {
   const {
     attributes,
@@ -118,71 +129,114 @@ function SortableCard({
   }
 
   const record = position.record
+  const completedTasks = record.tasks?.filter(t => t.status === 'COMPLETED').length || 0
+  const totalTasks = record.tasks?.length || 0
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer group"
-      onClick={onClick}
     >
       {/* Status color bar */}
       <div 
-        className="h-1.5 rounded-t-lg" 
+        className="h-2 rounded-t-lg" 
         style={{ backgroundColor: record.status?.color || '#e5e7eb' }}
       />
       
       <div className="p-3">
-        {/* Header with drag handle and owner name */}
+        {/* Header row with checkbox, name, and eye icon */}
         <div className="flex items-start gap-2">
+          {/* Checkbox */}
           <button
-            {...attributes}
-            {...listeners}
-            className="p-1 -ml-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleComplete(record.id, !record.isComplete)
+            }}
+            className="mt-0.5 flex-shrink-0"
           >
-            <GripVertical className="w-4 h-4 text-gray-400" />
+            {record.isComplete ? (
+              <CheckSquare className="w-4 h-4 text-green-600" />
+            ) : (
+              <Square className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+            )}
           </button>
-          <div className="flex-1 min-w-0">
+          
+          {/* Name and address */}
+          <div className="flex-1 min-w-0" onClick={onClick}>
             <h4 className="font-medium text-gray-900 text-sm truncate">
               {record.ownerFullName}
             </h4>
             {record.propertyStreet && (
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-blue-600 truncate">
                 {record.propertyStreet}
                 {record.propertyCity && `, ${record.propertyCity}`}
                 {record.propertyState && ` ${record.propertyState}`}
+                {record.propertyZip && ` ${record.propertyZip}`}
               </p>
             )}
+          </div>
+          
+          {/* Eye icon and drag handle */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onClick}
+              className="p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-100 rounded transition"
+            >
+              <Eye className="w-4 h-4 text-blue-500" />
+            </button>
+            <button
+              {...attributes}
+              {...listeners}
+              className="p-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="w-4 h-4 text-gray-400" />
+            </button>
           </div>
         </div>
 
         {/* Phone */}
         {record.phoneNumbers.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
-            <Phone className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-600">
+            <Phone className="w-3.5 h-3.5 text-gray-400" />
             <span>{record.phoneNumbers[0].number}</span>
           </div>
         )}
 
-        {/* Tags */}
-        {record.recordTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {record.recordTags.slice(0, 3).map((rt) => (
-              <span 
-                key={rt.id} 
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
-              >
-                {rt.tag.name}
+        {/* Bottom row: icons and task progress */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+          {/* Temperature and other icons */}
+          <div className="flex items-center gap-2">
+            {record.temperature === 'cold' && (
+              <span title="Cold">
+                <Snowflake className="w-4 h-4 text-blue-400" />
               </span>
-            ))}
-            {record.recordTags.length > 3 && (
-              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-xs rounded">
-                +{record.recordTags.length - 3}
+            )}
+            {record.temperature === 'warm' && (
+              <span title="Warm">
+                <Package className="w-4 h-4 text-orange-400" />
+              </span>
+            )}
+            {record.temperature === 'hot' && (
+              <span title="Hot">
+                <Pencil className="w-4 h-4 text-red-400" />
+              </span>
+            )}
+            {record.recordTags.length > 0 && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                {record.recordTags.length} tags
               </span>
             )}
           </div>
-        )}
+          
+          {/* Task progress */}
+          {totalTasks > 0 && (
+            <span className="text-xs text-gray-500">
+              {completedTasks}/{totalTasks}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -512,6 +566,35 @@ export default function BoardDetailPage() {
     }
   }
 
+  const handleToggleComplete = async (recordId: string, isComplete: boolean) => {
+    try {
+      const token = localStorage.getItem('token')
+      await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isComplete }),
+      })
+
+      // Update local state
+      setBoard(prev => prev ? {
+        ...prev,
+        columns: prev.columns.map(col => ({
+          ...col,
+          records: col.records.map(pos => 
+            pos.recordId === recordId 
+              ? { ...pos, record: { ...pos.record, isComplete } }
+              : pos
+          ),
+        })),
+      } : null)
+    } catch (err) {
+      console.error('Failed to toggle complete:', err)
+    }
+  }
+
   const activePosition = activeId 
     ? board?.columns.flatMap(c => c.records).find(r => r.id === activeId)
     : null
@@ -670,6 +753,7 @@ export default function BoardDetailPage() {
                         key={position.id}
                         position={position}
                         onClick={() => router.push(`/dashboard/records/${position.recordId}`)}
+                        onToggleComplete={handleToggleComplete}
                       />
                     ))}
                   </SortableContext>

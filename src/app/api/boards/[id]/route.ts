@@ -48,6 +48,9 @@ export async function GET(
                       take: 1,
                       orderBy: { createdAt: 'asc' },
                     },
+                    tasks: {
+                      select: { id: true, status: true },
+                    },
                   },
                 },
               },
