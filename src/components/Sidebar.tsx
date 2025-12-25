@@ -11,12 +11,14 @@ import {
   Zap,
   CircleDot,
   FileText,
-  Activity
+  Activity,
+  CheckSquare
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
+  { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },

@@ -18,6 +18,11 @@ model User {
   comments        RecordComment[]
   activityLogs    RecordActivityLog[]
   systemLogs      ActivityLog[]
+  
+  // Task relations
+  assignedTasks   Task[]   @relation("TaskAssignee")
+  createdTasks    Task[]   @relation("TaskCreator")
+  notifications   Notification[]
 }
 
 model Property {
@@ -188,6 +193,8 @@ model Record {
   comments            RecordComment[]
   activityLogs        RecordActivityLog[]
   customFieldValues   CustomFieldValue[]
+  tasks               Task[]
+  notifications       Notification[]
 }
 
 model RecordTag {
@@ -323,4 +330,132 @@ model ActivityLog {
   @@index([status])
   @@index([createdAt])
   @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════════════════════
+
+model Task {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  
+  // Scheduling
+  dueDate         DateTime? // Optional - some tasks have no due date
+  dueTime         String?   // "09:00", "14:30" - specific time on due date
+  startDate       DateTime? // For date ranges
+  recurrence      String?   // NONE, DAILY, WEEKLY, MONTHLY
+  recurrenceDays  String[]  @default([]) // ["MON", "WED", "FRI"] for weekly
+  skipWeekends    Boolean   @default(false)
+  
+  // Status & Priority
+  status          String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  priority        String    @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
+  
+  // Assignment
+  assignmentType  String    @default("MANUAL")  // MANUAL, ROUND_ROBIN
+  assignedToId    String?
+  assignedTo      User?     @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  
+  // Link to Record (optional)
+  recordId        String?
+  record          Record?   @relation(fields: [recordId], references: [id], onDelete: SetNull)
+  
+  // Creator
+  createdById     String
+  createdBy       User      @relation("TaskCreator", fields: [createdById], references: [id])
+  
+  // Template reference
+  templateId      String?
+  template        TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+  
+  // Notifications generated from this task
+  notifications   Notification[]
+  
+  @@index([assignedToId])
+  @@index([recordId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdById])
+}
+
+model TaskTemplate {
+  id              String   @id @default(cuid())
+  name            String   // Template name e.g. "Follow-up Call"
+  title           String   // Task title template e.g. "Call {owner} about {property}"
+  description     String?
+  category        String?  // OUTREACH, MAIL, OFFERS, RESEARCH, ADMIN, PROPERTY, TEAM
+  priority        String   @default("MEDIUM")
+  
+  // Scheduling defaults
+  dueDaysFromNow  Int?     // null = no due date, 0 = today, 3 = in 3 days
+  dueTime         String?  // Default time e.g. "09:00"
+  recurrence      String?  // NONE, DAILY, WEEKLY, MONTHLY
+  recurrenceDays  String[] @default([]) // ["MON", "WED", "FRI"]
+  skipWeekends    Boolean  @default(false)
+  
+  // Assignment defaults
+  assignmentType  String   @default("MANUAL") // MANUAL, ROUND_ROBIN
+  roundRobinUsers String[] @default([]) // User IDs for round robin pool
+  
+  // Tasks created from this template
+  tasks           Task[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([category])
+}
+
+model RoundRobinState {
+  id              String   @id @default(cuid())
+  identifier      String   @unique // "global" or templateId
+  userIds         String[] // Users in rotation
+  currentIndex    Int      @default(0) // Who's next
+  updatedAt       DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+
+model Notification {
+  id              String   @id @default(cuid())
+  
+  // Recipient
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Content
+  type            String   // TASK_DUE, TASK_ASSIGNED, TASK_OVERDUE, RECORD_ASSIGNED, SYSTEM
+  title           String
+  message         String
+  
+  // Links (optional)
+  taskId          String?
+  task            Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  recordId        String?
+  record          Record?  @relation(fields: [recordId], references: [id], onDelete: SetNull)
+  
+  // Delivery
+  deliveryType    String   @default("IMMEDIATE") // IMMEDIATE, SCHEDULED, ON_LOGIN
+  scheduledFor    DateTime? // For scheduled notifications
+  
+  // Status
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  isDismissed     Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
 }
