@@ -43,6 +43,7 @@ import {
 import TriggerNode from '@/components/automation/TriggerNode'
 import ActionNode from '@/components/automation/ActionNode'
 import ConditionNode from '@/components/automation/ConditionNode'
+import NodeConfigPanel from '@/components/automation/NodeConfigPanel'
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -593,30 +594,25 @@ export default function AutomationBuilderPage() {
               )}
 
               {panelMode === 'edit' && selectedNode && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Node Type</label>
-                    <p className="text-sm text-gray-600 capitalize">{selectedNode.type}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Label</label>
-                    <p className="text-sm text-gray-600">{selectedNode.data.label}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Action Type</label>
-                    <p className="text-sm text-gray-600">{selectedNode.data.type}</p>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => deleteNode(selectedNode.id)}
-                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg w-full justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Node
-                    </button>
-                  </div>
-                </div>
+                <NodeConfigPanel
+                  node={selectedNode}
+                  onClose={() => {
+                    setShowPanel(false)
+                    setSelectedNode(null)
+                  }}
+                  onSave={(nodeId, config) => {
+                    setNodes((nds) =>
+                      nds.map((n) =>
+                        n.id === nodeId
+                          ? { ...n, data: { ...n.data, config } }
+                          : n
+                      )
+                    )
+                    setShowPanel(false)
+                    setSelectedNode(null)
+                  }}
+                  onDelete={deleteNode}
+                />
               )}
             </div>
           </div>
