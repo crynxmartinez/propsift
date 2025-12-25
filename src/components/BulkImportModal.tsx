@@ -298,6 +298,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
         setMotivations(prev => [...prev, newMotivation])
         toggleArrayItem('motivationIds', newMotivation.id)
         setMotivationSearch('')
+        setIsDropdownOpen(false)
       }
     } catch (error) {
       console.error('Error creating motivation:', error)
@@ -322,6 +323,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
         setTags(prev => [...prev, newTag])
         toggleArrayItem('tagIds', newTag.id)
         setTagSearch('')
+        setIsDropdownOpen(false)
       }
     } catch (error) {
       console.error('Error creating tag:', error)
