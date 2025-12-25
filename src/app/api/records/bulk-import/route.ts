@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 interface ImportRequest {
   activityId?: string;
@@ -29,6 +30,12 @@ export async function POST(request: NextRequest) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Get user with role info for team data sharing
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found or inactive' }, { status: 401 });
     }
 
     const body: ImportRequest = await request.json();
@@ -175,9 +182,10 @@ export async function POST(request: NextRequest) {
         if (importType === 'add') {
           // ADD MODE: Create new or overwrite existing
           
-          // Check for existing record by property address
+          // Check for existing record by property address (within team)
           const existingRecord = await prisma.record.findFirst({
             where: {
+              createdById: authUser.ownerId,
               propertyStreet: { equals: propertyStreet, mode: 'insensitive' },
               propertyCity: { equals: propertyCity, mode: 'insensitive' },
               propertyState: { equals: propertyState, mode: 'insensitive' },
@@ -293,6 +301,7 @@ export async function POST(request: NextRequest) {
             // Create new record
             const newRecord = await prisma.record.create({
               data: {
+                createdById: authUser.ownerId,
                 ownerFirstName,
                 ownerLastName,
                 ownerFullName,
@@ -379,9 +388,10 @@ export async function POST(request: NextRequest) {
           let existingRecord;
           
           if (importOption === 'mailing_address') {
-            // Find by mailing address
+            // Find by mailing address (within team)
             existingRecord = await prisma.record.findFirst({
               where: {
+                createdById: authUser.ownerId,
                 mailingStreet: { equals: mailingStreet, mode: 'insensitive' },
                 mailingCity: { equals: mailingCity, mode: 'insensitive' },
                 mailingState: { equals: mailingState, mode: 'insensitive' },
@@ -389,9 +399,10 @@ export async function POST(request: NextRequest) {
               },
             });
           } else {
-            // Find by property address
+            // Find by property address (within team)
             existingRecord = await prisma.record.findFirst({
               where: {
+                createdById: authUser.ownerId,
                 propertyStreet: { equals: propertyStreet, mode: 'insensitive' },
                 propertyCity: { equals: propertyCity, mode: 'insensitive' },
                 propertyState: { equals: propertyState, mode: 'insensitive' },
