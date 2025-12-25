@@ -845,8 +845,14 @@ function CreateTaskModal({
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split('T')[0] : '')
   const [dueTime, setDueTime] = useState(task?.dueTime || '')
   const [noDueDate, setNoDueDate] = useState(!task?.dueDate)
-  const [notifyAfterDays, setNotifyAfterDays] = useState<number | ''>(
-    (task as Task & { notifyAfterDays?: number | null })?.notifyAfterDays ?? ''
+  const [notifyAfter, setNotifyAfter] = useState<number | ''>(
+    (task as Task & { notifyAfter?: number | null })?.notifyAfter ?? ''
+  )
+  const [notifyAfterUnit, setNotifyAfterUnit] = useState(
+    (task as Task & { notifyAfterUnit?: string | null })?.notifyAfterUnit || 'days'
+  )
+  const [repeatCount, setRepeatCount] = useState<number | ''>(
+    (task as Task & { repeatCount?: number | null })?.repeatCount ?? ''
   )
   const [recurrence, setRecurrence] = useState(task?.recurrence || 'NONE')
   const [recurrenceDays, setRecurrenceDays] = useState<string[]>(task?.recurrenceDays || [])
@@ -900,7 +906,9 @@ function CreateTaskModal({
         description: description || null,
         dueDate: noDueDate ? null : dueDate || null,
         dueTime: dueTime || null,
-        notifyAfterDays: noDueDate && notifyAfterDays !== '' ? notifyAfterDays : null,
+        notifyAfter: noDueDate && notifyAfter !== '' ? notifyAfter : null,
+        notifyAfterUnit: noDueDate && notifyAfter !== '' ? notifyAfterUnit : null,
+        repeatCount: noDueDate && repeatCount !== '' ? repeatCount : null,
         recurrence: recurrence === 'NONE' ? null : recurrence,
         recurrenceDays,
         skipWeekends,
@@ -1117,78 +1125,70 @@ function CreateTaskModal({
                   </div>
                 </div>
               ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notify after (days)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 7"
-                      value={notifyAfterDays}
-                      onChange={(e) => setNotifyAfterDays(e.target.value ? parseInt(e.target.value) : '')}
-                      className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-500">days from creation</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Leave empty for no notification</p>
-                </div>
-              )}
-
-              {/* Recurrence */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Recurrence
-                </label>
-                <select
-                  value={recurrence}
-                  onChange={(e) => setRecurrence(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="NONE">None (One-time)</option>
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </div>
-
-              {/* Weekly Days Selection */}
-              {recurrence === 'WEEKLY' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Repeat on
-                  </label>
-                  <div className="flex gap-2">
-                    {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleRecurrenceDay(day)}
-                        className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
-                          recurrenceDays.includes(day)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                <div className="space-y-4">
+                  {/* Notify After */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notify after
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="e.g. 7"
+                        value={notifyAfter}
+                        onChange={(e) => setNotifyAfter(e.target.value ? parseInt(e.target.value) : '')}
+                        className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <select
+                        value={notifyAfterUnit}
+                        onChange={(e) => setNotifyAfterUnit(e.target.value)}
+                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        {day.charAt(0)}
-                      </button>
-                    ))}
+                        <option value="minutes">Minutes</option>
+                        <option value="days">Days</option>
+                        <option value="months">Months</option>
+                        <option value="years">Years</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Leave empty for no notification</p>
+                  </div>
+
+                  {/* Repeat Count */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Recurrence
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={repeatCount === '' ? 'one-time' : 'repeat'}
+                        onChange={(e) => {
+                          if (e.target.value === 'one-time') {
+                            setRepeatCount('')
+                          } else {
+                            setRepeatCount(1)
+                          }
+                        }}
+                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="one-time">One time</option>
+                        <option value="repeat">Repeat</option>
+                      </select>
+                      {repeatCount !== '' && (
+                        <>
+                          <input
+                            type="number"
+                            min="1"
+                            value={repeatCount}
+                            onChange={(e) => setRepeatCount(e.target.value ? parseInt(e.target.value) : 1)}
+                            className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-500">times</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Skip Weekends */}
-              {recurrence === 'DAILY' && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={skipWeekends}
-                    onChange={(e) => setSkipWeekends(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Skip weekends</span>
-                </label>
               )}
             </div>
           </div>

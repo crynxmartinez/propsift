@@ -72,7 +72,9 @@ export async function PUT(
       description,
       dueDate,
       dueTime,
-      notifyAfterDays,
+      notifyAfter,
+      notifyAfterUnit,
+      repeatCount,
       startDate,
       recurrence,
       recurrenceDays,
@@ -102,7 +104,9 @@ export async function PUT(
     if (description !== undefined) updateData.description = description || null;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (dueTime !== undefined) updateData.dueTime = dueTime || null;
-    if (notifyAfterDays !== undefined) updateData.notifyAfterDays = notifyAfterDays ?? null;
+    if (notifyAfter !== undefined) updateData.notifyAfter = notifyAfter ?? null;
+    if (notifyAfterUnit !== undefined) updateData.notifyAfterUnit = notifyAfterUnit || null;
+    if (repeatCount !== undefined) updateData.repeatCount = repeatCount ?? null;
     if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
     if (recurrence !== undefined) updateData.recurrence = recurrence || null;
     if (recurrenceDays !== undefined) updateData.recurrenceDays = recurrenceDays || [];

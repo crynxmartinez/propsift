@@ -299,7 +299,9 @@ model Task {
   description     String?
   dueDate         DateTime?
   dueTime         String?
-  notifyAfterDays Int?
+  notifyAfter     Int?
+  notifyAfterUnit String?
+  repeatCount     Int?
   startDate       DateTime?
   recurrence      String?
   recurrenceDays  String[]       @default([])
