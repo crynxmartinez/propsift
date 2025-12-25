@@ -12,11 +12,13 @@ import {
   CircleDot,
   FileText,
   Activity,
-  CheckSquare
+  CheckSquare,
+  LayoutGrid
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Board', href: '/dashboard/board', icon: LayoutGrid },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
