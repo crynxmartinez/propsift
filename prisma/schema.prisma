@@ -57,6 +57,8 @@ model User {
   createdFilterFolders FilterFolder[]        @relation("FilterFolderCreator")
   createdFilterTemplates FilterTemplate[]    @relation("FilterTemplateCreator")
   createdBoards        Board[]               @relation("BoardCreator")
+  createdAutomationFolders AutomationFolder[] @relation("AutomationFolderCreator")
+  createdAutomations   Automation[]          @relation("AutomationCreator")
 }
 
 model Property {
@@ -512,4 +514,81 @@ model RecordBoardPosition {
   @@unique([recordId, columnId])
   @@index([columnId])
   @@index([recordId])
+}
+
+// ==========================================
+// AUTOMATION SYSTEM
+// ==========================================
+
+model AutomationFolder {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  color       String       @default("#6366f1")
+  order       Int          @default(0)
+  createdById String
+  createdBy   User         @relation("AutomationFolderCreator", fields: [createdById], references: [id])
+  automations Automation[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([name, createdById])
+  @@index([createdById])
+  @@index([order])
+}
+
+model Automation {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  folderId    String?
+  folder      AutomationFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  isActive    Boolean           @default(false)
+  isDraft     Boolean           @default(true)
+  
+  // Workflow definition stored as JSON
+  // Contains: triggers, nodes, edges, viewport
+  workflowData Json?
+  
+  // Statistics
+  runCount    Int               @default(0)
+  lastRunAt   DateTime?
+  
+  createdById String
+  createdBy   User              @relation("AutomationCreator", fields: [createdById], references: [id])
+  logs        AutomationLog[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([name, createdById])
+  @@index([createdById])
+  @@index([folderId])
+  @@index([isActive])
+}
+
+model AutomationLog {
+  id           String     @id @default(cuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recordId     String?
+  
+  // Execution details
+  triggeredBy  String     // trigger type that started this run
+  status       String     @default("running") // running, completed, failed, skipped
+  startedAt    DateTime   @default(now())
+  completedAt  DateTime?
+  
+  // Step-by-step execution log
+  steps        Json?      // Array of { nodeId, status, startedAt, completedAt, error? }
+  
+  // Error tracking
+  errorMessage String?
+  errorNodeId  String?
+  
+  createdAt    DateTime   @default(now())
+
+  @@index([automationId])
+  @@index([recordId])
+  @@index([status])
+  @@index([createdAt])
 }
