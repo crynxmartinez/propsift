@@ -809,7 +809,34 @@ export default function RecordsPage() {
                         <span className="text-sm">{tag.name}</span>
                       </label>
                     ))}
-                  {tags.filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                  {tags.filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && bulkSearchQuery.trim() && bulkActionModal === 'addTags' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/tags', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: bulkSearchQuery.trim() }),
+                          })
+                          if (res.ok) {
+                            const newTag = await res.json()
+                            setTags([...tags, newTag])
+                            setSelectedBulkItems([...selectedBulkItems, newTag.id])
+                            setBulkSearchQuery('')
+                            showToast(`Tag "${newTag.name}" created`, 'success')
+                          }
+                        } catch (error) {
+                          showToast('Failed to create tag', 'error')
+                        }
+                      }}
+                      className="w-full p-3 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create "{bulkSearchQuery.trim()}"
+                    </button>
+                  )}
+                  {tags.filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (!bulkSearchQuery.trim() || bulkActionModal === 'removeTags') && (
                     <p className="text-sm text-gray-400 p-3 text-center">No tags found</p>
                   )}
                 </div>
@@ -852,7 +879,34 @@ export default function RecordsPage() {
                         <span className="text-sm">{motivation.name}</span>
                       </label>
                     ))}
-                  {motivations.filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                  {motivations.filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && bulkSearchQuery.trim() && bulkActionModal === 'addMotivations' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/motivations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: bulkSearchQuery.trim() }),
+                          })
+                          if (res.ok) {
+                            const newMotivation = await res.json()
+                            setMotivations([...motivations, newMotivation])
+                            setSelectedBulkItems([...selectedBulkItems, newMotivation.id])
+                            setBulkSearchQuery('')
+                            showToast(`Motivation "${newMotivation.name}" created`, 'success')
+                          }
+                        } catch (error) {
+                          showToast('Failed to create motivation', 'error')
+                        }
+                      }}
+                      className="w-full p-3 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create "{bulkSearchQuery.trim()}"
+                    </button>
+                  )}
+                  {motivations.filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (!bulkSearchQuery.trim() || bulkActionModal === 'removeMotivations') && (
                     <p className="text-sm text-gray-400 p-3 text-center">No motivations found</p>
                   )}
                 </div>
