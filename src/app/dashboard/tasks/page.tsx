@@ -146,7 +146,9 @@ export default function TasksPage() {
         params.set('assignedToId', assigneeFilter)
       }
 
-      const response = await fetch(`/api/tasks?${params.toString()}`)
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
+      const response = await fetch(`/api/tasks?${params.toString()}`, { headers })
       if (!response.ok) throw new Error('Failed to fetch tasks')
       
       let data: Task[] = await response.json()
@@ -170,7 +172,7 @@ export default function TasksPage() {
       setTasks(data)
       
       // Calculate counts
-      const allTasks = await fetch('/api/tasks').then(r => r.json())
+      const allTasks = await fetch('/api/tasks', { headers }).then(r => r.json())
       setCounts({
         all: allTasks.length,
         pending: allTasks.filter((t: Task) => t.status === 'PENDING').length,
@@ -189,10 +191,13 @@ export default function TasksPage() {
   // Fetch templates
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/task-templates')
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/task-templates', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (response.ok) {
         const data = await response.json()
-        setTemplates(data)
+        setTemplates(Array.isArray(data) ? data : [])
       }
     } catch (error) {
       console.error('Error fetching templates:', error)
@@ -202,10 +207,13 @@ export default function TasksPage() {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users')
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (response.ok) {
         const data = await response.json()
-        setUsers(data)
+        setUsers(Array.isArray(data) ? data : [])
       }
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -322,9 +330,10 @@ export default function TasksPage() {
   // Update task status
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus }),
       })
       
@@ -343,8 +352,10 @@ export default function TasksPage() {
     if (!confirm('Are you sure you want to delete this task?')) return
     
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       })
       
       if (!response.ok) throw new Error('Failed to delete task')
