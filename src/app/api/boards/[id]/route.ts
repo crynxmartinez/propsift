@@ -34,11 +34,7 @@ export async function GET(
           include: {
             records: {
               orderBy: { order: 'asc' },
-              select: {
-                id: true,
-                recordId: true,
-                columnId: true,
-                order: true,
+              include: {
                 record: {
                   include: {
                     status: true,
