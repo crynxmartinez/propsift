@@ -37,6 +37,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import RecordDetailPanel from '@/components/RecordDetailPanel'
 
 interface RecordTag {
   id: string
@@ -294,6 +295,9 @@ export default function BoardDetailPage() {
 
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // Record detail panel
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -752,7 +756,7 @@ export default function BoardDetailPage() {
                       <SortableCard
                         key={position.id}
                         position={position}
-                        onClick={() => router.push(`/dashboard/records/${position.recordId}`)}
+                        onClick={() => setSelectedRecordId(position.recordId)}
                         onToggleComplete={handleToggleComplete}
                       />
                     ))}
@@ -893,6 +897,15 @@ export default function BoardDetailPage() {
         <div
           className="fixed inset-0 z-0"
           onClick={() => setColumnMenuId(null)}
+        />
+      )}
+
+      {/* Record Detail Panel */}
+      {selectedRecordId && (
+        <RecordDetailPanel
+          recordId={selectedRecordId}
+          onClose={() => setSelectedRecordId(null)}
+          onNavigate={(id) => router.push(`/dashboard/records/${id}`)}
         />
       )}
     </div>
