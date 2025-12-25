@@ -301,6 +301,19 @@ export async function GET(request: NextRequest) {
 // POST /api/records - Create a new record
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       ownerFirstName,
@@ -376,6 +389,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         statusId: statusId || null,
         assignedToId: assignedToId || null,
+        createdById: decoded.userId,
         isComplete,
         // Create phone number entry if provided
         phoneNumbers: phone ? {
