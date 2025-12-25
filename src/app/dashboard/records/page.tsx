@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download } from 'lucide-react'
+import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download, CheckSquare, XCircle } from 'lucide-react'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
 import RecordFilterPanel, { FilterBlock } from '@/components/RecordFilterPanel'
@@ -64,6 +64,15 @@ interface ApiResponse {
 
 type FilterType = 'all' | 'complete' | 'incomplete'
 
+interface TaskTemplate {
+  id: string
+  name: string
+  title: string
+  description: string | null
+  category: string | null
+  priority: string
+}
+
 export default function RecordsPage() {
   const router = useRouter()
   const { showToast } = useToast()
@@ -97,6 +106,8 @@ export default function RecordsPage() {
   const [selectedBulkItems, setSelectedBulkItems] = useState<string[]>([])
   const [selectedTemperature, setSelectedTemperature] = useState<string>('')
   const [bulkSearchQuery, setBulkSearchQuery] = useState('')
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
+  const [selectedTaskTemplate, setSelectedTaskTemplate] = useState<string>('')
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -157,16 +168,18 @@ export default function RecordsPage() {
   // Fetch options for bulk actions
   const fetchBulkOptions = async () => {
     try {
-      const [tagsRes, motivationsRes, statusesRes, usersRes] = await Promise.all([
+      const [tagsRes, motivationsRes, statusesRes, usersRes, taskTemplatesRes] = await Promise.all([
         fetch('/api/tags'),
         fetch('/api/motivations'),
         fetch('/api/statuses'),
         fetch('/api/users'),
+        fetch('/api/task-templates'),
       ])
       if (tagsRes.ok) setTags(await tagsRes.json())
       if (motivationsRes.ok) setMotivations(await motivationsRes.json())
       if (statusesRes.ok) setStatuses(await statusesRes.json())
       if (usersRes.ok) setUsers(await usersRes.json())
+      if (taskTemplatesRes.ok) setTaskTemplates(await taskTemplatesRes.json())
     } catch (error) {
       console.error('Error fetching bulk options:', error)
     }
@@ -177,6 +190,7 @@ export default function RecordsPage() {
     setShowManageDropdown(false)
     setSelectedBulkItems([])
     setSelectedTemperature('')
+    setSelectedTaskTemplate('')
     if (tags.length === 0) fetchBulkOptions()
   }
 
@@ -210,6 +224,52 @@ export default function RecordsPage() {
     setBulkActionLoading(true)
     try {
       const recordIds = Array.from(selectedIds)
+
+      // Handle task-related actions separately
+      if (bulkActionModal === 'addTaskTemplate') {
+        const res = await fetch('/api/tasks/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateId: selectedTaskTemplate,
+            recordIds,
+            createdById: 'system', // TODO: Get from auth
+          }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setBulkActionModal(null)
+          setSelectedIds(new Set())
+          setSelectedTaskTemplate('')
+          showToast(`Created ${data.count} tasks successfully`, 'success')
+        } else {
+          const error = await res.json()
+          showToast(error.error || 'Failed to create tasks', 'error')
+        }
+        return
+      }
+
+      if (bulkActionModal === 'clearTasks') {
+        const res = await fetch('/api/tasks/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordIds }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setBulkActionModal(null)
+          setSelectedIds(new Set())
+          showToast(`Deleted ${data.deletedCount} tasks from ${data.recordCount} records`, 'success')
+        } else {
+          const error = await res.json()
+          showToast(error.error || 'Failed to clear tasks', 'error')
+        }
+        return
+      }
+
+      // Handle other bulk actions via records/bulk endpoint
       let body: Record<string, unknown> = { action: bulkActionModal, recordIds }
 
       switch (bulkActionModal) {
@@ -480,6 +540,19 @@ export default function RecordsPage() {
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
                       <User className="w-4 h-4" /> Assign to user
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button
+                      onClick={() => openBulkActionModal('addTaskTemplate')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <CheckSquare className="w-4 h-4" /> Add task template
+                    </button>
+                    <button
+                      onClick={() => openBulkActionModal('clearTasks')}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <XCircle className="w-4 h-4" /> Clear tasks
                     </button>
                     <div className="border-t border-gray-100 my-1" />
                     <button
@@ -845,6 +918,8 @@ export default function RecordsPage() {
                 {bulkActionModal === 'updateStatus' && 'Update Status'}
                 {bulkActionModal === 'updateTemperature' && 'Update Temperature'}
                 {bulkActionModal === 'assignToUser' && 'Assign to User'}
+                {bulkActionModal === 'addTaskTemplate' && 'Add Task Template'}
+                {bulkActionModal === 'clearTasks' && 'Clear Tasks'}
                 {bulkActionModal === 'deletePhones' && 'Delete Phones'}
                 {bulkActionModal === 'deleteRecords' && 'Delete Records'}
               </h3>
@@ -1125,6 +1200,68 @@ export default function RecordsPage() {
               </div>
             )}
 
+            {/* Task Template selection */}
+            {bulkActionModal === 'addTaskTemplate' && (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search templates..."
+                    value={bulkSearchQuery}
+                    onChange={(e) => setBulkSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                  {taskTemplates
+                    .filter(t => t.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()) || t.title.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
+                    .map((template) => (
+                      <label key={template.id} className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="radio"
+                          name="taskTemplate"
+                          checked={selectedTaskTemplate === template.id}
+                          onChange={() => setSelectedTaskTemplate(template.id)}
+                          className="text-blue-600"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{template.title}</div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          template.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
+                          template.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                          template.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {template.priority}
+                        </span>
+                      </label>
+                    ))}
+                  {taskTemplates.filter(t => t.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()) || t.title.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No templates found</p>
+                  )}
+                </div>
+                {selectedTaskTemplate && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                    <p className="text-sm text-blue-800">
+                      This will create a task from the selected template for each of the {selectedIds.size} selected record(s).
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Clear Tasks confirmation */}
+            {bulkActionModal === 'clearTasks' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Are you sure?</strong> This will permanently delete all tasks associated with the selected {selectedIds.size} record(s). This action cannot be undone.
+                </p>
+              </div>
+            )}
+
             {/* Delete confirmations */}
             {bulkActionModal === 'deletePhones' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -1158,6 +1295,8 @@ export default function RecordsPage() {
                   selectedBulkItems.length === 0
                 ) || (
                   bulkActionModal === 'updateTemperature' && !selectedTemperature
+                ) || (
+                  bulkActionModal === 'addTaskTemplate' && !selectedTaskTemplate
                 )}
                 className={`px-4 py-2 rounded-lg text-white transition ${
                   bulkActionModal === 'deleteRecords'
