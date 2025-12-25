@@ -67,6 +67,18 @@ interface Automation {
   lastRunAt: string | null
 }
 
+interface AutomationLog {
+  id: string
+  automationId: string
+  recordId: string | null
+  triggeredBy: string
+  status: string
+  startedAt: string
+  completedAt: string | null
+  errorMessage: string | null
+  createdAt: string
+}
+
 // Trigger and Action definitions
 const triggerCategories = [
   {
@@ -190,10 +202,39 @@ export default function AutomationBuilderPage() {
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  
+  // Logs state
+  const [logs, setLogs] = useState<AutomationLog[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
 
   useEffect(() => {
     fetchAutomation()
   }, [automationId])
+
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      fetchLogs()
+    }
+  }, [activeTab, automationId])
+
+  const fetchLogs = async () => {
+    setLogsLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/automations/${automationId}/logs?limit=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setLogs(data.logs || [])
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error)
+    } finally {
+      setLogsLoading(false)
+    }
+  }
 
   const fetchAutomation = async () => {
     try {
@@ -455,7 +496,144 @@ export default function AutomationBuilderPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Canvas */}
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold">Execution Logs</h2>
+                <button
+                  onClick={fetchLogs}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {logsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No execution logs yet</h3>
+                  <p className="text-gray-500">
+                    Logs will appear here when the automation runs
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Triggered By</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {logs.map((log) => {
+                        const startedAt = new Date(log.startedAt)
+                        const completedAt = log.completedAt ? new Date(log.completedAt) : null
+                        const duration = completedAt 
+                          ? Math.round((completedAt.getTime() - startedAt.getTime()) / 1000)
+                          : null
+
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                log.status === 'completed' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : log.status === 'failed'
+                                  ? 'bg-red-100 text-red-700'
+                                  : log.status === 'running'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {log.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {log.triggeredBy.replace(/_/g, ' ')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {startedAt.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {duration !== null ? `${duration}s` : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-red-600 max-w-xs truncate">
+                              {log.errorMessage || '-'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-lg font-semibold mb-6">Automation Settings</h2>
+              <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <p className="text-gray-900">{automation.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <p className="text-gray-600">{automation.description || 'No description'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Folder</label>
+                  <p className="text-gray-600">{automation.folder?.name || 'Uncategorized'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Runs</label>
+                  <p className="text-gray-900">{automation.runCount}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Run</label>
+                  <p className="text-gray-600">
+                    {automation.lastRunAt 
+                      ? new Date(automation.lastRunAt).toLocaleString()
+                      : 'Never'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-lg font-semibold mb-6">Version History</h2>
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
+                <p className="text-gray-500">
+                  Version history will be available in a future update
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Builder Tab - Canvas */}
+        {activeTab === 'builder' && (
         <div className="flex-1 relative">
           <ReactFlow
             nodes={nodes}
@@ -503,6 +681,7 @@ export default function AutomationBuilderPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Right Panel */}
         {showPanel && (
