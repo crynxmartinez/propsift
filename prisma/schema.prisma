@@ -294,25 +294,26 @@ model ActivityLog {
 }
 
 model Task {
-  id             String         @id @default(cuid())
-  title          String
-  description    String?
-  dueDate        DateTime?
-  dueTime        String?
-  startDate      DateTime?
-  recurrence     String?
-  recurrenceDays String[]       @default([])
-  skipWeekends   Boolean        @default(false)
-  status         String         @default("PENDING")
-  priority       String         @default("MEDIUM")
-  assignmentType String         @default("MANUAL")
-  assignedToId   String?
-  recordId       String?
-  createdById    String
-  templateId     String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  completedAt    DateTime?
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  dueTime         String?
+  notifyAfterDays Int?
+  startDate       DateTime?
+  recurrence      String?
+  recurrenceDays  String[]       @default([])
+  skipWeekends    Boolean        @default(false)
+  status          String         @default("PENDING")
+  priority        String         @default("MEDIUM")
+  assignmentType  String         @default("MANUAL")
+  assignedToId    String?
+  recordId        String?
+  createdById     String
+  templateId      String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  completedAt     DateTime?
   notifications  Notification[]
   assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
   createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])

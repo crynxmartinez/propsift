@@ -845,6 +845,9 @@ function CreateTaskModal({
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split('T')[0] : '')
   const [dueTime, setDueTime] = useState(task?.dueTime || '')
   const [noDueDate, setNoDueDate] = useState(!task?.dueDate)
+  const [notifyAfterDays, setNotifyAfterDays] = useState<number | ''>(
+    (task as Task & { notifyAfterDays?: number | null })?.notifyAfterDays ?? ''
+  )
   const [recurrence, setRecurrence] = useState(task?.recurrence || 'NONE')
   const [recurrenceDays, setRecurrenceDays] = useState<string[]>(task?.recurrenceDays || [])
   const [skipWeekends, setSkipWeekends] = useState(task?.skipWeekends || false)
@@ -897,6 +900,7 @@ function CreateTaskModal({
         description: description || null,
         dueDate: noDueDate ? null : dueDate || null,
         dueTime: dueTime || null,
+        notifyAfterDays: noDueDate && notifyAfterDays !== '' ? notifyAfterDays : null,
         recurrence: recurrence === 'NONE' ? null : recurrence,
         recurrenceDays,
         skipWeekends,
@@ -1087,7 +1091,7 @@ function CreateTaskModal({
                 <span className="text-sm text-gray-700">No due date</span>
               </label>
 
-              {!noDueDate && (
+              {!noDueDate ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1111,6 +1115,24 @@ function CreateTaskModal({
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notify after (days)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 7"
+                      value={notifyAfterDays}
+                      onChange={(e) => setNotifyAfterDays(e.target.value ? parseInt(e.target.value) : '')}
+                      className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500">days from creation</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Leave empty for no notification</p>
                 </div>
               )}
 
