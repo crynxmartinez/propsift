@@ -161,6 +161,24 @@ interface TagItem {
   name: string
 }
 
+interface BoardColumn {
+  id: string
+  name: string
+  color: string
+}
+
+interface Board {
+  id: string
+  name: string
+  columns: BoardColumn[]
+}
+
+interface RecordBoardPosition {
+  id: string
+  columnId: string
+  column: BoardColumn & { board: { id: string; name: string } }
+}
+
 type TabType = 'overview' | 'conversation' | 'activity' | 'additional'
 
 const PHONE_STATUSES = [
@@ -257,6 +275,11 @@ export default function PropertyDetailsPage() {
   const [showEditAddressModal, setShowEditAddressModal] = useState(false)
   const [editAddressData, setEditAddressData] = useState({ street: '', city: '', state: '', zip: '' })
   
+  // Board stage
+  const [boards, setBoards] = useState<Board[]>([])
+  const [recordBoardPositions, setRecordBoardPositions] = useState<RecordBoardPosition[]>([])
+  const [showBoardDropdown, setShowBoardDropdown] = useState(false)
+  
   // Loading states
   const [savingField, setSavingField] = useState(false)
   const [savingCustomField, setSavingCustomField] = useState(false)
@@ -270,6 +293,8 @@ export default function PropertyDetailsPage() {
     fetchRecord()
     fetchCustomFields()
     fetchOptions()
+    fetchBoards()
+    fetchRecordBoardPositions()
   }, [recordId])
 
   useEffect(() => {
@@ -315,6 +340,56 @@ export default function PropertyDetailsPage() {
       }
     } catch (error) {
       console.error('Error fetching custom fields:', error)
+    }
+  }
+
+  const fetchBoards = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/boards', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBoards(data)
+      }
+    } catch (error) {
+      console.error('Error fetching boards:', error)
+    }
+  }
+
+  const fetchRecordBoardPositions = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/records/${recordId}/boards`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setRecordBoardPositions(data)
+      }
+    } catch (error) {
+      console.error('Error fetching record board positions:', error)
+    }
+  }
+
+  const handleAddToBoard = async (boardId: string, columnId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/boards/${boardId}/records`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recordId, columnId }),
+      })
+      if (res.ok) {
+        fetchRecordBoardPositions()
+        setShowBoardDropdown(false)
+      }
+    } catch (error) {
+      console.error('Error adding to board:', error)
     }
   }
 
@@ -946,6 +1021,82 @@ export default function PropertyDetailsPage() {
                     {user.name || user.email}
                   </button>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Board Stage Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowBoardDropdown(!showBoardDropdown)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <span className="text-sm">
+                {recordBoardPositions.length > 0 
+                  ? `${recordBoardPositions.length} Board${recordBoardPositions.length > 1 ? 's' : ''}`
+                  : 'Add to Board'}
+              </span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {showBoardDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
+                {/* Current board positions */}
+                {recordBoardPositions.length > 0 && (
+                  <div className="p-2 border-b border-gray-100">
+                    <p className="text-xs text-gray-500 px-2 mb-1">Current Boards</p>
+                    {recordBoardPositions.map((pos) => (
+                      <div
+                        key={pos.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50"
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: pos.column.color }}
+                        />
+                        <span className="text-sm text-gray-700 flex-1">
+                          {pos.column.board.name} → {pos.column.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add to board */}
+                <div className="p-2">
+                  <p className="text-xs text-gray-500 px-2 mb-1">Add to Board</p>
+                  {boards.length === 0 ? (
+                    <p className="text-sm text-gray-400 px-2 py-1">No boards available</p>
+                  ) : (
+                    boards.map((board) => (
+                      <div key={board.id} className="mb-2">
+                        <p className="text-xs font-medium text-gray-600 px-2 py-1">{board.name}</p>
+                        {board.columns.map((column) => {
+                          const alreadyAdded = recordBoardPositions.some(
+                            p => p.column.board.id === board.id
+                          )
+                          return (
+                            <button
+                              key={column.id}
+                              onClick={() => handleAddToBoard(board.id, column.id)}
+                              disabled={alreadyAdded}
+                              className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm rounded ${
+                                alreadyAdded 
+                                  ? 'text-gray-400 cursor-not-allowed' 
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              <span
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: column.color }}
+                              />
+                              {column.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
