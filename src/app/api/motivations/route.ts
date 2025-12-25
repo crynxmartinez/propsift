@@ -15,10 +15,7 @@ const DEFAULT_MOTIVATIONS = [
   'High Equity',
   'Tired Landlord',
   'Code Violation',
-  'Inherited',
-  'Downsizing',
-  'Relocation',
-  'Financial Distress',
+  'Off Market',
 ]
 
 async function seedDefaultMotivations(userId: string) {
