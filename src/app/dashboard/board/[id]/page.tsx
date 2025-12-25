@@ -881,7 +881,11 @@ export default function BoardDetailPage() {
                 </div>
               ) : filteredRecords.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">
-                  {searchQuery ? 'No matching records found' : 'All records are already on this board'}
+                  {searchQuery 
+                    ? 'No matching records found' 
+                    : availableRecords.length === 0 
+                      ? 'No records available' 
+                      : 'All records are already on this board'}
                 </p>
               ) : (
                 <div className="space-y-2">
