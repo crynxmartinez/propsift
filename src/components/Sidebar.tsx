@@ -13,7 +13,8 @@ import {
   FileText,
   Activity,
   CheckSquare,
-  LayoutGrid
+  LayoutGrid,
+  Workflow
 } from 'lucide-react'
 
 const menuItems = [
@@ -21,6 +22,7 @@ const menuItems = [
   { name: 'Board', href: '/dashboard/board', icon: LayoutGrid },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
+  { name: 'Automations', href: '/dashboard/automations', icon: Workflow },
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
