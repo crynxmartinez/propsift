@@ -687,7 +687,7 @@ function FilterBlockComponent({
         {!isEmptyOperator && (
           <>
             {/* Multiselect / Select with options */}
-            {(filter.fieldType === 'multiselect' || filter.fieldType === 'select' || filter.fieldType === 'user') && options.length > 0 && (
+            {(filter.fieldType === 'multiselect' || filter.fieldType === 'select' || filter.fieldType === 'user') && (
               <div className="relative">
                 {/* Search input */}
                 <div className="relative">
@@ -732,7 +732,9 @@ function FilterBlockComponent({
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowValueDropdown(false)} />
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                      {filteredOptions.length === 0 ? (
+                      {options.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">Loading options...</div>
+                      ) : filteredOptions.length === 0 ? (
                         <div className="px-3 py-2 text-sm text-gray-500">No options found</div>
                       ) : (
                         filteredOptions.map(option => (

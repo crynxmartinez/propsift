@@ -135,6 +135,11 @@ export default function RecordsPage() {
     setSelectedIds(new Set())
   }, [filter])
 
+  // Fetch filter options on mount
+  useEffect(() => {
+    fetchBulkOptions()
+  }, [])
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement

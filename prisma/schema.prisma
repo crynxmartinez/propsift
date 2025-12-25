@@ -8,213 +8,181 @@ datasource db {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
+  id              String              @id @default(cuid())
+  email           String              @unique
   password        String
   name            String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  assignedRecords Record[]
-  comments        RecordComment[]
-  activityLogs    RecordActivityLog[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   systemLogs      ActivityLog[]
-  
-  // Task relations
-  assignedTasks   Task[]   @relation("TaskAssignee")
-  createdTasks    Task[]   @relation("TaskCreator")
   notifications   Notification[]
+  assignedRecords Record[]
+  activityLogs    RecordActivityLog[]
+  comments        RecordComment[]
+  assignedTasks   Task[]              @relation("TaskAssignee")
+  createdTasks    Task[]              @relation("TaskCreator")
 }
 
 model Property {
-  id              String   @id @default(cuid())
-  address         String   @unique
-  zpid            String?
-  streetAddress   String?
-  city            String?
-  state           String?
-  zipcode         String?
-  bedrooms        Int?
-  bathrooms       Float?
-  livingArea      Int?
-  yearBuilt       Int?
-  homeType        String?
-  price           Float?
-  zestimate       Float?
-  priceHistory    Json?
+  id               String               @id @default(cuid())
+  address          String               @unique
+  zpid             String?
+  streetAddress    String?
+  city             String?
+  state            String?
+  zipcode          String?
+  bedrooms         Int?
+  bathrooms        Float?
+  livingArea       Int?
+  yearBuilt        Int?
+  homeType         String?
+  price            Float?
+  zestimate        Float?
+  priceHistory     Json?
   zestimateHistory Json?
-  rawData         Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  tags            PropertyTag[]
-  motivations     PropertyMotivation[]
-  statuses        PropertyStatus[]
+  rawData          Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  motivations      PropertyMotivation[]
+  statuses         PropertyStatus[]
+  tags             PropertyTag[]
 }
 
 model Tag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String        @id @default(cuid())
+  name       String        @unique
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
   properties PropertyTag[]
   records    RecordTag[]
 }
 
 model Motivation {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String               @id @default(cuid())
+  name       String               @unique
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
   properties PropertyMotivation[]
   records    RecordMotivation[]
 }
 
 model PropertyTag {
   id         String   @id @default(cuid())
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyId String
-  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
   tagId      String
   createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id])
 
   @@unique([propertyId, tagId])
 }
 
 model PropertyMotivation {
   id           String     @id @default(cuid())
-  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyId   String
-  motivation   Motivation @relation(fields: [motivationId], references: [id], onDelete: Restrict)
   motivationId String
   createdAt    DateTime   @default(now())
+  motivation   Motivation @relation(fields: [motivationId], references: [id])
+  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, motivationId])
 }
 
 model Status {
-  id         String   @id @default(cuid())
-  name       String   @unique
+  id         String           @id @default(cuid())
+  name       String           @unique
   color      String
-  isDefault  Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isDefault  Boolean          @default(false)
+  isActive   Boolean          @default(true)
+  order      Int              @default(0)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   properties PropertyStatus[]
   records    Record[]
 }
 
 model PropertyStatus {
   id         String   @id @default(cuid())
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyId String
-  status     Status   @relation(fields: [statusId], references: [id], onDelete: Restrict)
   statusId   String
   createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  status     Status   @relation(fields: [statusId], references: [id])
 
   @@unique([propertyId, statusId])
 }
 
 model Record {
-  id                  String   @id @default(cuid())
-  
-  // Owner Information
-  ownerFirstName      String?
-  ownerLastName       String?
-  ownerFullName       String
-  isCompany           Boolean  @default(false)
-  isCompanyOverride   Boolean?
-  
-  // Property Address
-  propertyStreet      String?
-  propertyCity        String?
-  propertyState       String?
-  propertyZip         String?
-  
-  // Mailing Address
-  mailingStreet       String?
-  mailingCity         String?
-  mailingState        String?
-  mailingZip          String?
-  
-  // Contact Information (legacy single phone/email - kept for backward compatibility)
-  phone               String?
-  email               String?
-  
-  // Notes & Description
-  notes               String?
-  description         String?
-  
-  // Temperature (COLD, WARM, HOT)
-  temperature         String?
-  
-  // Property Details
-  estimatedValue      Decimal?
-  bedrooms            Int?
-  bathrooms           Decimal?
-  sqft                Int?
-  lotSize             Decimal?
-  structureType       String?
-  heatingType         String?
-  airConditioner      String?
-  yearBuilt           Int?
-  
-  // Attempt Counters
-  callAttempts        Int      @default(0)
-  directMailAttempts  Int      @default(0)
-  smsAttempts         Int      @default(0)
-  rvmAttempts         Int      @default(0)
-  
-  // Contact flag
-  isContact           Boolean  @default(false)
-  
-  // Completeness (computed on save)
-  isComplete          Boolean  @default(false)
-  
-  // Status relation
-  statusId            String?
-  status              Status?  @relation(fields: [statusId], references: [id])
-  
-  // Assigned To
-  assignedToId        String?
-  assignedTo          User?    @relation(fields: [assignedToId], references: [id])
-  
-  // Skiptrace
-  skiptraceDate       DateTime?
-  
-  // Timestamps
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  // Relations
-  recordTags          RecordTag[]
-  recordMotivations   RecordMotivation[]
-  phoneNumbers        RecordPhoneNumber[]
-  emails              RecordEmail[]
-  comments            RecordComment[]
-  activityLogs        RecordActivityLog[]
-  customFieldValues   CustomFieldValue[]
-  tasks               Task[]
-  notifications       Notification[]
+  id                 String              @id @default(cuid())
+  ownerFirstName     String?
+  ownerLastName      String?
+  ownerFullName      String
+  isCompany          Boolean             @default(false)
+  isCompanyOverride  Boolean?
+  propertyStreet     String?
+  propertyCity       String?
+  propertyState      String?
+  propertyZip        String?
+  mailingStreet      String?
+  mailingCity        String?
+  mailingState       String?
+  mailingZip         String?
+  phone              String?
+  email              String?
+  notes              String?
+  description        String?
+  temperature        String?
+  estimatedValue     Decimal?
+  bedrooms           Int?
+  bathrooms          Decimal?
+  sqft               Int?
+  lotSize            Decimal?
+  structureType      String?
+  heatingType        String?
+  airConditioner     String?
+  yearBuilt          Int?
+  callAttempts       Int                 @default(0)
+  directMailAttempts Int                 @default(0)
+  smsAttempts        Int                 @default(0)
+  rvmAttempts        Int                 @default(0)
+  isContact          Boolean             @default(false)
+  isComplete         Boolean             @default(false)
+  statusId           String?
+  assignedToId       String?
+  skiptraceDate      DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  customFieldValues  CustomFieldValue[]
+  notifications      Notification[]
+  assignedTo         User?               @relation(fields: [assignedToId], references: [id])
+  status             Status?             @relation(fields: [statusId], references: [id])
+  activityLogs       RecordActivityLog[]
+  comments           RecordComment[]
+  emails             RecordEmail[]
+  recordMotivations  RecordMotivation[]
+  phoneNumbers       RecordPhoneNumber[]
+  recordTags         RecordTag[]
+  tasks              Task[]
 }
 
 model RecordTag {
   id        String   @id @default(cuid())
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   recordId  String
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
   tagId     String
   createdAt DateTime @default(now())
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id])
 
   @@unique([recordId, tagId])
 }
 
 model RecordMotivation {
   id           String     @id @default(cuid())
-  record       Record     @relation(fields: [recordId], references: [id], onDelete: Cascade)
   recordId     String
-  motivation   Motivation @relation(fields: [motivationId], references: [id], onDelete: Restrict)
   motivationId String
   createdAt    DateTime   @default(now())
+  motivation   Motivation @relation(fields: [motivationId], references: [id])
+  record       Record     @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@unique([recordId, motivationId])
 }
@@ -222,12 +190,12 @@ model RecordMotivation {
 model RecordPhoneNumber {
   id        String   @id @default(cuid())
   recordId  String
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   number    String
-  type      String   @default("MOBILE") // MOBILE, LANDLINE
-  statuses  String[] @default([])       // Array of: PRIMARY, CORRECT, WRONG, NO_ANSWER, DNC, DEAD
+  type      String   @default("MOBILE")
+  statuses  String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@index([recordId])
 }
@@ -235,11 +203,11 @@ model RecordPhoneNumber {
 model RecordEmail {
   id        String   @id @default(cuid())
   recordId  String
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   email     String
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@index([recordId])
 }
@@ -247,11 +215,11 @@ model RecordEmail {
 model RecordComment {
   id        String   @id @default(cuid())
   recordId  String
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   content   String
   createdAt DateTime @default(now())
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([recordId])
   @@index([userId])
@@ -260,124 +228,97 @@ model RecordComment {
 model RecordActivityLog {
   id        String   @id @default(cuid())
   recordId  String
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  action    String   // created, updated, deleted
-  field     String?  // which field changed
+  action    String
+  field     String?
   oldValue  String?
   newValue  String?
-  source    String?  // Property Details Page, Bulk Actions, API, etc.
+  source    String?
   createdAt DateTime @default(now())
+  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([recordId])
   @@index([userId])
   @@index([createdAt])
 }
 
-// Custom Fields - user-defined fields for tracking
 model CustomFieldDefinition {
-  id          String   @id @default(cuid())
-  name        String   // Field name (e.g., "Pool", "Garage Size")
-  fieldType   String   // text, number, boolean, date, select
-  displayType String   @default("card") // card or row
-  options     String?  // JSON array for select type options
-  isRequired  Boolean  @default(false)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id          String             @id @default(cuid())
+  name        String
+  fieldType   String
+  displayType String             @default("card")
+  options     String?
+  isRequired  Boolean            @default(false)
+  order       Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   values      CustomFieldValue[]
 }
 
 model CustomFieldValue {
-  id         String   @id @default(cuid())
-  value      String?  // Stored as string, parsed based on fieldType
-  
-  fieldId    String
-  field      CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-  recordId   String
-  record     Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String                @id @default(cuid())
+  value     String?
+  fieldId   String
+  recordId  String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  field     CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  record    Record                @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@unique([fieldId, recordId])
   @@index([recordId])
   @@index([fieldId])
 }
 
-// System Log - tracks uploads, downloads, and system-wide actions
 model ActivityLog {
-  id          String   @id @default(cuid())
-  type        String   // "upload", "download", "log"
-  action      String   // "bulk_import", "export", "bulk_delete", "bulk_update_status", etc.
-  filename    String?  // Original filename for uploads/downloads
-  description String?  // Human-readable description e.g. "User uploaded file.csv"
-  total       Int      @default(0)  // Total items to process
-  processed   Int      @default(0)  // Items processed so far
-  status      String   @default("pending") // pending, processing, completed, failed
-  metadata    Json?    // Extra data (import type, field mapping, errors, etc.)
-  errorMessage String? // Error message if failed
-  
-  userId      String?  // User who performed the action
-  user        User?    @relation(fields: [userId], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id           String   @id @default(cuid())
+  type         String
+  action       String
+  filename     String?
+  description  String?
+  total        Int      @default(0)
+  processed    Int      @default(0)
+  status       String   @default("pending")
+  metadata     Json?
+  errorMessage String?
+  userId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User?    @relation(fields: [userId], references: [id])
+
   @@index([type])
   @@index([status])
   @@index([createdAt])
   @@index([userId])
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TASKS
-// ═══════════════════════════════════════════════════════════════
-
 model Task {
-  id              String    @id @default(cuid())
-  title           String
-  description     String?
-  
-  // Scheduling
-  dueDate         DateTime? // Optional - some tasks have no due date
-  dueTime         String?   // "09:00", "14:30" - specific time on due date
-  startDate       DateTime? // For date ranges
-  recurrence      String?   // NONE, DAILY, WEEKLY, MONTHLY
-  recurrenceDays  String[]  @default([]) // ["MON", "WED", "FRI"] for weekly
-  skipWeekends    Boolean   @default(false)
-  
-  // Status & Priority
-  status          String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
-  priority        String    @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
-  
-  // Assignment
-  assignmentType  String    @default("MANUAL")  // MANUAL, ROUND_ROBIN
-  assignedToId    String?
-  assignedTo      User?     @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  
-  // Link to Record (optional)
-  recordId        String?
-  record          Record?   @relation(fields: [recordId], references: [id], onDelete: SetNull)
-  
-  // Creator
-  createdById     String
-  createdBy       User      @relation("TaskCreator", fields: [createdById], references: [id])
-  
-  // Template reference
-  templateId      String?
-  template        TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  
-  // Timestamps
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  completedAt     DateTime?
-  
-  // Notifications generated from this task
-  notifications   Notification[]
-  
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  dueDate        DateTime?
+  dueTime        String?
+  startDate      DateTime?
+  recurrence     String?
+  recurrenceDays String[]       @default([])
+  skipWeekends   Boolean        @default(false)
+  status         String         @default("PENDING")
+  priority       String         @default("MEDIUM")
+  assignmentType String         @default("MANUAL")
+  assignedToId   String?
+  recordId       String?
+  createdById    String
+  templateId     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  completedAt    DateTime?
+  notifications  Notification[]
+  assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])
+  record         Record?        @relation(fields: [recordId], references: [id])
+  template       TaskTemplate?  @relation(fields: [templateId], references: [id])
+
   @@index([assignedToId])
   @@index([recordId])
   @@index([status])
@@ -387,73 +328,51 @@ model Task {
 
 model TaskTemplate {
   id              String   @id @default(cuid())
-  name            String   // Template name e.g. "Follow-up Call"
-  title           String   // Task title template e.g. "Call {owner} about {property}"
+  name            String
+  title           String
   description     String?
-  category        String?  // OUTREACH, MAIL, OFFERS, RESEARCH, ADMIN, PROPERTY, TEAM
+  category        String?
   priority        String   @default("MEDIUM")
-  
-  // Scheduling defaults
-  dueDaysFromNow  Int?     // null = no due date, 0 = today, 3 = in 3 days
-  dueTime         String?  // Default time e.g. "09:00"
-  recurrence      String?  // NONE, DAILY, WEEKLY, MONTHLY
-  recurrenceDays  String[] @default([]) // ["MON", "WED", "FRI"]
+  dueDaysFromNow  Int?
+  dueTime         String?
+  recurrence      String?
+  recurrenceDays  String[] @default([])
   skipWeekends    Boolean  @default(false)
-  
-  // Assignment defaults
-  assignmentType  String   @default("MANUAL") // MANUAL, ROUND_ROBIN
-  roundRobinUsers String[] @default([]) // User IDs for round robin pool
-  
-  // Tasks created from this template
-  tasks           Task[]
-  
+  assignmentType  String   @default("MANUAL")
+  roundRobinUsers String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+  tasks           Task[]
+
   @@index([category])
 }
 
 model RoundRobinState {
-  id              String   @id @default(cuid())
-  identifier      String   @unique // "global" or templateId
-  userIds         String[] // Users in rotation
-  currentIndex    Int      @default(0) // Who's next
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  identifier   String   @unique
+  userIds      String[]
+  currentIndex Int      @default(0)
+  updatedAt    DateTime @updatedAt
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NOTIFICATIONS
-// ═══════════════════════════════════════════════════════════════
-
 model Notification {
-  id              String   @id @default(cuid())
-  
-  // Recipient
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Content
-  type            String   // TASK_DUE, TASK_ASSIGNED, TASK_OVERDUE, RECORD_ASSIGNED, SYSTEM
-  title           String
-  message         String
-  
-  // Links (optional)
-  taskId          String?
-  task            Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  recordId        String?
-  record          Record?  @relation(fields: [recordId], references: [id], onDelete: SetNull)
-  
-  // Delivery
-  deliveryType    String   @default("IMMEDIATE") // IMMEDIATE, SCHEDULED, ON_LOGIN
-  scheduledFor    DateTime? // For scheduled notifications
-  
-  // Status
-  isRead          Boolean  @default(false)
-  readAt          DateTime?
-  isDismissed     Boolean  @default(false)
-  
-  createdAt       DateTime @default(now())
-  
+  id           String    @id @default(cuid())
+  userId       String
+  type         String
+  title        String
+  message      String
+  taskId       String?
+  recordId     String?
+  deliveryType String    @default("IMMEDIATE")
+  scheduledFor DateTime?
+  isRead       Boolean   @default(false)
+  readAt       DateTime?
+  isDismissed  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  record       Record?   @relation(fields: [recordId], references: [id])
+  task         Task?     @relation(fields: [taskId], references: [id])
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([isRead])
   @@index([type])
