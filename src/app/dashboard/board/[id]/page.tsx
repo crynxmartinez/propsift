@@ -130,6 +130,12 @@ function SortableCard({
   }
 
   const record = position.record
+  
+  // Guard against undefined record (e.g., if record was deleted)
+  if (!record) {
+    return null
+  }
+  
   const completedTasks = record.tasks?.filter(t => t.status === 'COMPLETED').length || 0
   const totalTasks = record.tasks?.length || 0
 
