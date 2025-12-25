@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
     const { name } = await request.json()
 
@@ -13,8 +27,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Motivation name is required' }, { status: 400 })
     }
 
-    const existingMotivation = await prisma.motivation.findUnique({
-      where: { id }
+    const existingMotivation = await prisma.motivation.findFirst({
+      where: { id, createdById: decoded.userId }
     })
 
     if (!existingMotivation) {
@@ -24,6 +38,7 @@ export async function PATCH(
     const duplicateMotivation = await prisma.motivation.findFirst({
       where: {
         name: name.trim(),
+        createdById: decoded.userId,
         NOT: { id }
       }
     })
@@ -49,13 +64,26 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
 
-    const motivation = await prisma.motivation.findUnique({
-      where: { id },
+    const motivation = await prisma.motivation.findFirst({
+      where: { id, createdById: decoded.userId },
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       }
     })
@@ -64,9 +92,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Motivation not found' }, { status: 404 })
     }
 
-    if (motivation._count.properties > 0) {
+    if (motivation._count.records > 0) {
       return NextResponse.json(
-        { error: `Cannot delete motivation. It has ${motivation._count.properties} record(s) connected to it.` },
+        { error: `Cannot delete motivation. It has ${motivation._count.records} record(s) connected to it.` },
         { status: 400 }
       )
     }

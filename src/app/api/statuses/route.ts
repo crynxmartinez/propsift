@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 const DEFAULT_STATUSES = [
   { name: 'New Lead', color: '#3B82F6', isDefault: true, order: 0 },
@@ -14,22 +15,39 @@ const DEFAULT_STATUSES = [
   { name: 'DNC', color: '#991B1B', isDefault: true, order: 9 },
 ]
 
-async function seedDefaultStatuses() {
-  const existingCount = await prisma.status.count()
+async function seedDefaultStatuses(userId: string) {
+  const existingCount = await prisma.status.count({
+    where: { createdById: userId }
+  })
   
   if (existingCount === 0) {
-    await prisma.status.createMany({
-      data: DEFAULT_STATUSES,
-      skipDuplicates: true,
-    })
+    for (const status of DEFAULT_STATUSES) {
+      await prisma.status.create({
+        data: { ...status, createdById: userId }
+      })
+    }
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    await seedDefaultStatuses()
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    await seedDefaultStatuses(decoded.userId)
 
     const statuses = await prisma.status.findMany({
+      where: { createdById: decoded.userId },
       include: {
         _count: {
           select: { records: true }
@@ -59,6 +77,19 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { name, color } = await request.json()
 
     if (!name || !name.trim()) {
@@ -69,8 +100,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Status color is required' }, { status: 400 })
     }
 
-    const existingStatus = await prisma.status.findUnique({
-      where: { name: name.trim() }
+    const existingStatus = await prisma.status.findFirst({
+      where: { 
+        name: name.trim(),
+        createdById: decoded.userId
+      }
     })
 
     if (existingStatus) {
@@ -78,6 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     const maxOrder = await prisma.status.aggregate({
+      where: { createdById: decoded.userId },
       _max: { order: true }
     })
     const newOrder = (maxOrder._max.order ?? -1) + 1
@@ -88,7 +123,8 @@ export async function POST(request: NextRequest) {
         color: color.trim(),
         isDefault: false,
         isActive: true,
-        order: newOrder
+        order: newOrder,
+        createdById: decoded.userId
       }
     })
 

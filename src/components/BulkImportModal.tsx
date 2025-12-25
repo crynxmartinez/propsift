@@ -443,9 +443,13 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
       // 3. Start background import (fire and forget)
       // API handles activity log updates internally
+      const token = localStorage.getItem('token')
       fetch('/api/records/bulk-import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           activityId: activity.id,
           importType: state.importType,

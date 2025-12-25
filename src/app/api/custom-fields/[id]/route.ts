@@ -1,14 +1,28 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 // GET - Fetch a single custom field definition
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const field = await prisma.customFieldDefinition.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    const field = await prisma.customFieldDefinition.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     })
     if (!field) {
       return NextResponse.json({ error: 'Field not found' }, { status: 404 })
@@ -22,10 +36,31 @@ export async function GET(
 
 // PUT - Update a custom field definition
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Check field exists and belongs to user
+    const existing = await prisma.customFieldDefinition.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Field not found' }, { status: 404 })
+    }
+
     const body = await request.json()
     const { name, fieldType, displayType, options, isRequired, order } = body
 
@@ -50,10 +85,31 @@ export async function PUT(
 
 // DELETE - Delete a custom field definition (and all its values)
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Check field exists and belongs to user
+    const existing = await prisma.customFieldDefinition.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Field not found' }, { status: 404 })
+    }
+
     await prisma.customFieldDefinition.delete({
       where: { id: params.id },
     })

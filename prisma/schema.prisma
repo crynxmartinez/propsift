@@ -8,20 +8,27 @@ datasource db {
 }
 
 model User {
-  id              String              @id @default(cuid())
-  email           String              @unique
-  password        String
-  name            String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  systemLogs      ActivityLog[]
-  notifications   Notification[]
-  assignedRecords Record[]
-  createdRecords  Record[]            @relation("RecordCreator")
-  activityLogs    RecordActivityLog[]
-  comments        RecordComment[]
-  assignedTasks   Task[]              @relation("TaskAssignee")
-  createdTasks    Task[]              @relation("TaskCreator")
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  password             String
+  name                 String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  systemLogs           ActivityLog[]
+  notifications        Notification[]
+  assignedRecords      Record[]
+  createdRecords       Record[]              @relation("RecordCreator")
+  activityLogs         RecordActivityLog[]
+  comments             RecordComment[]
+  assignedTasks        Task[]                @relation("TaskAssignee")
+  createdTasks         Task[]                @relation("TaskCreator")
+  createdTags          Tag[]                 @relation("TagCreator")
+  createdMotivations   Motivation[]          @relation("MotivationCreator")
+  createdStatuses      Status[]              @relation("StatusCreator")
+  createdCustomFields  CustomFieldDefinition[] @relation("CustomFieldCreator")
+  createdTaskTemplates TaskTemplate[]        @relation("TaskTemplateCreator")
+  createdFilterFolders FilterFolder[]        @relation("FilterFolderCreator")
+  createdFilterTemplates FilterTemplate[]    @relation("FilterTemplateCreator")
 }
 
 model Property {
@@ -50,21 +57,29 @@ model Property {
 }
 
 model Tag {
-  id         String        @id @default(cuid())
-  name       String        @unique
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  properties PropertyTag[]
-  records    RecordTag[]
+  id          String        @id @default(cuid())
+  name        String
+  createdById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   User?         @relation("TagCreator", fields: [createdById], references: [id])
+  properties  PropertyTag[]
+  records     RecordTag[]
+
+  @@unique([name, createdById])
 }
 
 model Motivation {
-  id         String               @id @default(cuid())
-  name       String               @unique
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-  properties PropertyMotivation[]
-  records    RecordMotivation[]
+  id          String               @id @default(cuid())
+  name        String
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  createdBy   User?                @relation("MotivationCreator", fields: [createdById], references: [id])
+  properties  PropertyMotivation[]
+  records     RecordMotivation[]
+
+  @@unique([name, createdById])
 }
 
 model PropertyTag {
@@ -90,16 +105,20 @@ model PropertyMotivation {
 }
 
 model Status {
-  id         String           @id @default(cuid())
-  name       String           @unique
-  color      String
-  isDefault  Boolean          @default(false)
-  isActive   Boolean          @default(true)
-  order      Int              @default(0)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  properties PropertyStatus[]
-  records    Record[]
+  id          String           @id @default(cuid())
+  name        String
+  color       String
+  isDefault   Boolean          @default(false)
+  isActive    Boolean          @default(true)
+  order       Int              @default(0)
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   User?            @relation("StatusCreator", fields: [createdById], references: [id])
+  properties  PropertyStatus[]
+  records     Record[]
+
+  @@unique([name, createdById])
 }
 
 model PropertyStatus {
@@ -254,9 +273,13 @@ model CustomFieldDefinition {
   options     String?
   isRequired  Boolean            @default(false)
   order       Int                @default(0)
+  createdById String?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  createdBy   User?              @relation("CustomFieldCreator", fields: [createdById], references: [id])
   values      CustomFieldValue[]
+
+  @@unique([name, createdById])
 }
 
 model CustomFieldValue {
@@ -346,10 +369,13 @@ model TaskTemplate {
   skipWeekends    Boolean  @default(false)
   assignmentType  String   @default("MANUAL")
   roundRobinUsers String[] @default([])
+  createdById     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  createdBy       User?    @relation("TaskTemplateCreator", fields: [createdById], references: [id])
   tasks           Task[]
 
+  @@unique([name, createdById])
   @@index([category])
 }
 
@@ -386,23 +412,30 @@ model Notification {
 }
 
 model FilterFolder {
-  id        String           @id @default(cuid())
-  name      String
-  order     Int              @default(0)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  templates FilterTemplate[]
+  id          String           @id @default(cuid())
+  name        String
+  order       Int              @default(0)
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   User?            @relation("FilterFolderCreator", fields: [createdById], references: [id])
+  templates   FilterTemplate[]
+
+  @@unique([name, createdById])
 }
 
 model FilterTemplate {
-  id        String        @id @default(cuid())
-  name      String
-  filters   Json
-  folderId  String?
-  folder    FilterFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  order     Int           @default(0)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  name        String
+  filters     Json
+  folderId    String?
+  folder      FilterFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  order       Int           @default(0)
+  createdById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   User?         @relation("FilterTemplateCreator", fields: [createdById], references: [id])
 
+  @@unique([name, createdById])
   @@index([folderId])
 }

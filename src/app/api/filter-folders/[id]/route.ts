@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/filter-folders/[id] - Get a single folder
 export async function GET(
@@ -7,10 +8,24 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const folder = await prisma.filterFolder.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const folder = await prisma.filterFolder.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
       include: {
         templates: {
+          where: { createdById: decoded.userId },
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -42,6 +57,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name } = body;
 
@@ -52,9 +80,9 @@ export async function PUT(
       );
     }
 
-    // Check folder exists
-    const existing = await prisma.filterFolder.findUnique({
-      where: { id: params.id },
+    // Check folder exists and belongs to user
+    const existing = await prisma.filterFolder.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existing) {
@@ -64,10 +92,11 @@ export async function PUT(
       );
     }
 
-    // Check for duplicate name (excluding current folder)
+    // Check for duplicate name (excluding current folder) for this user
     const duplicate = await prisma.filterFolder.findFirst({
       where: {
         name: name.trim(),
+        createdById: decoded.userId,
         id: { not: params.id },
       },
     });
@@ -105,9 +134,22 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check folder exists
-    const existing = await prisma.filterFolder.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Check folder exists and belongs to user
+    const existing = await prisma.filterFolder.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existing) {

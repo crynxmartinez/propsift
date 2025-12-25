@@ -1,27 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/filter-templates - List all templates grouped by folder
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get all folders with their templates
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Get all folders with their templates for this user
     const folders = await prisma.filterFolder.findMany({
+      where: { createdById: decoded.userId },
       orderBy: { order: 'asc' },
       include: {
         templates: {
+          where: { createdById: decoded.userId },
           orderBy: { order: 'asc' },
         },
       },
     });
 
-    // Get uncategorized templates (no folder)
+    // Get uncategorized templates (no folder) for this user
     const uncategorized = await prisma.filterTemplate.findMany({
-      where: { folderId: null },
+      where: { folderId: null, createdById: decoded.userId },
       orderBy: { order: 'asc' },
     });
 
-    // Get total template count
-    const totalCount = await prisma.filterTemplate.count();
+    // Get total template count for this user
+    const totalCount = await prisma.filterTemplate.count({
+      where: { createdById: decoded.userId },
+    });
 
     return NextResponse.json({
       folders,
@@ -40,6 +58,19 @@ export async function GET() {
 // POST /api/filter-templates - Create a new template
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, filters, folderId } = body;
 
@@ -57,10 +88,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If folderId provided, verify folder exists
+    // If folderId provided, verify folder exists and belongs to user
     if (folderId) {
-      const folder = await prisma.filterFolder.findUnique({
-        where: { id: folderId },
+      const folder = await prisma.filterFolder.findFirst({
+        where: { id: folderId, createdById: decoded.userId },
       });
       if (!folder) {
         return NextResponse.json(
@@ -70,9 +101,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get max order for the folder (or uncategorized)
+    // Get max order for the folder (or uncategorized) for this user
     const maxOrder = await prisma.filterTemplate.aggregate({
-      where: { folderId: folderId || null },
+      where: { folderId: folderId || null, createdById: decoded.userId },
       _max: { order: true },
     });
 
@@ -82,6 +113,7 @@ export async function POST(request: NextRequest) {
         filters: filters,
         folderId: folderId || null,
         order: (maxOrder._max.order ?? -1) + 1,
+        createdById: decoded.userId,
       },
       include: {
         folder: true,

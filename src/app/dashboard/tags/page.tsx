@@ -27,7 +27,10 @@ export default function TagsPage() {
 
   const fetchTags = async () => {
     try {
-      const res = await fetch('/api/tags')
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/tags', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (!res.ok) throw new Error('Failed to fetch tags')
       const data = await res.json()
       setTags(data)
@@ -60,9 +63,13 @@ export default function TagsPage() {
 
     setCreating(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/tags', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: newTagName.trim() })
       })
 
@@ -87,9 +94,13 @@ export default function TagsPage() {
 
     setUpdating(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/tags/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: editingName.trim() })
       })
 
@@ -115,8 +126,10 @@ export default function TagsPage() {
     
     setDeletingId(deleteConfirm.id)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/tags/${deleteConfirm.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       })
 
       const data = await res.json()

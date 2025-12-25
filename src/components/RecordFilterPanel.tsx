@@ -337,7 +337,10 @@ export default function RecordFilterPanel({
   const fetchTemplates = useCallback(async () => {
     setLoadingTemplates(true)
     try {
-      const res = await fetch('/api/filter-templates')
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/filter-templates', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (res.ok) {
         const data = await res.json()
         setFolders(data.folders || [])
@@ -363,9 +366,13 @@ export default function RecordFilterPanel({
     if (!newFolderName.trim()) return
     setCreatingFolder(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/filter-folders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: newFolderName.trim() }),
       })
       if (res.ok) {
@@ -385,9 +392,13 @@ export default function RecordFilterPanel({
     if (!templateName.trim() || filters.length === 0) return
     setSavingTemplate(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/filter-templates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: templateName.trim(),
           filters: filters,
@@ -417,7 +428,11 @@ export default function RecordFilterPanel({
   // Delete template
   const handleDeleteTemplate = async (id: string) => {
     try {
-      const res = await fetch(`/api/filter-templates/${id}`, { method: 'DELETE' })
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/filter-templates/${id}`, { 
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (res.ok) {
         fetchTemplates()
         setTemplateMenuId(null)
@@ -430,7 +445,11 @@ export default function RecordFilterPanel({
   // Duplicate template
   const handleDuplicateTemplate = async (id: string) => {
     try {
-      const res = await fetch(`/api/filter-templates/${id}/duplicate`, { method: 'POST' })
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/filter-templates/${id}/duplicate`, { 
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (res.ok) {
         fetchTemplates()
         setTemplateMenuId(null)
@@ -444,9 +463,13 @@ export default function RecordFilterPanel({
   const handleRenameTemplate = async (id: string) => {
     if (!editingTemplateName.trim()) return
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/filter-templates/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: editingTemplateName.trim() }),
       })
       if (res.ok) {
@@ -462,7 +485,11 @@ export default function RecordFilterPanel({
   // Delete folder
   const handleDeleteFolder = async (id: string) => {
     try {
-      const res = await fetch(`/api/filter-folders/${id}`, { method: 'DELETE' })
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/filter-folders/${id}`, { 
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (res.ok) {
         fetchTemplates()
         setFolderMenuId(null)
@@ -476,9 +503,13 @@ export default function RecordFilterPanel({
   const handleRenameFolder = async (id: string) => {
     if (!editingFolderName.trim()) return
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/filter-folders/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: editingFolderName.trim() }),
       })
       if (res.ok) {

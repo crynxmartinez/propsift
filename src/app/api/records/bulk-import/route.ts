@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
+import { verifyToken } from '@/lib/auth';
 
 interface ImportRequest {
   activityId?: string;
@@ -17,6 +18,19 @@ interface ImportRequest {
 // POST /api/records/bulk-import - Import records from CSV
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body: ImportRequest = await request.json();
     const { activityId, importType, importOption, motivationIds, tagIds, fieldMapping, csvHeaders, csvData } = body;
 

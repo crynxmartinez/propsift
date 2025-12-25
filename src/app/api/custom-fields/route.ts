@@ -1,10 +1,25 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 // GET - Fetch all custom field definitions
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const fields = await prisma.customFieldDefinition.findMany({
+      where: { createdById: decoded.userId },
       orderBy: { order: 'asc' },
     })
     return NextResponse.json(fields)
@@ -15,8 +30,21 @@ export async function GET() {
 }
 
 // POST - Create a new custom field definition
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { name, fieldType, displayType, options, isRequired } = body
 
@@ -24,8 +52,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name and field type are required' }, { status: 400 })
     }
 
-    // Get the max order to add new field at the end
+    // Get the max order to add new field at the end for this user
     const maxOrder = await prisma.customFieldDefinition.aggregate({
+      where: { createdById: decoded.userId },
       _max: { order: true },
     })
 
@@ -37,6 +66,7 @@ export async function POST(request: Request) {
         options: options ? JSON.stringify(options) : null,
         isRequired: isRequired || false,
         order: (maxOrder._max.order ?? -1) + 1,
+        createdById: decoded.userId,
       },
     })
 

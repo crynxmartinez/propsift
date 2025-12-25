@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
     const body = await request.json()
     const { name, color, isActive } = body
 
-    const existingStatus = await prisma.status.findUnique({
-      where: { id }
+    const existingStatus = await prisma.status.findFirst({
+      where: { id, createdById: decoded.userId }
     })
 
     if (!existingStatus) {
@@ -28,6 +42,7 @@ export async function PATCH(
       const duplicateStatus = await prisma.status.findFirst({
         where: {
           name: name.trim(),
+          createdById: decoded.userId,
           NOT: { id }
         }
       })
@@ -67,13 +82,26 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
 
-    const status = await prisma.status.findUnique({
-      where: { id },
+    const status = await prisma.status.findFirst({
+      where: { id, createdById: decoded.userId },
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       }
     })
@@ -89,9 +117,9 @@ export async function DELETE(
       )
     }
 
-    if (status._count.properties > 0) {
+    if (status._count.records > 0) {
       return NextResponse.json(
-        { error: `Cannot delete status. It has ${status._count.properties} record(s) connected to it.` },
+        { error: `Cannot delete status. It has ${status._count.records} record(s) connected to it.` },
         { status: 400 }
       )
     }

@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/task-templates - Get all task templates
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { createdById: decoded.userId };
     if (category) {
       where.category = category;
     }
@@ -33,6 +47,19 @@ export async function GET(request: NextRequest) {
 // POST /api/task-templates - Create a new task template
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -70,6 +97,7 @@ export async function POST(request: NextRequest) {
         skipWeekends: skipWeekends || false,
         assignmentType: assignmentType || 'MANUAL',
         roundRobinUsers: roundRobinUsers || [],
+        createdById: decoded.userId,
       },
     });
 

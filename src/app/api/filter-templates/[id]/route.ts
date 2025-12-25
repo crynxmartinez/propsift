@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/filter-templates/[id] - Get a single template
 export async function GET(
@@ -7,8 +8,21 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const template = await prisma.filterTemplate.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const template = await prisma.filterTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
       include: {
         folder: true,
       },
@@ -37,12 +51,25 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, filters, folderId } = body;
 
-    // Check template exists
-    const existing = await prisma.filterTemplate.findUnique({
-      where: { id: params.id },
+    // Check template exists and belongs to user
+    const existing = await prisma.filterTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existing) {
@@ -77,9 +104,9 @@ export async function PUT(
 
     if (folderId !== undefined) {
       if (folderId !== null) {
-        // Verify folder exists
-        const folder = await prisma.filterFolder.findUnique({
-          where: { id: folderId },
+        // Verify folder exists and belongs to user
+        const folder = await prisma.filterFolder.findFirst({
+          where: { id: folderId, createdById: decoded.userId },
         });
         if (!folder) {
           return NextResponse.json(
@@ -115,9 +142,22 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check template exists
-    const existing = await prisma.filterTemplate.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Check template exists and belongs to user
+    const existing = await prisma.filterTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existing) {

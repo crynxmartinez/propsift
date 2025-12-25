@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
     const { name } = await request.json()
 
@@ -13,8 +27,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Tag name is required' }, { status: 400 })
     }
 
-    const existingTag = await prisma.tag.findUnique({
-      where: { id }
+    const existingTag = await prisma.tag.findFirst({
+      where: { id, createdById: decoded.userId }
     })
 
     if (!existingTag) {
@@ -24,6 +38,7 @@ export async function PATCH(
     const duplicateTag = await prisma.tag.findFirst({
       where: {
         name: name.trim(),
+        createdById: decoded.userId,
         NOT: { id }
       }
     })
@@ -49,13 +64,26 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { id } = params
 
-    const tag = await prisma.tag.findUnique({
-      where: { id },
+    const tag = await prisma.tag.findFirst({
+      where: { id, createdById: decoded.userId },
       include: {
         _count: {
-          select: { properties: true }
+          select: { records: true }
         }
       }
     })
@@ -64,9 +92,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 })
     }
 
-    if (tag._count.properties > 0) {
+    if (tag._count.records > 0) {
       return NextResponse.json(
-        { error: `Cannot delete tag. It has ${tag._count.properties} record(s) connected to it.` },
+        { error: `Cannot delete tag. It has ${tag._count.records} record(s) connected to it.` },
         { status: 400 }
       )
     }

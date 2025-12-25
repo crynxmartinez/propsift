@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const motivations = await prisma.motivation.findMany({
+      where: { createdById: decoded.userId },
       include: {
         _count: {
           select: { records: true }
@@ -29,14 +44,30 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const { name } = await request.json()
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Motivation name is required' }, { status: 400 })
     }
 
-    const existingMotivation = await prisma.motivation.findUnique({
-      where: { name: name.trim() }
+    const existingMotivation = await prisma.motivation.findFirst({
+      where: { 
+        name: name.trim(),
+        createdById: decoded.userId
+      }
     })
 
     if (existingMotivation) {
@@ -44,7 +75,10 @@ export async function POST(request: NextRequest) {
     }
 
     const motivation = await prisma.motivation.create({
-      data: { name: name.trim() }
+      data: { 
+        name: name.trim(),
+        createdById: decoded.userId
+      }
     })
 
     return NextResponse.json(motivation, { status: 201 })

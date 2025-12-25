@@ -296,9 +296,13 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
         tagIds: formData.tagIds,
       }
 
+      const token = localStorage.getItem('token')
       const response = await fetch('/api/records', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       })
 

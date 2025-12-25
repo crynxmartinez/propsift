@@ -27,7 +27,10 @@ export default function MotivationsPage() {
 
   const fetchMotivations = async () => {
     try {
-      const res = await fetch('/api/motivations')
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/motivations', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (!res.ok) throw new Error('Failed to fetch motivations')
       const data = await res.json()
       setMotivations(data)
@@ -60,9 +63,13 @@ export default function MotivationsPage() {
 
     setCreating(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/motivations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: newMotivationName.trim() })
       })
 
@@ -87,9 +94,13 @@ export default function MotivationsPage() {
 
     setUpdating(true)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/motivations/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ name: editingName.trim() })
       })
 
@@ -115,8 +126,10 @@ export default function MotivationsPage() {
     
     setDeletingId(deleteConfirm.id)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/motivations/${deleteConfirm.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       })
 
       const data = await res.json()

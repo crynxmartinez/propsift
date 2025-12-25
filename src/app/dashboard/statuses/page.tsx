@@ -45,7 +45,10 @@ export default function StatusesPage() {
 
   const fetchStatuses = async () => {
     try {
-      const res = await fetch('/api/statuses')
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/statuses', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       if (!res.ok) throw new Error('Failed to fetch statuses')
       const data = await res.json()
       setStatuses(data)
@@ -115,9 +118,13 @@ export default function StatusesPage() {
     setSaving(true)
     try {
       if (modalMode === 'create') {
+        const token = localStorage.getItem('token')
         const res = await fetch('/api/statuses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
           body: JSON.stringify({ name: statusName.trim(), color: statusColor })
         })
 
@@ -129,9 +136,13 @@ export default function StatusesPage() {
 
         showMessage('success', 'Status created successfully')
       } else if (editingStatus) {
+        const token = localStorage.getItem('token')
         const res = await fetch(`/api/statuses/${editingStatus.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
           body: JSON.stringify({ name: statusName.trim(), color: statusColor })
         })
 
@@ -156,9 +167,13 @@ export default function StatusesPage() {
   const handleToggle = async (status: StatusItem) => {
     setTogglingId(status.id)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/statuses/${status.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ isActive: !status.isActive })
       })
 
@@ -181,8 +196,10 @@ export default function StatusesPage() {
     
     setDeletingId(deleteConfirm.id)
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/statuses/${deleteConfirm.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       })
 
       const data = await res.json()
@@ -235,9 +252,13 @@ export default function StatusesPage() {
 
     try {
       const orderedIds = newStatuses.map(s => s.id)
+      const token = localStorage.getItem('token')
       const res = await fetch('/api/statuses/reorder', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ orderedIds })
       })
 

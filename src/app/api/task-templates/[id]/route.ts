@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/task-templates/[id] - Get a single task template
 export async function GET(
@@ -7,8 +8,21 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const template = await prisma.taskTemplate.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const template = await prisma.taskTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!template) {
@@ -34,6 +48,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -50,9 +77,9 @@ export async function PUT(
       roundRobinUsers,
     } = body;
 
-    // Check if template exists
-    const existingTemplate = await prisma.taskTemplate.findUnique({
-      where: { id: params.id },
+    // Check if template exists and belongs to user
+    const existingTemplate = await prisma.taskTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existingTemplate) {
@@ -99,9 +126,22 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if template exists
-    const existingTemplate = await prisma.taskTemplate.findUnique({
-      where: { id: params.id },
+    // Authenticate user
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Check if template exists and belongs to user
+    const existingTemplate = await prisma.taskTemplate.findFirst({
+      where: { id: params.id, createdById: decoded.userId },
     });
 
     if (!existingTemplate) {
