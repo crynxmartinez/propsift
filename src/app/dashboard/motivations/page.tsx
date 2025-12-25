@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Zap, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink, MoreVertical } from 'lucide-react'
+import { useToast } from '@/components/Toast'
 
 interface MotivationItem {
   id: string
@@ -12,6 +13,7 @@ interface MotivationItem {
 }
 
 export default function MotivationsPage() {
+  const { showToast } = useToast()
   const [motivations, setMotivations] = useState<MotivationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [newMotivationName, setNewMotivationName] = useState('')
@@ -22,8 +24,6 @@ export default function MotivationsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<MotivationItem | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
 
   const fetchMotivations = async () => {
     try {
@@ -32,7 +32,7 @@ export default function MotivationsPage() {
       const data = await res.json()
       setMotivations(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch motivations')
+      showToast(err instanceof Error ? err.message : 'Failed to fetch motivations', 'error')
     } finally {
       setLoading(false)
     }
@@ -53,20 +53,7 @@ export default function MotivationsPage() {
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
-  const showMessage = (type: 'error' | 'success', message: string) => {
-    if (type === 'error') {
-      setError(message)
-      setSuccess(null)
-    } else {
-      setSuccess(message)
-      setError(null)
-    }
-    setTimeout(() => {
-      setError(null)
-      setSuccess(null)
-    }, 3000)
-  }
-
+  
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMotivationName.trim()) return
@@ -86,10 +73,10 @@ export default function MotivationsPage() {
       }
 
       setNewMotivationName('')
-      showMessage('success', 'Motivation created successfully')
+      showToast('Motivation created successfully', 'success')
       fetchMotivations()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to create motivation')
+      showToast(err instanceof Error ? err.message : 'Failed to create motivation', 'error')
     } finally {
       setCreating(false)
     }
@@ -114,10 +101,10 @@ export default function MotivationsPage() {
 
       setEditingId(null)
       setEditingName('')
-      showMessage('success', 'Motivation updated successfully')
+      showToast('Motivation updated successfully', 'success')
       fetchMotivations()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to update motivation')
+      showToast(err instanceof Error ? err.message : 'Failed to update motivation', 'error')
     } finally {
       setUpdating(false)
     }
@@ -138,10 +125,10 @@ export default function MotivationsPage() {
         throw new Error(data.error || 'Failed to delete motivation')
       }
 
-      showMessage('success', 'Motivation deleted successfully')
+      showToast('Motivation deleted successfully', 'success')
       fetchMotivations()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to delete motivation')
+      showToast(err instanceof Error ? err.message : 'Failed to delete motivation', 'error')
     } finally {
       setDeletingId(null)
       setDeleteConfirm(null)
@@ -164,14 +151,6 @@ export default function MotivationsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Motivations</h1>
         <p className="text-gray-500 mt-1">Manage your property motivations</p>
       </div>
-
-      {(error || success) && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
-        }`}>
-          {error || success}
-        </div>
-      )}
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">

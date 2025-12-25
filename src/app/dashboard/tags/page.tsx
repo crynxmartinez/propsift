@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Tag, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink, MoreVertical } from 'lucide-react'
+import { useToast } from '@/components/Toast'
 
 interface TagItem {
   id: string
@@ -12,6 +13,7 @@ interface TagItem {
 }
 
 export default function TagsPage() {
+  const { showToast } = useToast()
   const [tags, setTags] = useState<TagItem[]>([])
   const [loading, setLoading] = useState(true)
   const [newTagName, setNewTagName] = useState('')
@@ -22,8 +24,6 @@ export default function TagsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<TagItem | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
 
   const fetchTags = async () => {
     try {
@@ -32,7 +32,7 @@ export default function TagsPage() {
       const data = await res.json()
       setTags(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch tags')
+      showToast(err instanceof Error ? err.message : 'Failed to fetch tags', 'error')
     } finally {
       setLoading(false)
     }
@@ -53,20 +53,7 @@ export default function TagsPage() {
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
-  const showMessage = (type: 'error' | 'success', message: string) => {
-    if (type === 'error') {
-      setError(message)
-      setSuccess(null)
-    } else {
-      setSuccess(message)
-      setError(null)
-    }
-    setTimeout(() => {
-      setError(null)
-      setSuccess(null)
-    }, 3000)
-  }
-
+  
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTagName.trim()) return
@@ -86,10 +73,10 @@ export default function TagsPage() {
       }
 
       setNewTagName('')
-      showMessage('success', 'Tag created successfully')
+      showToast('Tag created successfully', 'success')
       fetchTags()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to create tag')
+      showToast(err instanceof Error ? err.message : 'Failed to create tag', 'error')
     } finally {
       setCreating(false)
     }
@@ -114,10 +101,10 @@ export default function TagsPage() {
 
       setEditingId(null)
       setEditingName('')
-      showMessage('success', 'Tag updated successfully')
+      showToast('Tag updated successfully', 'success')
       fetchTags()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to update tag')
+      showToast(err instanceof Error ? err.message : 'Failed to update tag', 'error')
     } finally {
       setUpdating(false)
     }
@@ -138,10 +125,10 @@ export default function TagsPage() {
         throw new Error(data.error || 'Failed to delete tag')
       }
 
-      showMessage('success', 'Tag deleted successfully')
+      showToast('Tag deleted successfully', 'success')
       fetchTags()
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to delete tag')
+      showToast(err instanceof Error ? err.message : 'Failed to delete tag', 'error')
     } finally {
       setDeletingId(null)
       setDeleteConfirm(null)
@@ -164,14 +151,6 @@ export default function TagsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Tags</h1>
         <p className="text-gray-500 mt-1">Manage your property tags</p>
       </div>
-
-      {(error || success) && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
-        }`}>
-          {error || success}
-        </div>
-      )}
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
