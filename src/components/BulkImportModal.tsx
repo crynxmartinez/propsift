@@ -148,7 +148,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   const [motivationSearch, setMotivationSearch] = useState('')
   const [tagSearch, setTagSearch] = useState('')
   const [activeListTab, setActiveListTab] = useState<'motivations' | 'tags'>('motivations')
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   
   // Search state for Step 4 (field mapping)
   const [fieldSearch, setFieldSearch] = useState('')
@@ -195,8 +195,23 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       setActiveListTab('motivations')
       setFieldSearch('')
       setDraggedColumn(null)
+      setIsDropdownOpen(false)
     }
   }, [isOpen])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-dropdown-container]')) {
+        setIsDropdownOpen(false)
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [isDropdownOpen])
 
   // Combine system fields with custom fields
   const allSystemFields = useMemo(() => {
@@ -746,7 +761,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 </div>
 
                 {/* Search Input */}
-                <div className="p-3 border-b border-gray-100 flex-shrink-0">
+                <div className="p-3 border-b border-gray-100 flex-shrink-0" data-dropdown-container>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -758,8 +773,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           setTagSearch(e.target.value)
                         }
                       }}
-                      onFocus={() => setIsSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                      onFocus={() => setIsDropdownOpen(true)}
                       placeholder={`Search ${activeListTab}...`}
                       className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
@@ -767,9 +781,9 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 </div>
                 
                 {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="flex-1 overflow-y-auto min-h-0" data-dropdown-container>
                   {/* Dropdown - when focused or searching */}
-                  {activeListTab === 'motivations' && (isSearchFocused || motivationSearch) ? (
+                  {activeListTab === 'motivations' && isDropdownOpen ? (
                     <div className="bg-gray-50">
                       {motivations
                         .filter(m => 
@@ -782,7 +796,6 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             type="button"
                             onClick={() => {
                               toggleArrayItem('motivationIds', motivation.id)
-                              setMotivationSearch('')
                             }}
                             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
@@ -796,7 +809,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         <div className="px-4 py-2 text-sm text-gray-500">No matching motivations</div>
                       )}
                     </div>
-                  ) : activeListTab === 'tags' && (isSearchFocused || tagSearch) ? (
+                  ) : activeListTab === 'tags' && isDropdownOpen ? (
                     <div className="bg-gray-50">
                       {tags
                         .filter(t => 
@@ -809,7 +822,6 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             type="button"
                             onClick={() => {
                               toggleArrayItem('tagIds', tag.id)
-                              setTagSearch('')
                             }}
                             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
