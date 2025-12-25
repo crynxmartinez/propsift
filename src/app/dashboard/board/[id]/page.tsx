@@ -198,7 +198,7 @@ function SortableCard({
         </div>
 
         {/* Phone */}
-        {record.phoneNumbers.length > 0 && (
+        {record.phoneNumbers?.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-600">
             <Phone className="w-3.5 h-3.5 text-gray-400" />
             <span>{record.phoneNumbers[0].number}</span>
@@ -224,7 +224,7 @@ function SortableCard({
                 <Pencil className="w-4 h-4 text-red-400" />
               </span>
             )}
-            {record.recordTags.length > 0 && (
+            {record.recordTags?.length > 0 && (
               <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                 {record.recordTags.length} tags
               </span>
