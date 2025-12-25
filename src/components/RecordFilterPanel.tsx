@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   X, 
   Search, 
@@ -10,7 +10,11 @@ import {
   Trash2,
   Save,
   FolderOpen,
-  RotateCcw
+  RotateCcw,
+  MoreVertical,
+  Pencil,
+  Copy,
+  Loader2
 } from 'lucide-react'
 
 // Types
@@ -24,11 +28,21 @@ export interface FilterBlock {
   connector: 'AND' | 'OR'
 }
 
-export interface FilterPreset {
+export interface FilterFolder {
+  id: string
+  name: string
+  order: number
+  templates: FilterTemplate[]
+  _count?: { templates: number }
+}
+
+export interface FilterTemplate {
   id: string
   name: string
   filters: FilterBlock[]
-  isShared: boolean
+  folderId: string | null
+  folder?: FilterFolder | null
+  order: number
 }
 
 interface FilterCategory {
@@ -123,15 +137,45 @@ export default function RecordFilterPanel({
   users,
   customFields = [],
 }: Props) {
+  // Filter state
   const [filters, setFilters] = useState<FilterBlock[]>([])
   const [showFieldSelector, setShowFieldSelector] = useState(false)
   const [fieldSearch, setFieldSearch] = useState('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['GENERAL']))
-  const [presets, setPresets] = useState<FilterPreset[]>([])
-  const [showPresets, setShowPresets] = useState(false)
-  const [showSavePreset, setShowSavePreset] = useState(false)
-  const [presetName, setPresetName] = useState('')
-  const [resultCount, setResultCount] = useState<number | null>(null)
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'filter' | 'templates'>('filter')
+
+  // Template state
+  const [folders, setFolders] = useState<FilterFolder[]>([])
+  const [uncategorizedTemplates, setUncategorizedTemplates] = useState<FilterTemplate[]>([])
+  const [templateCount, setTemplateCount] = useState(0)
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+  const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
+  
+  // Save template modal
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  
+  // Create folder
+  const [showCreateFolder, setShowCreateFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
+  
+  // Menus and editing
+  const [templateMenuId, setTemplateMenuId] = useState<string | null>(null)
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null)
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null)
+  const [editingFolderName, setEditingFolderName] = useState('')
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
+  const [editingTemplateName, setEditingTemplateName] = useState('')
+
+  // Animation state
+  const [isVisible, setIsVisible] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
 
   // Build filter categories
   const filterCategories: FilterCategory[] = [
@@ -254,7 +298,6 @@ export default function RecordFilterPanel({
   // Clear all filters
   const clearFilters = () => {
     setFilters([])
-    setResultCount(null)
   }
 
   // Apply filters
@@ -290,57 +333,186 @@ export default function RecordFilterPanel({
     return field.options || []
   }
 
-  // Load presets from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('filterPresets')
-    if (saved) {
-      try {
-        setPresets(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to load presets:', e)
+  // Fetch templates from API
+  const fetchTemplates = useCallback(async () => {
+    setLoadingTemplates(true)
+    try {
+      const res = await fetch('/api/filter-templates')
+      if (res.ok) {
+        const data = await res.json()
+        setFolders(data.folders || [])
+        setUncategorizedTemplates(data.uncategorized || [])
+        setTemplateCount(data.totalCount || 0)
       }
+    } catch (error) {
+      console.error('Error fetching templates:', error)
+    } finally {
+      setLoadingTemplates(false)
     }
   }, [])
 
-  // Save preset
-  const savePreset = () => {
-    if (!presetName.trim()) return
-    
-    const newPreset: FilterPreset = {
-      id: `preset_${Date.now()}`,
-      name: presetName.trim(),
-      filters: filters,
-      isShared: false,
+  // Fetch templates when Templates tab is active
+  useEffect(() => {
+    if (activeTab === 'templates' && isOpen) {
+      fetchTemplates()
     }
-    
-    const updatedPresets = [...presets, newPreset]
-    setPresets(updatedPresets)
-    localStorage.setItem('filterPresets', JSON.stringify(updatedPresets))
-    setShowSavePreset(false)
-    setPresetName('')
+  }, [activeTab, isOpen, fetchTemplates])
+
+  // Create folder
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+    setCreatingFolder(true)
+    try {
+      const res = await fetch('/api/filter-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      })
+      if (res.ok) {
+        setNewFolderName('')
+        setShowCreateFolder(false)
+        fetchTemplates()
+      }
+    } catch (error) {
+      console.error('Error creating folder:', error)
+    } finally {
+      setCreatingFolder(false)
+    }
   }
 
-  // Load preset
-  const loadPreset = (preset: FilterPreset) => {
-    setFilters(preset.filters)
-    setShowPresets(false)
+  // Save template
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim() || filters.length === 0) return
+    setSavingTemplate(true)
+    try {
+      const res = await fetch('/api/filter-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateName.trim(),
+          filters: filters,
+          folderId: selectedFolderId,
+        }),
+      })
+      if (res.ok) {
+        setTemplateName('')
+        setSelectedFolderId(null)
+        setShowSaveTemplate(false)
+        fetchTemplates()
+      }
+    } catch (error) {
+      console.error('Error saving template:', error)
+    } finally {
+      setSavingTemplate(false)
+    }
   }
 
-  // Delete preset
-  const deletePreset = (id: string) => {
-    const updatedPresets = presets.filter(p => p.id !== id)
-    setPresets(updatedPresets)
-    localStorage.setItem('filterPresets', JSON.stringify(updatedPresets))
+  // Use template (load filters and switch to filter tab)
+  const handleUseTemplate = (template: FilterTemplate) => {
+    setFilters(template.filters)
+    setActiveTab('filter')
+    setExpandedTemplateId(null)
   }
 
-  // Animation state
-  const [isVisible, setIsVisible] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
+  // Delete template
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const res = await fetch(`/api/filter-templates/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchTemplates()
+        setTemplateMenuId(null)
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error)
+    }
+  }
 
+  // Duplicate template
+  const handleDuplicateTemplate = async (id: string) => {
+    try {
+      const res = await fetch(`/api/filter-templates/${id}/duplicate`, { method: 'POST' })
+      if (res.ok) {
+        fetchTemplates()
+        setTemplateMenuId(null)
+      }
+    } catch (error) {
+      console.error('Error duplicating template:', error)
+    }
+  }
+
+  // Rename template
+  const handleRenameTemplate = async (id: string) => {
+    if (!editingTemplateName.trim()) return
+    try {
+      const res = await fetch(`/api/filter-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingTemplateName.trim() }),
+      })
+      if (res.ok) {
+        setEditingTemplateId(null)
+        setEditingTemplateName('')
+        fetchTemplates()
+      }
+    } catch (error) {
+      console.error('Error renaming template:', error)
+    }
+  }
+
+  // Delete folder
+  const handleDeleteFolder = async (id: string) => {
+    try {
+      const res = await fetch(`/api/filter-folders/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchTemplates()
+        setFolderMenuId(null)
+      }
+    } catch (error) {
+      console.error('Error deleting folder:', error)
+    }
+  }
+
+  // Rename folder
+  const handleRenameFolder = async (id: string) => {
+    if (!editingFolderName.trim()) return
+    try {
+      const res = await fetch(`/api/filter-folders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingFolderName.trim() }),
+      })
+      if (res.ok) {
+        setEditingFolderId(null)
+        setEditingFolderName('')
+        fetchTemplates()
+      }
+    } catch (error) {
+      console.error('Error renaming folder:', error)
+    }
+  }
+
+  // Toggle folder expansion
+  const toggleFolderExpand = (id: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  // Toggle template expansion (accordion - only one open at a time)
+  const toggleTemplateExpand = (id: string) => {
+    setExpandedTemplateId(prev => prev === id ? null : id)
+  }
+
+  // Animation effect
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true)
-      // Small delay to trigger animation
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setIsAnimating(true)
@@ -348,13 +520,107 @@ export default function RecordFilterPanel({
       })
     } else {
       setIsAnimating(false)
-      // Wait for animation to complete before hiding
       const timer = setTimeout(() => {
         setIsVisible(false)
       }, 300)
       return () => clearTimeout(timer)
     }
   }, [isOpen])
+
+  // Render a single template item
+  const renderTemplateItem = (template: FilterTemplate) => (
+    <div key={template.id} className="border-b last:border-b-0">
+      <div 
+        className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer"
+        onClick={() => toggleTemplateExpand(template.id)}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {expandedTemplateId === template.id ? (
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          )}
+          {editingTemplateId === template.id ? (
+            <input
+              type="text"
+              value={editingTemplateName}
+              onChange={(e) => setEditingTemplateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameTemplate(template.id)
+                if (e.key === 'Escape') { setEditingTemplateId(null); setEditingTemplateName('') }
+              }}
+              onBlur={() => handleRenameTemplate(template.id)}
+              className="px-2 py-1 border rounded text-sm flex-1"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span className="text-sm text-gray-700 truncate">{template.name}</span>
+          )}
+        </div>
+        <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setTemplateMenuId(templateMenuId === template.id ? null : template.id)}
+            className="p-1 hover:bg-gray-200 rounded"
+          >
+            <MoreVertical className="w-4 h-4 text-gray-400" />
+          </button>
+          {templateMenuId === template.id && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setTemplateMenuId(null)} />
+              <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-20 py-1 w-36">
+                <button
+                  onClick={() => {
+                    setEditingTemplateId(template.id)
+                    setEditingTemplateName(template.name)
+                    setTemplateMenuId(null)
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Pencil className="w-4 h-4" /> Rename
+                </button>
+                <button
+                  onClick={() => handleDuplicateTemplate(template.id)}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" /> Duplicate
+                </button>
+                <button
+                  onClick={() => handleDeleteTemplate(template.id)}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-red-600 flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {expandedTemplateId === template.id && (
+        <div className="px-4 py-3 bg-gray-50 border-t">
+          <div className="text-xs text-gray-500 mb-2">Filters ({template.filters.length}):</div>
+          <div className="space-y-1 mb-3">
+            {template.filters.map((f, i) => (
+              <div key={i} className="text-sm text-gray-600">
+                • {f.fieldLabel} {f.operator.replace(/_/g, ' ')}
+                {f.value !== null && f.value !== '' && (
+                  <span className="text-gray-800 font-medium">
+                    {Array.isArray(f.value) ? ` (${f.value.length} selected)` : `: ${f.value}`}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => handleUseTemplate(template)}
+            className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+          >
+            Use This Template
+          </button>
+        </div>
+      )}
+    </div>
+  )
 
   if (!isVisible) return null
 
@@ -385,222 +651,397 @@ export default function RecordFilterPanel({
           </button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50">
+        {/* Tabs */}
+        <div className="flex border-b">
           <button
-            onClick={() => setShowPresets(!showPresets)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-white hover:text-gray-900 rounded-lg transition border border-transparent hover:border-gray-200"
+            onClick={() => setActiveTab('filter')}
+            className={`flex-1 py-3 text-sm font-medium transition ${
+              activeTab === 'filter'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            <FolderOpen className="w-4 h-4" />
-            Load
+            Filter
           </button>
           <button
-            onClick={() => setShowSavePreset(true)}
-            disabled={filters.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-white hover:text-gray-900 rounded-lg transition border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setActiveTab('templates')}
+            className={`flex-1 py-3 text-sm font-medium transition ${
+              activeTab === 'templates'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            <Save className="w-4 h-4" />
-            Save
-          </button>
-          <button
-            onClick={clearFilters}
-            disabled={filters.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-white hover:text-gray-900 rounded-lg transition border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Clear
+            Templates {templateCount > 0 && `(${templateCount})`}
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* Add Filter Block Button */}
-          <div className="relative mb-4">
-            <button
-              onClick={() => setShowFieldSelector(!showFieldSelector)}
-              className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition"
-            >
-              <span className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add filter block
-              </span>
-              <Plus className="w-4 h-4" />
-            </button>
-
-            {/* Field Selector Dropdown */}
-            {showFieldSelector && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10 max-h-80 overflow-hidden">
-                {/* Search */}
-                <div className="p-2 border-b sticky top-0 bg-white">
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Search for filter blocks..."
-                      value={fieldSearch}
-                      onChange={(e) => setFieldSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div className="overflow-y-auto max-h-64">
-                  {filteredCategories.map(category => (
-                    <div key={category.name}>
-                      <button
-                        onClick={() => toggleCategory(category.name)}
-                        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100"
-                      >
-                        {category.name}
-                        {expandedCategories.has(category.name) ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </button>
-                      {expandedCategories.has(category.name) && (
-                        <div>
-                          {category.fields.map(field => (
-                            <button
-                              key={field.key}
-                              onClick={() => addFilterBlock(field)}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                            >
-                              {field.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Filter Blocks */}
-          {filters.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <Search className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-gray-900 font-medium mb-2">Build your own filter presets</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                You can build your very own filter set by adding filter blocks and applying conditions to it.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filters.map((filter, index) => (
-                <div key={filter.id}>
-                  {/* Connector (between blocks) */}
-                  {index > 0 && (
-                    <div className="flex justify-center my-2">
-                      <button
-                        onClick={() => toggleConnector(filter.id)}
-                        className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition"
-                      >
-                        {filter.connector}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Filter Block */}
-                  <FilterBlockComponent
-                    filter={filter}
-                    options={getFieldOptions(filter.field)}
-                    operators={OPERATORS[filter.fieldType] || []}
-                    onUpdate={(updates) => updateFilter(filter.id, updates)}
-                    onRemove={() => removeFilter(filter.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Presets Panel */}
-          {showPresets && (
-            <div className="mt-4 border rounded-lg overflow-hidden">
-              <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center justify-between">
-                Saved Presets
-                <button onClick={() => setShowPresets(false)}>
-                  <X className="w-4 h-4" />
+        <div className="flex-1 overflow-y-auto">
+          {/* ===== FILTER TAB ===== */}
+          {activeTab === 'filter' && (
+            <div className="p-4">
+              {/* Toolbar */}
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  onClick={() => setShowSaveTemplate(true)}
+                  disabled={filters.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4" />
+                  Save as Template
+                </button>
+                <button
+                  onClick={clearFilters}
+                  disabled={filters.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Clear
                 </button>
               </div>
-              {presets.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">
-                  No saved presets yet
+
+              {/* Add Filter Block Button */}
+              <div className="relative mb-4">
+                <button
+                  onClick={() => setShowFieldSelector(!showFieldSelector)}
+                  className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add filter block
+                  </span>
+                  <Plus className="w-4 h-4" />
+                </button>
+
+                {/* Field Selector Dropdown */}
+                {showFieldSelector && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10 max-h-80 overflow-hidden">
+                    {/* Search */}
+                    <div className="p-2 border-b sticky top-0 bg-white">
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search for filter blocks..."
+                          value={fieldSearch}
+                          onChange={(e) => setFieldSearch(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Categories */}
+                    <div className="overflow-y-auto max-h-64">
+                      {filteredCategories.map(category => (
+                        <div key={category.name}>
+                          <button
+                            onClick={() => toggleCategory(category.name)}
+                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100"
+                          >
+                            {category.name}
+                            {expandedCategories.has(category.name) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
+                          {expandedCategories.has(category.name) && (
+                            <div>
+                              {category.fields.map(field => (
+                                <button
+                                  key={field.key}
+                                  onClick={() => addFilterBlock(field)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                >
+                                  {field.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Blocks */}
+              {filters.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Search className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-gray-900 font-medium mb-2">Build your own filter presets</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    You can build your very own filter set by adding filter blocks and applying conditions to it.
+                  </p>
                 </div>
               ) : (
-                <div>
-                  {presets.map(preset => (
-                    <div
-                      key={preset.id}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 border-b last:border-b-0"
-                    >
-                      <button
-                        onClick={() => loadPreset(preset)}
-                        className="text-sm text-gray-700 hover:text-blue-600"
-                      >
-                        {preset.name}
-                      </button>
-                      <button
-                        onClick={() => deletePreset(preset.id)}
-                        className="p-1 text-gray-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                <div className="space-y-3">
+                  {filters.map((filter, index) => (
+                    <div key={filter.id}>
+                      {/* Connector (between blocks) */}
+                      {index > 0 && (
+                        <div className="flex justify-center my-2">
+                          <button
+                            onClick={() => toggleConnector(filter.id)}
+                            className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition"
+                          >
+                            {filter.connector}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Filter Block */}
+                      <FilterBlockComponent
+                        filter={filter}
+                        options={getFieldOptions(filter.field)}
+                        operators={OPERATORS[filter.fieldType] || []}
+                        onUpdate={(updates) => updateFilter(filter.id, updates)}
+                        onRemove={() => removeFilter(filter.id)}
+                      />
                     </div>
                   ))}
                 </div>
               )}
             </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="border-t p-4 bg-gray-50">
-          {resultCount !== null && (
-            <p className="text-sm text-gray-500 mb-3">
-              Showing {resultCount.toLocaleString()} records
-            </p>
+          {/* ===== TEMPLATES TAB ===== */}
+          {activeTab === 'templates' && (
+            <div className="p-4">
+              {/* Create Folder Button */}
+              <div className="mb-4">
+                {showCreateFolder ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Folder name..."
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateFolder()
+                        if (e.key === 'Escape') { setShowCreateFolder(false); setNewFolderName('') }
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleCreateFolder}
+                      disabled={!newFolderName.trim() || creatingFolder}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {creatingFolder ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                    </button>
+                    <button
+                      onClick={() => { setShowCreateFolder(false); setNewFolderName('') }}
+                      className="px-3 py-2 text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowCreateFolder(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition border border-gray-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Folder
+                  </button>
+                )}
+              </div>
+
+              {/* Loading State */}
+              {loadingTemplates ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Folders */}
+                  {folders.map(folder => (
+                    <div key={folder.id} className="border rounded-lg overflow-hidden">
+                      {/* Folder Header */}
+                      <div 
+                        className="flex items-center justify-between px-3 py-2 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                        onClick={() => toggleFolderExpand(folder.id)}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {expandedFolders.has(folder.id) ? (
+                            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          )}
+                          <FolderOpen className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          {editingFolderId === folder.id ? (
+                            <input
+                              type="text"
+                              value={editingFolderName}
+                              onChange={(e) => setEditingFolderName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameFolder(folder.id)
+                                if (e.key === 'Escape') { setEditingFolderId(null); setEditingFolderName('') }
+                              }}
+                              onBlur={() => handleRenameFolder(folder.id)}
+                              className="px-2 py-1 border rounded text-sm flex-1"
+                              autoFocus
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-gray-700 truncate">{folder.name}</span>
+                          )}
+                          <span className="text-xs text-gray-400 flex-shrink-0">
+                            ({folder.templates?.length || 0})
+                          </span>
+                        </div>
+                        <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setFolderMenuId(folderMenuId === folder.id ? null : folder.id)}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            <MoreVertical className="w-4 h-4 text-gray-400" />
+                          </button>
+                          {folderMenuId === folder.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setFolderMenuId(null)} />
+                              <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-20 py-1 w-32">
+                                <button
+                                  onClick={() => {
+                                    setEditingFolderId(folder.id)
+                                    setEditingFolderName(folder.name)
+                                    setFolderMenuId(null)
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <Pencil className="w-4 h-4" /> Rename
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFolder(folder.id)}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-red-600 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Delete
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Folder Templates */}
+                      {expandedFolders.has(folder.id) && folder.templates && folder.templates.length > 0 && (
+                        <div className="border-t">
+                          {folder.templates.map(template => renderTemplateItem(template))}
+                        </div>
+                      )}
+                      {expandedFolders.has(folder.id) && (!folder.templates || folder.templates.length === 0) && (
+                        <div className="border-t px-4 py-3 text-sm text-gray-500 text-center">
+                          No templates in this folder
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Uncategorized Templates */}
+                  {uncategorizedTemplates.length > 0 && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="px-3 py-2 bg-gray-50 text-sm font-medium text-gray-500">
+                        Uncategorized
+                      </div>
+                      <div className="border-t">
+                        {uncategorizedTemplates.map(template => renderTemplateItem(template))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {folders.length === 0 && uncategorizedTemplates.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <FolderOpen className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-gray-900 font-medium mb-2">No templates yet</h3>
+                      <p className="text-sm text-gray-500">
+                        Create filters and save them as templates for quick access.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
-          <button
-            onClick={handleApply}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-          >
-            Apply Filters
-          </button>
         </div>
 
-        {/* Save Preset Modal */}
-        {showSavePreset && (
+        {/* Footer - Only show on Filter tab */}
+        {activeTab === 'filter' && (
+          <div className="border-t p-4 bg-gray-50">
+            <button
+              onClick={handleApply}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+            >
+              Apply Filters
+            </button>
+          </div>
+        )}
+
+        {/* Save Template Modal */}
+        {showSaveTemplate && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-4 w-80 shadow-xl">
-              <h3 className="text-lg font-semibold mb-3">Save Filter Preset</h3>
+              <h3 className="text-lg font-semibold mb-3">Save as Template</h3>
               <input
                 type="text"
-                placeholder="Preset name"
-                value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
+                placeholder="Template name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
                 autoFocus
               />
+              
+              {/* Folder Selection */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-600 mb-2">Folder (optional)</label>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="radio"
+                      name="folder"
+                      checked={selectedFolderId === null}
+                      onChange={() => setSelectedFolderId(null)}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">No folder</span>
+                  </label>
+                  {folders.map(folder => (
+                    <label key={folder.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="radio"
+                        name="folder"
+                        checked={selectedFolderId === folder.id}
+                        onChange={() => setSelectedFolderId(folder.id)}
+                        className="text-blue-600"
+                      />
+                      <FolderOpen className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-700">{folder.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <button
-                  onClick={() => { setShowSavePreset(false); setPresetName('') }}
+                  onClick={() => { setShowSaveTemplate(false); setTemplateName(''); setSelectedFolderId(null) }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={savePreset}
-                  disabled={!presetName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  onClick={handleSaveTemplate}
+                  disabled={!templateName.trim() || savingTemplate}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                 >
-                  Save Preset
+                  {savingTemplate && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Template
                 </button>
               </div>
             </div>

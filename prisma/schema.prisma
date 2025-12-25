@@ -378,3 +378,25 @@ model Notification {
   @@index([type])
   @@index([createdAt])
 }
+
+model FilterFolder {
+  id        String           @id @default(cuid())
+  name      String
+  order     Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  templates FilterTemplate[]
+}
+
+model FilterTemplate {
+  id        String        @id @default(cuid())
+  name      String
+  filters   Json
+  folderId  String?
+  folder    FilterFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  order     Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([folderId])
+}
