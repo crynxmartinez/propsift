@@ -207,8 +207,16 @@ export default function AutomationBuilderPage() {
   const [logs, setLogs] = useState<AutomationLog[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
 
+  // Test workflow state
+  const [showTestModal, setShowTestModal] = useState(false)
+  const [testRecords, setTestRecords] = useState<{ id: string; ownerFullName: string; propertyStreet: string | null }[]>([])
+  const [testRecordId, setTestRecordId] = useState('')
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+
   useEffect(() => {
     fetchAutomation()
+    fetchTestRecords()
   }, [automationId])
 
   useEffect(() => {
@@ -233,6 +241,66 @@ export default function AutomationBuilderPage() {
       console.error('Error fetching logs:', error)
     } finally {
       setLogsLoading(false)
+    }
+  }
+
+  const fetchTestRecords = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/records?limit=20', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setTestRecords(data.records || [])
+      }
+    } catch (error) {
+      console.error('Error fetching test records:', error)
+    }
+  }
+
+  const handleTestWorkflow = async () => {
+    if (!testRecordId) return
+    setTesting(true)
+    setTestResult(null)
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/automations/${automationId}/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recordId: testRecordId }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setTestResult({
+          success: true,
+          message: `Test completed successfully! Status: ${data.log?.status || 'completed'}`,
+        })
+        // Refresh logs
+        if (activeTab === 'logs') {
+          fetchLogs()
+        }
+      } else {
+        setTestResult({
+          success: false,
+          message: data.error || 'Test failed',
+        })
+      }
+    } catch (error) {
+      console.error('Error testing workflow:', error)
+      setTestResult({
+        success: false,
+        message: 'Failed to run test',
+      })
+    } finally {
+      setTesting(false)
     }
   }
 
@@ -324,8 +392,9 @@ export default function AutomationBuilderPage() {
           {
             ...connection,
             type: 'smoothstep',
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { strokeWidth: 2 },
+            animated: true,
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
+            style: { strokeWidth: 2, stroke: '#6366f1' },
           },
           eds
         )
@@ -340,15 +409,24 @@ export default function AutomationBuilderPage() {
     setShowPanel(true)
   }, [])
 
+  const openAddActionPanel = () => {
+    setPanelMode('action')
+    setShowPanel(true)
+  }
+
   const addNode = (type: string, label: string, nodeType: string = 'action') => {
+    const nodeId = `${nodeType}-${Date.now()}`
     const newNode: Node = {
-      id: `${nodeType}-${Date.now()}`,
+      id: nodeId,
       type: nodeType,
       position: { x: 250, y: nodes.length * 150 + 100 },
       data: { 
         label, 
         type,
-        config: {} 
+        config: {},
+        onAddAction: openAddActionPanel,
+        onDelete: () => deleteNode(nodeId),
+        onCopy: () => copyNode(nodeId),
       },
     }
     setNodes((nds) => [...nds, newNode])
@@ -363,14 +441,18 @@ export default function AutomationBuilderPage() {
       return
     }
 
+    const nodeId = `trigger-${Date.now()}`
     const newNode: Node = {
-      id: `trigger-${Date.now()}`,
+      id: nodeId,
       type: 'trigger',
       position: { x: 250, y: 50 },
       data: { 
         label, 
         type,
-        config: {} 
+        config: {},
+        onAddAction: openAddActionPanel,
+        onDelete: () => deleteNode(nodeId),
+        onCopy: () => copyNode(nodeId),
       },
     }
     setNodes((nds) => [...nds, newNode])
@@ -382,6 +464,25 @@ export default function AutomationBuilderPage() {
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId))
     setShowPanel(false)
     setSelectedNode(null)
+  }
+
+  const copyNode = (nodeId: string) => {
+    const nodeToCopy = nodes.find((n) => n.id === nodeId)
+    if (!nodeToCopy) return
+
+    const newNodeId = `${nodeToCopy.type}-${Date.now()}`
+    const newNode: Node = {
+      ...nodeToCopy,
+      id: newNodeId,
+      position: { x: nodeToCopy.position.x + 50, y: nodeToCopy.position.y + 50 },
+      data: {
+        ...nodeToCopy.data,
+        onAddAction: openAddActionPanel,
+        onDelete: () => deleteNode(newNodeId),
+        onCopy: () => copyNode(newNodeId),
+      },
+    }
+    setNodes((nds) => [...nds, newNode])
   }
 
   const toggleCategory = (categoryName: string) => {
@@ -459,6 +560,14 @@ export default function AutomationBuilderPage() {
           </button>
 
           <button
+            onClick={() => setShowTestModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+          >
+            <Play className="w-4 h-4" />
+            Test
+          </button>
+
+          <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
@@ -468,6 +577,61 @@ export default function AutomationBuilderPage() {
           </button>
         </div>
       </div>
+
+      {/* Test Workflow Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-4">Test Automation</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Select a record to test this automation with. The automation will run immediately with the selected record.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Record
+              </label>
+              <select
+                value={testRecordId}
+                onChange={(e) => setTestRecordId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Choose a record...</option>
+                {testRecords.map((record) => (
+                  <option key={record.id} value={record.id}>
+                    {record.ownerFullName} - {record.propertyStreet || 'No address'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {testResult && (
+              <div className={`p-3 rounded-lg mb-4 ${
+                testResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              }`}>
+                {testResult.message}
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowTestModal(false)
+                  setTestRecordId('')
+                  setTestResult(null)
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleTestWorkflow}
+                disabled={!testRecordId || testing}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {testing ? 'Running...' : 'Run Test'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 px-4">
