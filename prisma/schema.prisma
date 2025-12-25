@@ -56,6 +56,7 @@ model User {
   createdTaskTemplates TaskTemplate[]        @relation("TaskTemplateCreator")
   createdFilterFolders FilterFolder[]        @relation("FilterFolderCreator")
   createdFilterTemplates FilterTemplate[]    @relation("FilterTemplateCreator")
+  createdBoards        Board[]               @relation("BoardCreator")
 }
 
 model Property {
@@ -212,6 +213,7 @@ model Record {
   phoneNumbers       RecordPhoneNumber[]
   recordTags         RecordTag[]
   tasks              Task[]
+  boardPositions     RecordBoardPosition[]
 }
 
 model RecordTag {
@@ -465,4 +467,49 @@ model FilterTemplate {
 
   @@unique([name, createdById])
   @@index([folderId])
+}
+
+// Kanban Board Models
+model Board {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdBy   User          @relation("BoardCreator", fields: [createdById], references: [id])
+  columns     BoardColumn[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([name, createdById])
+  @@index([createdById])
+}
+
+model BoardColumn {
+  id        String                @id @default(cuid())
+  name      String
+  color     String                @default("#6366f1")
+  order     Int                   @default(0)
+  boardId   String
+  board     Board                 @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  records   RecordBoardPosition[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([boardId])
+  @@index([order])
+}
+
+model RecordBoardPosition {
+  id        String      @id @default(cuid())
+  recordId  String
+  record    Record      @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  columnId  String
+  column    BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([recordId, columnId])
+  @@index([columnId])
+  @@index([recordId])
 }
