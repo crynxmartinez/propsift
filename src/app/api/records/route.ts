@@ -234,8 +234,12 @@ export async function GET(request: NextRequest) {
 
     // Build where clause based on completion filter and user role
     // Use ownerId for team data sharing (all team members see same data)
+    // Also include legacy records with null createdById
     let whereClause: Record<string, unknown> = {
-      createdById: authUser.ownerId, // Show records for the account (team shares data)
+      OR: [
+        { createdById: authUser.ownerId },
+        { createdById: null }
+      ]
     };
 
     // Members can only see records assigned to them

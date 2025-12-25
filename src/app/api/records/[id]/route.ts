@@ -30,7 +30,13 @@ export async function GET(
     }
 
     const record = await prisma.record.findFirst({
-      where: { id: params.id, createdById: authUser.ownerId },
+      where: { 
+        id: params.id, 
+        OR: [
+          { createdById: authUser.ownerId },
+          { createdById: null }
+        ]
+      },
       include: {
         status: true,
         assignedTo: {
@@ -146,7 +152,13 @@ export async function PUT(
 
     // Check if record exists and belongs to team
     const existingRecord = await prisma.record.findFirst({
-      where: { id: params.id, createdById: authUser.ownerId },
+      where: { 
+        id: params.id, 
+        OR: [
+          { createdById: authUser.ownerId },
+          { createdById: null }
+        ]
+      },
       include: {
         recordMotivations: true,
         recordTags: true,
@@ -598,7 +610,13 @@ export async function DELETE(
 
     // Check if record exists and belongs to team
     const existingRecord = await prisma.record.findFirst({
-      where: { id: params.id, createdById: authUser.ownerId },
+      where: { 
+        id: params.id, 
+        OR: [
+          { createdById: authUser.ownerId },
+          { createdById: null }
+        ]
+      },
     });
 
     if (!existingRecord) {
