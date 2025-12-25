@@ -421,7 +421,23 @@ export default function BoardDetailPage() {
       })
       if (!res.ok) throw new Error('Failed to fetch records')
       const data = await res.json()
-      setAvailableRecords(data.records || [])
+      // Map records to include empty arrays for missing fields
+      const records = (data.records || []).map((r: { id: string; ownerFullName: string; propertyStreet?: string | null; propertyCity?: string | null; propertyState?: string | null; propertyZip?: string | null; status?: Status | null; assignedTo?: AssignedTo | null; recordTags?: RecordTag[]; phoneNumbers?: PhoneNumber[]; isComplete?: boolean; temperature?: string | null; tasks?: { id: string; status: string }[] }) => ({
+        id: r.id,
+        ownerFullName: r.ownerFullName,
+        propertyStreet: r.propertyStreet || null,
+        propertyCity: r.propertyCity || null,
+        propertyState: r.propertyState || null,
+        propertyZip: r.propertyZip || null,
+        status: r.status || null,
+        assignedTo: r.assignedTo || null,
+        recordTags: r.recordTags || [],
+        phoneNumbers: r.phoneNumbers || [],
+        isComplete: r.isComplete || false,
+        temperature: r.temperature || null,
+        tasks: r.tasks || [],
+      }))
+      setAvailableRecords(records)
     } catch (err) {
       console.error('Failed to fetch records:', err)
     } finally {
