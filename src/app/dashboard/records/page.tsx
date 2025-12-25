@@ -185,12 +185,14 @@ export default function RecordsPage() {
   // Fetch options for bulk actions
   const fetchBulkOptions = async () => {
     try {
+      const token = localStorage.getItem('token')
+      const headers = { Authorization: `Bearer ${token}` }
       const [tagsRes, motivationsRes, statusesRes, usersRes, taskTemplatesRes] = await Promise.all([
-        fetch('/api/tags'),
-        fetch('/api/motivations'),
-        fetch('/api/statuses'),
-        fetch('/api/users'),
-        fetch('/api/task-templates'),
+        fetch('/api/tags', { headers }),
+        fetch('/api/motivations', { headers }),
+        fetch('/api/statuses', { headers }),
+        fetch('/api/users', { headers }),
+        fetch('/api/task-templates', { headers }),
       ])
       if (tagsRes.ok) setTags(await tagsRes.json())
       if (motivationsRes.ok) setMotivations(await motivationsRes.json())
@@ -219,9 +221,10 @@ export default function RecordsPage() {
       const recordCount = selectedIds.size > 0 ? selectedIds.size : totalCount
       
       // Call export API which creates activity log and stores CSV
+      const token = localStorage.getItem('token')
       const exportRes = await fetch('/api/records/export', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ recordIds }),
       })
       
@@ -243,10 +246,11 @@ export default function RecordsPage() {
       const recordIds = Array.from(selectedIds)
 
       // Handle task-related actions separately
+      const token = localStorage.getItem('token')
       if (bulkActionModal === 'addTaskTemplate') {
         const res = await fetch('/api/tasks/bulk', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             templateId: selectedTaskTemplate,
             recordIds,
@@ -270,7 +274,7 @@ export default function RecordsPage() {
       if (bulkActionModal === 'clearTasks') {
         const res = await fetch('/api/tasks/bulk', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ recordIds }),
         })
 
@@ -315,7 +319,7 @@ export default function RecordsPage() {
 
       const res = await fetch('/api/records/bulk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       })
 
@@ -989,9 +993,10 @@ export default function RecordsPage() {
                       type="button"
                       onClick={async () => {
                         try {
+                          const token = localStorage.getItem('token')
                           const res = await fetch('/api/tags', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                             body: JSON.stringify({ name: bulkSearchQuery.trim() }),
                           })
                           if (res.ok) {
@@ -1059,9 +1064,10 @@ export default function RecordsPage() {
                       type="button"
                       onClick={async () => {
                         try {
+                          const token = localStorage.getItem('token')
                           const res = await fetch('/api/motivations', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                             body: JSON.stringify({ name: bulkSearchQuery.trim() }),
                           })
                           if (res.ok) {
