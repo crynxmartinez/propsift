@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Tag, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink, MoreVertical } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Tag, Plus, Pencil, Trash2, X, Check, Loader2, ExternalLink, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 
 interface TagItem {
@@ -24,6 +24,15 @@ export default function TagsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<TagItem | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const paginatedTags = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return tags.slice(startIndex, startIndex + itemsPerPage)
+  }, [tags, currentPage])
+
+  const totalPages = Math.ceil(tags.length / itemsPerPage)
 
   const fetchTags = async () => {
     try {
@@ -231,7 +240,7 @@ export default function TagsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {tags.map((tag) => (
+              {paginatedTags.map((tag) => (
                 <tr key={tag.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     {editingId === tag.id ? (
@@ -327,6 +336,44 @@ export default function TagsPage() {
               ))}
             </tbody>
           </table>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, tags.length)} of {tags.length} tags
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
