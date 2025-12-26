@@ -30,6 +30,16 @@ interface WidgetConfig {
       metric?: string
     }>
   }
+  // Multi-metric support
+  multiMetric?: {
+    metrics: Array<{
+      dataSource: string
+      metric?: string
+      label: string
+      color?: string
+    }>
+    comparison?: 'side_by_side' | 'stacked' | 'overlay'
+  }
 }
 
 // POST /api/analytics-data - Get data for a widget
@@ -73,6 +83,12 @@ export async function POST(request: NextRequest) {
     // Handle calculated metrics first
     if (config.calculatedMetric && config.calculatedMetric.sources.length > 0) {
       result = await getCalculatedMetric(config, authUser.ownerId, dateRange)
+      return NextResponse.json(result)
+    }
+
+    // Handle multi-metric widgets
+    if (config.multiMetric && config.multiMetric.metrics.length > 0) {
+      result = await getMultiMetricData(config, authUser.ownerId, dateRange)
       return NextResponse.json(result)
     }
 
@@ -1087,6 +1103,103 @@ async function getPresetCalculatedMetric(
     
     default:
       return { value: 0, label: 'Unknown', sourceValues: {} }
+  }
+}
+
+// ==========================================
+// MULTI-METRIC DATA - Multiple data sources in one widget
+// ==========================================
+async function getMultiMetricData(
+  config: WidgetConfig,
+  ownerId: string,
+  dateRange: { start: Date; end: Date } | null
+) {
+  if (!config.multiMetric) {
+    return { data: [] }
+  }
+
+  const { metrics, comparison } = config.multiMetric
+  const data: Array<{ label: string; value: number; color?: string }> = []
+
+  for (const metricConfig of metrics) {
+    const sourceConfig: WidgetConfig = {
+      dataSource: metricConfig.dataSource,
+      metric: metricConfig.metric || 'count',
+      timePeriod: config.timePeriod,
+    }
+    
+    const baseWhere = {
+      createdById: ownerId,
+      ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
+    }
+    
+    const result = await getNumberData(sourceConfig, baseWhere, ownerId, dateRange)
+    
+    data.push({
+      label: metricConfig.label,
+      value: result.value,
+      color: metricConfig.color,
+    })
+  }
+
+  return {
+    data,
+    comparison: comparison || 'side_by_side',
+    // Also return individual values for number widgets showing multiple KPIs
+    values: data.map(d => ({ label: d.label, value: d.value, color: d.color })),
+  }
+}
+
+// ==========================================
+// COMPARISON DATA - Compare two time periods
+// ==========================================
+async function getComparisonData(
+  config: WidgetConfig,
+  ownerId: string,
+  dateRange: { start: Date; end: Date } | null
+) {
+  if (!dateRange) {
+    return { current: 0, previous: 0, change: 0, changePercent: 0 }
+  }
+
+  const baseWhere = {
+    createdById: ownerId,
+  }
+
+  // Current period
+  const currentWhere = {
+    ...baseWhere,
+    createdAt: { gte: dateRange.start, lte: dateRange.end },
+  }
+  
+  // Previous period (same duration before current)
+  const duration = dateRange.end.getTime() - dateRange.start.getTime()
+  const prevStart = new Date(dateRange.start.getTime() - duration)
+  const prevEnd = new Date(dateRange.start.getTime() - 1)
+  
+  const previousWhere = {
+    ...baseWhere,
+    createdAt: { gte: prevStart, lte: prevEnd },
+  }
+
+  const currentConfig: WidgetConfig = { ...config }
+  const previousConfig: WidgetConfig = { ...config }
+
+  const currentResult = await getNumberData(currentConfig, currentWhere, ownerId, dateRange)
+  const previousResult = await getNumberData(previousConfig, previousWhere, ownerId, { start: prevStart, end: prevEnd })
+
+  const change = currentResult.value - previousResult.value
+  const changePercent = previousResult.value > 0 
+    ? ((currentResult.value - previousResult.value) / previousResult.value) * 100 
+    : 0
+
+  return {
+    current: currentResult.value,
+    previous: previousResult.value,
+    change,
+    changePercent: Math.round(changePercent * 10) / 10,
+    currentPeriod: { start: dateRange.start, end: dateRange.end },
+    previousPeriod: { start: prevStart, end: prevEnd },
   }
 }
 
