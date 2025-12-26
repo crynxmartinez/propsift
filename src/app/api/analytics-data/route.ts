@@ -434,6 +434,145 @@ async function getGroupedData(
         }
       }
       break
+
+    case 'tags':
+      // Get all tags with record count
+      const allTags = await prisma.tag.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      for (const tag of allTags) {
+        data.push({ label: tag.name, value: tag.records.length })
+      }
+      break
+
+    case 'motivations':
+      // Get all motivations with record count
+      const allMotivations = await prisma.motivation.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      for (const motivation of allMotivations) {
+        data.push({ label: motivation.name, value: motivation.records.length })
+      }
+      break
+
+    case 'statuses':
+      // Get all statuses with record count
+      const allStatuses = await prisma.status.findMany({
+        where: { createdById: ownerId },
+        orderBy: { order: 'asc' },
+      })
+      for (const status of allStatuses) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: { createdById: ownerId, statusId: status.id } as any,
+        })
+        data.push({ label: status.name, value: count, color: status.color })
+      }
+      break
+
+    case 'team':
+      // Get team members with their record/task counts
+      const teamMembers = await prisma.user.findMany({
+        where: {
+          OR: [{ id: ownerId }, { accountOwnerId: ownerId }],
+        },
+      })
+      for (const member of teamMembers) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const recordCount = await prisma.record.count({
+          where: { assignedToId: member.id } as any,
+        })
+        data.push({ label: member.name || member.email, value: recordCount })
+      }
+      break
+
+    case 'automations':
+      // Get automations by status
+      const activeCount = await prisma.automation.count({
+        where: { createdById: ownerId, isActive: true },
+      })
+      const inactiveCount = await prisma.automation.count({
+        where: { createdById: ownerId, isActive: false },
+      })
+      data.push({ label: 'Active', value: activeCount, color: '#10B981' })
+      data.push({ label: 'Inactive', value: inactiveCount, color: '#9CA3AF' })
+      break
+
+    case 'phones':
+      // Get phone numbers by type
+      const phoneTypes = ['mobile', 'landline', 'voip', 'unknown']
+      for (const phoneType of phoneTypes) {
+        const count = await prisma.recordPhoneNumber.count({
+          where: { 
+            record: { createdById: ownerId },
+            type: phoneType,
+          },
+        })
+        if (count > 0) {
+          data.push({ label: phoneType.charAt(0).toUpperCase() + phoneType.slice(1), value: count })
+        }
+      }
+      break
+
+    case 'emails':
+      // Get emails - primary vs secondary
+      const primaryEmails = await prisma.recordEmail.count({
+        where: { record: { createdById: ownerId }, isPrimary: true },
+      })
+      const secondaryEmails = await prisma.recordEmail.count({
+        where: { record: { createdById: ownerId }, isPrimary: false },
+      })
+      data.push({ label: 'Primary', value: primaryEmails, color: '#3B82F6' })
+      data.push({ label: 'Secondary', value: secondaryEmails, color: '#9CA3AF' })
+      break
+
+    case 'boards':
+      // Get boards with record count
+      const boards = await prisma.board.findMany({
+        where: { createdById: ownerId },
+        include: {
+          columns: {
+            include: {
+              records: true,
+            },
+          },
+        },
+      })
+      for (const board of boards) {
+        const recordCount = board.columns.reduce((sum, col) => sum + col.records.length, 0)
+        data.push({ label: board.name, value: recordCount })
+      }
+      break
+
+    case 'custom_fields':
+      // Get custom field definitions by type
+      const fields = await prisma.customFieldDefinition.findMany({
+        where: { createdById: ownerId },
+      })
+      const fieldsByType: Record<string, number> = {}
+      for (const field of fields) {
+        fieldsByType[field.fieldType] = (fieldsByType[field.fieldType] || 0) + 1
+      }
+      for (const [type, count] of Object.entries(fieldsByType)) {
+        data.push({ label: type.charAt(0).toUpperCase() + type.slice(1), value: count })
+      }
+      break
+
+    default:
+      // Default: try to get records by status
+      const defaultStatuses = await prisma.status.findMany({
+        where: { createdById: ownerId },
+        orderBy: { order: 'asc' },
+      })
+      for (const status of defaultStatuses) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: { createdById: ownerId, statusId: status.id } as any,
+        })
+        data.push({ label: status.name, value: count, color: status.color })
+      }
   }
 
   // Sort data
@@ -553,66 +692,119 @@ async function getLeaderboardData(
   const data: Array<{ name: string; value: number; avatar?: string }> = []
   const limit = config.limit || 10
 
-  // Get team members
-  const users = await prisma.user.findMany({
-    where: {
-      OR: [
-        { id: ownerId },
-        { accountOwnerId: ownerId },
-      ],
-    },
-    select: { id: true, name: true, email: true },
-  })
-
   switch (config.dataSource) {
-    case 'records':
-      for (const user of users) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const count = await prisma.record.count({
-          where: {
-            ...whereClause,
-            assignedToId: user.id,
-          } as any,
-        })
-        data.push({ name: user.name || user.email, value: count })
+    case 'tags':
+      // Leaderboard of tags by record count
+      const tags = await prisma.tag.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      for (const tag of tags) {
+        data.push({ name: tag.name, value: tag.records.length })
       }
       break
 
+    case 'motivations':
+      // Leaderboard of motivations by record count
+      const motivations = await prisma.motivation.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      for (const motivation of motivations) {
+        data.push({ name: motivation.name, value: motivation.records.length })
+      }
+      break
+
+    case 'statuses':
+      // Leaderboard of statuses by record count
+      const statuses = await prisma.status.findMany({
+        where: { createdById: ownerId },
+        orderBy: { order: 'asc' },
+      })
+      for (const status of statuses) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: { createdById: ownerId, statusId: status.id } as any,
+        })
+        data.push({ name: status.name, value: count })
+      }
+      break
+
+    case 'automations':
+      // Leaderboard of automations by run count
+      const automations = await prisma.automation.findMany({
+        where: { createdById: ownerId },
+        orderBy: { runCount: 'desc' },
+        take: limit,
+      })
+      for (const automation of automations) {
+        data.push({ name: automation.name, value: automation.runCount })
+      }
+      break
+
+    case 'boards':
+      // Leaderboard of boards by record count
+      const boards = await prisma.board.findMany({
+        where: { createdById: ownerId },
+        include: {
+          columns: {
+            include: { records: true },
+          },
+        },
+      })
+      for (const board of boards) {
+        const recordCount = board.columns.reduce((sum, col) => sum + col.records.length, 0)
+        data.push({ name: board.name, value: recordCount })
+      }
+      break
+
+    case 'team':
+    case 'records':
     case 'tasks':
     case 'tasks_completed':
-      for (const user of users) {
-        const count = await prisma.task.count({
-          where: {
-            createdById: ownerId,
-            assignedToId: user.id,
-            ...(config.dataSource === 'tasks_completed' ? { status: 'COMPLETED' } : {}),
-          },
-        })
-        data.push({ name: user.name || user.email, value: count })
-      }
-      break
-
     case 'activity':
-      for (const user of users) {
-        const count = await prisma.activityLog.count({
-          where: {
-            userId: user.id,
-          },
-        })
-        data.push({ name: user.name || user.email, value: count })
-      }
-      break
-
     default:
-      for (const user of users) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const count = await prisma.record.count({
-          where: {
-            ...whereClause,
-            assignedToId: user.id,
-          } as any,
-        })
-        data.push({ name: user.name || user.email, value: count })
+      // Get team members for user-based leaderboards
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+            { id: ownerId },
+            { accountOwnerId: ownerId },
+          ],
+        },
+        select: { id: true, name: true, email: true },
+      })
+
+      if (config.dataSource === 'tasks' || config.dataSource === 'tasks_completed') {
+        for (const user of users) {
+          const count = await prisma.task.count({
+            where: {
+              createdById: ownerId,
+              assignedToId: user.id,
+              ...(config.dataSource === 'tasks_completed' ? { status: 'COMPLETED' } : {}),
+            },
+          })
+          data.push({ name: user.name || user.email, value: count })
+        }
+      } else if (config.dataSource === 'activity') {
+        for (const user of users) {
+          const count = await prisma.activityLog.count({
+            where: { userId: user.id },
+          })
+          data.push({ name: user.name || user.email, value: count })
+        }
+      } else {
+        // Default: records per user
+        for (const user of users) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const count = await prisma.record.count({
+            where: {
+              ...whereClause,
+              assignedToId: user.id,
+            } as any,
+          })
+          data.push({ name: user.name || user.email, value: count })
+        }
       }
   }
 
