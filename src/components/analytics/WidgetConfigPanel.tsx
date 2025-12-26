@@ -29,6 +29,16 @@ interface WidgetAppearance {
   centerText?: string
   color?: string
   thresholds?: { warning: number; danger: number }
+  showPercentage?: boolean
+  showRank?: boolean
+  showAvatar?: boolean
+  showBar?: boolean
+  showArea?: boolean
+  showPoints?: boolean
+  smooth?: boolean
+  showHeader?: boolean
+  striped?: boolean
+  compact?: boolean
 }
 
 interface Widget {
@@ -963,83 +973,184 @@ export default function WidgetConfigPanel({
             </>
           ) : (
             <>
-              {/* Show Values */}
-              {isChartWidget && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.showValues ?? false}
-                    onChange={(e) => updateAppearance('showValues', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Show Values</span>
+              {/* ==========================================
+                  PHASE 6: ENHANCED APPEARANCE OPTIONS
+                  ========================================== */}
+              
+              {/* Color Scheme Picker */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Color Scheme
                 </label>
-              )}
+                <div className="space-y-2">
+                  {/* Preset Palettes */}
+                  {[
+                    { name: 'Blue', colors: ['#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'] },
+                    { name: 'Green', colors: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5'] },
+                    { name: 'Purple', colors: ['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'] },
+                    { name: 'Orange', colors: ['#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7'] },
+                    { name: 'Red', colors: ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'] },
+                    { name: 'Pink', colors: ['#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3'] },
+                    { name: 'Teal', colors: ['#14B8A6', '#2DD4BF', '#5EEAD4', '#99F6E4', '#CCFBF1'] },
+                    { name: 'Indigo', colors: ['#6366F1', '#818CF8', '#A5B4FC', '#C7D2FE', '#E0E7FF'] },
+                    { name: 'Rainbow', colors: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'] },
+                    { name: 'Grayscale', colors: ['#374151', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'] },
+                  ].map((palette) => (
+                    <button
+                      key={palette.name}
+                      onClick={() => updateAppearance('colors', palette.colors)}
+                      className={`w-full flex items-center gap-2 p-2 rounded-lg border ${
+                        JSON.stringify(appearance.colors) === JSON.stringify(palette.colors)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex gap-0.5">
+                        {palette.colors.map((color, i) => (
+                          <div
+                            key={i}
+                            className="w-4 h-4 rounded-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-600">{palette.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              {/* Show Legend */}
-              {isChartWidget && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.showLegend ?? true}
-                    onChange={(e) => updateAppearance('showLegend', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Show Legend</span>
+              {/* Display Options Section */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Display Options
                 </label>
-              )}
+                <div className="space-y-2">
+                  {/* Show Values */}
+                  {isChartWidget && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.showValues ?? false}
+                        onChange={(e) => updateAppearance('showValues', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Values on Chart</span>
+                    </label>
+                  )}
 
-              {/* Show Labels (pie chart) */}
-              {['pie_chart', 'donut_chart'].includes(widget.type) && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.showLabels ?? true}
-                    onChange={(e) => updateAppearance('showLabels', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Show Labels</span>
-                </label>
-              )}
+                  {/* Show Legend */}
+                  {isChartWidget && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.showLegend ?? true}
+                        onChange={(e) => updateAppearance('showLegend', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Legend</span>
+                    </label>
+                  )}
 
-              {/* Show Change (number widget) */}
-              {widget.type === 'number' && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.showChange ?? false}
-                    onChange={(e) => updateAppearance('showChange', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Show Change Indicator</span>
-                </label>
-              )}
+                  {/* Show Labels (pie chart) */}
+                  {['pie_chart', 'donut_chart'].includes(widget.type) && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.showLabels ?? true}
+                        onChange={(e) => updateAppearance('showLabels', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Labels</span>
+                    </label>
+                  )}
 
-              {/* Horizontal (bar chart) */}
-              {widget.type === 'bar_chart' && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.horizontal ?? false}
-                    onChange={(e) => updateAppearance('horizontal', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Horizontal Bars</span>
-                </label>
-              )}
+                  {/* Show Change Indicator (number widget) */}
+                  {widget.type === 'number' && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.showChange ?? false}
+                        onChange={(e) => updateAppearance('showChange', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Change Indicator (+5% / -3%)</span>
+                    </label>
+                  )}
 
-              {/* Donut (pie chart) */}
-              {widget.type === 'pie_chart' && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={appearance.donut ?? false}
-                    onChange={(e) => updateAppearance('donut', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Donut Style</span>
-                </label>
-              )}
+                  {/* Horizontal (bar chart) */}
+                  {widget.type === 'bar_chart' && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.horizontal ?? false}
+                        onChange={(e) => updateAppearance('horizontal', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Horizontal Bars</span>
+                    </label>
+                  )}
+
+                  {/* Donut (pie chart) */}
+                  {widget.type === 'pie_chart' && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.donut ?? false}
+                        onChange={(e) => updateAppearance('donut', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Donut Style</span>
+                    </label>
+                  )}
+
+                  {/* Show Percentage (gauge, progress) */}
+                  {['gauge', 'progress'].includes(widget.type) && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={appearance.showPercentage ?? true}
+                        onChange={(e) => updateAppearance('showPercentage', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Percentage</span>
+                    </label>
+                  )}
+
+                  {/* Show Rank (leaderboard) */}
+                  {widget.type === 'leaderboard' && (
+                    <>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={appearance.showRank ?? true}
+                          onChange={(e) => updateAppearance('showRank', e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">Show Rank Numbers</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={appearance.showAvatar ?? true}
+                          onChange={(e) => updateAppearance('showAvatar', e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">Show Avatars</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={appearance.showBar ?? true}
+                          onChange={(e) => updateAppearance('showBar', e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">Show Progress Bars</span>
+                      </label>
+                    </>
+                  )}
+                </div>
+              </div>
 
               {/* Center Text (donut) */}
               {(widget.type === 'donut_chart' || appearance.donut) && (
@@ -1057,23 +1168,63 @@ export default function WidgetConfigPanel({
                 </div>
               )}
 
-              {/* Color (number widget) */}
-              {widget.type === 'number' && (
+              {/* Accent Color (single color widgets) */}
+              {['number', 'progress', 'gauge'].includes(widget.type) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Accent Color
                   </label>
-                  <div className="flex gap-2">
-                    {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'].map((color) => (
+                  <div className="flex flex-wrap gap-2">
+                    {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1', '#F97316', '#84CC16'].map((color) => (
                       <button
                         key={color}
                         onClick={() => updateAppearance('color', color)}
-                        className={`w-8 h-8 rounded-lg border-2 ${
-                          appearance.color === color ? 'border-gray-900' : 'border-transparent'
+                        className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                          appearance.color === color ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'
                         }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Thresholds (for gauge, progress, number) */}
+              {['gauge', 'progress', 'number'].includes(widget.type) && (
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Color Thresholds
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Set thresholds to change color based on value
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-yellow-600 mb-1">Warning Below</label>
+                      <input
+                        type="number"
+                        value={appearance.thresholds?.warning || ''}
+                        onChange={(e) => updateAppearance('thresholds', {
+                          ...appearance.thresholds,
+                          warning: parseInt(e.target.value) || 0
+                        })}
+                        placeholder="e.g., 50"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-red-600 mb-1">Danger Below</label>
+                      <input
+                        type="number"
+                        value={appearance.thresholds?.danger || ''}
+                        onChange={(e) => updateAppearance('thresholds', {
+                          ...appearance.thresholds,
+                          danger: parseInt(e.target.value) || 0
+                        })}
+                        placeholder="e.g., 25"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
