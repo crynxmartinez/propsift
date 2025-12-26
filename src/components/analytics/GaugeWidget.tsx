@@ -33,9 +33,10 @@ export default function GaugeWidget({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData()
-  }, [widgetId, config])
+  }, [widgetId, JSON.stringify(config)])
 
   const fetchData = async () => {
     setLoading(true)
