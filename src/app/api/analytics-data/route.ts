@@ -282,6 +282,65 @@ async function getNumberData(
         } as any,
       })
       break
+
+    case 'tags':
+      value = await prisma.tag.count({ where: { createdById: ownerId } })
+      break
+
+    case 'motivations':
+      value = await prisma.motivation.count({ where: { createdById: ownerId } })
+      break
+
+    case 'statuses':
+      value = await prisma.status.count({ where: { createdById: ownerId } })
+      break
+
+    case 'boards':
+      value = await prisma.board.count({ where: { createdById: ownerId } })
+      break
+
+    case 'automations':
+      value = await prisma.automation.count({ where: { createdById: ownerId } })
+      break
+
+    case 'automations_active':
+      value = await prisma.automation.count({ where: { createdById: ownerId, isActive: true } })
+      break
+
+    case 'team':
+      value = await prisma.user.count({
+        where: {
+          OR: [{ id: ownerId }, { accountOwnerId: ownerId }],
+        },
+      })
+      break
+
+    case 'phones':
+      value = await prisma.recordPhoneNumber.count({
+        where: { record: { createdById: ownerId } },
+      })
+      break
+
+    case 'emails':
+      value = await prisma.recordEmail.count({
+        where: { record: { createdById: ownerId } },
+      })
+      break
+
+    case 'custom_fields':
+      value = await prisma.customFieldDefinition.count({ where: { createdById: ownerId } })
+      break
+
+    case 'activity':
+      value = await prisma.activityLog.count({
+        where: dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {},
+      })
+      break
+
+    default:
+      // Default to records count
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: whereClause as any })
   }
 
   const change = previousValue !== undefined ? value - previousValue : undefined
