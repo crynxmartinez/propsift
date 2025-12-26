@@ -4,7 +4,7 @@
  * Validation utilities for API inputs.
  */
 
-import type { WidgetQueryInput, GlobalFilters } from '../registry/types'
+import type { WidgetQueryInput, GlobalFilters, FilterPredicate } from '../registry/types'
 
 /**
  * Validation error
@@ -64,10 +64,10 @@ export function validateWidgetInput(input: unknown): WidgetQueryInput {
     metric: {
       key: metric.key as string,
       field: metric.field as string | undefined,
-      filter: metric.filter as Record<string, unknown> | undefined
+      filter: metric.filter as FilterPredicate[] | undefined
     },
     dimension: obj.dimension as string | undefined,
-    filters: (obj.filters as Array<{ field: string; operator: string; value: unknown }>) || [],
+    filters: (obj.filters as FilterPredicate[]) || [],
     globalFilters: (obj.globalFilters as GlobalFilters) || {},
     dateRange: obj.dateRange as WidgetQueryInput['dateRange'],
     dateMode: obj.dateMode as WidgetQueryInput['dateMode'],
