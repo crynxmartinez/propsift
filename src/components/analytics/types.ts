@@ -50,8 +50,8 @@ export interface DashboardConfig {
   description?: string
   widgets: WidgetConfig[]
   globalFilters: GlobalFilters
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 /**
