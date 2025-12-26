@@ -150,8 +150,10 @@ export type TenantScopeMode = 'direct' | 'via_join'
 export interface TenantScopeDef {
   mode: TenantScopeMode
   field?: string           // direct: e.g., 'workspaceId'
-  joinPath?: string        // via_join: e.g., 'record'
-  joinField?: string       // via_join: e.g., 'workspaceId'
+  // v2.2.2 FIX: Standardized via_join fields
+  joinEntity?: string      // via_join: registry key, e.g., 'records' (for cache deps)
+  joinRelation?: string    // via_join: Prisma relation name, e.g., 'record' (for query building)
+  joinField?: string       // via_join: field on joined model, e.g., 'workspaceId'
 }
 
 export type PermissionScope = 'adminOnly' | 'team' | 'roleBased'
@@ -160,7 +162,8 @@ export interface EntityDefinition {
   key: string
   label: string
   labelPlural: string
-  table: string // Prisma model name
+  // v2.2.2 FIX: Use delegate name (lowerCamelCase) for prisma[delegate] calls
+  delegate: string // Prisma client delegate, e.g., 'recordPhoneNumber' (not 'RecordPhoneNumber')
 
   tenantScope: TenantScopeDef
   permissionScope: PermissionScope
@@ -199,17 +202,17 @@ export type SearchFieldDef =
 
 ### Entity Keys (v2.2.2)
 
-| Entity Key | Table | Tenant Scope | Search Fields |
-|------------|-------|--------------|---------------|
-| `records` | Record | direct: `workspaceId` | `[{kind:'scalar',field:'name'}, {kind:'scalar',field:'address'}, {kind:'relation_some',relation:'phones',field:'phoneNumber'}, {kind:'relation_some',relation:'emails',field:'email'}]` |
-| `tasks` | Task | direct: `workspaceId` | `[{kind:'scalar',field:'title'}, {kind:'scalar',field:'description'}]` |
-| `phones` | RecordPhoneNumber | via_join: `record.workspaceId` | `[{kind:'scalar',field:'phoneNumber'}]` |
-| `emails` | RecordEmail | via_join: `record.workspaceId` | `[{kind:'scalar',field:'email'}]` |
-| `activity` | ActivityLog | direct: `workspaceId` | `[{kind:'scalar',field:'description'}]` |
-| `record_tags` | RecordTag | direct: `workspaceId` | `[]` (no search) |
-| `record_motivations` | RecordMotivation | direct: `workspaceId` | `[]` (no search) |
-| `tags` | Tag | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
-| `motivations` | Motivation | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
+| Entity Key | Delegate | Tenant Scope | Search Fields |
+|------------|----------|--------------|---------------|
+| `records` | `record` | direct: `workspaceId` | `[{kind:'scalar',field:'name'}, {kind:'scalar',field:'address'}, {kind:'relation_some',relation:'phones',field:'phoneNumber'}, {kind:'relation_some',relation:'emails',field:'email'}]` |
+| `tasks` | `task` | direct: `workspaceId` | `[{kind:'scalar',field:'title'}, {kind:'scalar',field:'description'}]` |
+| `phones` | `recordPhoneNumber` | via_join: `joinEntity:'records', joinRelation:'record', joinField:'workspaceId'` | `[{kind:'scalar',field:'phoneNumber'}]` |
+| `emails` | `recordEmail` | via_join: `joinEntity:'records', joinRelation:'record', joinField:'workspaceId'` | `[{kind:'scalar',field:'email'}]` |
+| `activity` | `activityLog` | direct: `workspaceId` | `[{kind:'scalar',field:'description'}]` |
+| `record_tags` | `recordTag` | direct: `workspaceId` | `[]` (no search) |
+| `record_motivations` | `recordMotivation` | direct: `workspaceId` | `[]` (no search) |
+| `tags` | `tag` | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
+| `motivations` | `motivation` | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
 
 ### B) Segment Registry
 
@@ -386,27 +389,37 @@ export interface CompileCtx {
   timezone: string
   permissions: PermissionSet
   permissionHash: string  // v2.2.2: Pre-computed for caching
+  // v2.2.2 FIX: Add scopeKey for team-based permissions
+  scopeKey?: string  // e.g., teamId, roleGroupId - used when manager sees team
 }
 
 // v2.2.2: Compute permission hash
 function computePermissionHash(ctx: CompileCtx): string {
-  const hashInput = {
+  const hashInput: Record<string, unknown> = {
     role: ctx.role,
     rowFilters: ctx.permissions.entities,
-    // Include userId ONLY if permissions are truly per-user
-    // (e.g., agent sees only assigned-to-self)
-    userId: hasPerUserScope(ctx) ? ctx.userId : undefined
   }
+  
+  // v2.2.2 FIX: Include scopeKey for team-based permissions
+  if (ctx.scopeKey) {
+    hashInput.scopeKey = ctx.scopeKey
+  }
+  
+  // Include userId ONLY if permissions are truly per-user
+  if (hasPerUserScope(ctx)) {
+    hashInput.userId = ctx.userId
+  }
+  
   return crypto.createHash('sha256')
-    .update(JSON.stringify(hashInput))
+    .update(stableStringify(hashInput))  // v2.2.2 FIX: Use stableStringify
     .digest('hex')
     .substring(0, 16)
 }
 
+// v2.2.2 FIX: Check for ANY $userId reference in rowFilters, not just assignedToId
 function hasPerUserScope(ctx: CompileCtx): boolean {
-  // Check if any entity has a rowFilter referencing userId
   return Object.values(ctx.permissions.entities).some(ep => 
-    ep.rowFilter?.some(f => f.field === 'assignedToId' && f.value === '$userId')
+    ep.rowFilter?.some(f => f.value === '$userId')  // Any field with $userId
   )
 }
 ```
@@ -466,6 +479,7 @@ function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K
 }
 
 // Stable stringify: sorted keys, consistent output
+// v2.2.2 FIX: Also sort arrays when order is not semantically meaningful
 function stableStringify(obj: unknown): string {
   return JSON.stringify(obj, (_, value) => {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -474,18 +488,27 @@ function stableStringify(obj: unknown): string {
         return sorted
       }, {} as Record<string, unknown>)
     }
+    // v2.2.2 FIX: Sort primitive arrays for deterministic output
+    // (string[], number[] - but NOT object arrays which may have meaningful order)
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] !== 'object') {
+      return [...value].sort()
+    }
     return value
   })
 }
 
+// v2.2.2 FIX: Include value in sort key to prevent instability when values differ
 function sortFilters(filters: FilterPredicate[]): FilterPredicate[] {
   return [...filters].sort((a, b) => 
-    `${a.field}:${a.operator}`.localeCompare(`${b.field}:${b.operator}`)
+    `${a.field}:${a.operator}:${stableStringify(a.value)}`.localeCompare(
+      `${b.field}:${b.operator}:${stableStringify(b.value)}`
+    )
   )
 }
 
 // v2.2.2 FIX: Normalize globalFilters to prevent hash instability
 // Problem: ['hot','warm'] vs ['warm','hot'] = different hash = cache fragmentation
+// v2.2.2 FIX: Use singular field names to match GlobalFilters interface
 function normalizeGlobalFilters(gf: Omit<GlobalFilters, 'dateRange'>): Record<string, unknown> {
   return {
     // Sort tag arrays
@@ -500,10 +523,9 @@ function normalizeGlobalFilters(gf: Omit<GlobalFilters, 'dateRange'>): Record<st
     } : undefined,
     // Sort assignee arrays
     assignees: gf.assignees ? [...gf.assignees].sort() : undefined,
-    // Sort status arrays
-    statuses: gf.statuses ? [...gf.statuses].sort() : undefined,
-    // Sort temperature arrays
-    temperatures: gf.temperatures ? [...gf.temperatures].sort() : undefined,
+    // v2.2.2 FIX: Use singular names to match interface (status, temperature)
+    status: gf.status ? [...gf.status].sort() : undefined,
+    temperature: gf.temperature ? [...gf.temperature].sort() : undefined,
   }
 }
 ```
@@ -604,7 +626,7 @@ export function compileQuery(
 
   return {
     entityKey: input.entityKey,
-    table: entity.table,
+    delegate: entity.delegate,  // v2.2.2 FIX: Use delegate for prisma[delegate] calls
     where,
     orderBy,
     take: input.limit,
@@ -838,11 +860,16 @@ export function compileDrilldownSearch(
   }
 }
 
+// v2.2.2 FIX: Prisma parameterizes queries, so SQL wildcard escaping is unnecessary
+// and can reduce match quality. Instead, sanitize for safety without breaking search UX.
 function sanitizeSearchInput(input: string, maxLength: number): string {
   return input
     .trim()
     .substring(0, maxLength)
-    .replace(/[%_\\]/g, '\\$&')  // Escape SQL wildcards (Prisma parameterizes, but defense in depth)
+    // Remove control characters but keep search-friendly chars
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    // Optionally restrict to safe chars for phone/email search:
+    // .replace(/[^a-zA-Z0-9 @._+\-]/g, '')
 }
 ```
 
@@ -900,23 +927,26 @@ export async function handleDrilldown(
     AND: [compiled.where, searchWhere].filter(w => Object.keys(w).length > 0)
   }
   
+  // v2.2.2 FIX: Clamp page to >= 1 to prevent negative skip
+  const page = Math.max(1, request.page)
+  
   // Execute with pagination
   const [rows, total] = await Promise.all([
-    prisma[compiled.table].findMany({
+    prisma[compiled.delegate].findMany({  // v2.2.2 FIX: Use delegate not table
       where,
       orderBy: request.sort ? { [request.sort.field]: request.sort.dir } : compiled.orderBy,
-      skip: (request.page - 1) * pageSize,
+      skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma[compiled.table].count({ where })
+    prisma[compiled.delegate].count({ where })  // v2.2.2 FIX: Use delegate not table
   ])
   
   return {
     rows,
     total,
-    page: request.page,
+    page,  // v2.2.2 FIX: Return clamped page
     pageSize,
-    hasMore: request.page * pageSize < total
+    hasMore: page * pageSize < total
   }
 }
 ```
@@ -1048,17 +1078,16 @@ export const INVALIDATION_MAP: Record<string, string[]> = {
   'task.update': ['tasks'],
   'task.delete': ['tasks'],
   
-  'tag.create': ['tags'],
-  // v2.2.2 FIX: tag.update does NOT bump widget cacheVersion
-  // It only bumps labelVersion (see invalidateLabelOnUpdate)
-  // 'tag.update': DO NOT ADD HERE - use invalidateLabelOnUpdate instead
-  'tag.delete': ['tags', 'record_tags'],
+  // v2.2.2 FIX: tag create/delete bump BOTH cacheVersion AND labelVersion
+  // (labels endpoint needs to reflect new/deleted tags)
+  'tag.create': ['tags'],  // + bump labelVersion:tags
+  'tag.delete': ['tags', 'record_tags'],  // + bump labelVersion:tags
+  // tag.update: labelVersion ONLY (see invalidateLabelOnUpdate)
   
-  'motivation.create': ['motivations'],
-  // v2.2.2 FIX: motivation.update does NOT bump widget cacheVersion
-  // It only bumps labelVersion (see invalidateLabelOnUpdate)
-  // 'motivation.update': DO NOT ADD HERE - use invalidateLabelOnUpdate instead
-  'motivation.delete': ['motivations', 'record_motivations'],
+  // v2.2.2 FIX: motivation create/delete bump BOTH cacheVersion AND labelVersion
+  'motivation.create': ['motivations'],  // + bump labelVersion:motivations
+  'motivation.delete': ['motivations', 'record_motivations'],  // + bump labelVersion:motivations
+  // motivation.update: labelVersion ONLY (see invalidateLabelOnUpdate)
 }
 
 // v2.2.2: Two-tier invalidation - widget vs label
@@ -1068,13 +1097,19 @@ export async function invalidateOnMutation(
   tenantId: string,
   mutationType: string
 ): Promise<void> {
-  // Check if this is a label-only update
   const [entity, action] = mutationType.split('.')
   
-  if (action === 'update' && LABEL_ENTITIES.includes(entity as any)) {
-    // Label update: bump labelVersion only, NOT widget cacheVersion
-    await redis.incr(`labelVersion:${tenantId}:${entity}`)
-    return
+  // v2.2.2 FIX: Label entities need labelVersion bumped on create/delete too
+  if (LABEL_ENTITIES.includes(entity as any)) {
+    if (action === 'update') {
+      // Label update: bump labelVersion ONLY, NOT widget cacheVersion
+      await redis.incr(`labelVersion:${tenantId}:${entity}`)
+      return
+    } else if (action === 'create' || action === 'delete') {
+      // Label create/delete: bump BOTH cacheVersion AND labelVersion
+      await redis.incr(`labelVersion:${tenantId}:${entity}`)
+      // Continue to also bump cacheVersion below
+    }
   }
   
   // All other mutations: bump widget cacheVersion
@@ -1924,7 +1959,7 @@ export async function invalidateOnMutation(tenantId: string, mutationType: strin
 // 4. Tag rename → only step 3 cache misses, step 1 stays cached
 ```
 
-### 5. Entity Key Convention
+### 5. Entity Key Convention (Updated)
 
 ```typescript
 // GOLDEN RULE: Always use registry entity keys, never Prisma relation names
@@ -1932,22 +1967,41 @@ export async function invalidateOnMutation(tenantId: string, mutationType: strin
 // Registry keys (use these everywhere):
 'records', 'phones', 'emails', 'record_tags', 'record_motivations', 'tasks', 'tags', 'motivations'
 
-// Prisma relations (internal to Prisma only):
-'record', 'phone', 'email', 'recordTags', 'recordMotivations', 'task', 'tag', 'motivation'
+// Prisma delegates (for prisma[delegate] calls):
+'record', 'recordPhoneNumber', 'recordEmail', 'recordTag', 'recordMotivation', 'task', 'tag', 'motivation'
 
-// In entity definition:
+// Prisma relations (for query building):
+'record', 'phones', 'emails', 'recordTags', 'recordMotivations', 'tasks', 'tags', 'motivations'
+
+// v2.2.2 FIX: Entity definition now has separate fields:
 {
-  key: 'phones',
-  table: 'recordPhoneNumber',  // Prisma model name
+  key: 'phones',                    // Registry key (for cache deps)
+  delegate: 'recordPhoneNumber',    // Prisma client delegate (for prisma[delegate])
   tenantScope: {
     mode: 'via_join',
-    joinEntity: 'records',     // Registry key, NOT 'record'
-    joinField: 'record.workspaceId'
+    joinEntity: 'records',          // Registry key (for cache deps)
+    joinRelation: 'record',         // Prisma relation name (for query building)
+    joinField: 'workspaceId'        // Field on joined model
   }
 }
 
 // In deps computation:
 deps.add(entity.tenantScope.joinEntity)  // 'records', matches cacheVersion key
+
+// In query execution:
+prisma[compiled.delegate].findMany(...)  // 'recordPhoneNumber'
+```
+
+### 6. Label Invalidation (Updated)
+
+```typescript
+// GOLDEN RULE: Label create/delete bumps BOTH cacheVersion AND labelVersion
+
+// tag.create → bump cacheVersion:tags + labelVersion:tags
+// tag.update → bump labelVersion:tags ONLY
+// tag.delete → bump cacheVersion:tags + cacheVersion:record_tags + labelVersion:tags
+
+// Same for motivations
 ```
 
 ---
