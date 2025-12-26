@@ -16,6 +16,9 @@ import {
 import NumberWidget from '@/components/analytics/NumberWidget'
 import BarChartWidget from '@/components/analytics/BarChartWidget'
 import PieChartWidget from '@/components/analytics/PieChartWidget'
+import LineChartWidget from '@/components/analytics/LineChartWidget'
+import ProgressWidget from '@/components/analytics/ProgressWidget'
+import TableWidget from '@/components/analytics/TableWidget'
 import WidgetConfigPanel from '@/components/analytics/WidgetConfigPanel'
 
 interface Dashboard {
@@ -522,9 +525,12 @@ function WidgetContent({ widget }: { widget: Widget }) {
     sortOrder?: string
     limit?: number
     timePeriod?: string
+    granularity?: string
     comparison?: string
     prefix?: string
     suffix?: string
+    goalValue?: number
+    columns?: string[]
   }
 
   const appearance = widget.appearance as {
@@ -538,6 +544,13 @@ function WidgetContent({ widget }: { widget: Widget }) {
     centerText?: string
     color?: string
     thresholds?: { warning: number; danger: number }
+    showArea?: boolean
+    showPoints?: boolean
+    smooth?: boolean
+    showPercentage?: boolean
+    showHeader?: boolean
+    striped?: boolean
+    compact?: boolean
   } | null
 
   switch (widget.type) {
@@ -584,6 +597,50 @@ function WidgetContent({ widget }: { widget: Widget }) {
             ...appearance,
             donut: widget.type === 'donut_chart',
           }}
+        />
+      )
+    case 'line_chart':
+    case 'area_chart':
+      return (
+        <LineChartWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            timePeriod: config.timePeriod || 'last_30_days',
+            granularity: config.granularity || 'daily',
+          }}
+          appearance={{
+            ...appearance,
+            showArea: widget.type === 'area_chart',
+          }}
+        />
+      )
+    case 'progress':
+      return (
+        <ProgressWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            goalValue: (config as { goalValue?: number }).goalValue || 100,
+          }}
+          appearance={appearance}
+        />
+      )
+    case 'table':
+      return (
+        <TableWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            limit: config.limit || 10,
+          }}
+          appearance={appearance}
         />
       )
     default:
