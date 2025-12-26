@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 // GET /api/tasks/[id] - Get a single task
 export async function GET(
@@ -174,6 +175,26 @@ export async function PUT(
           deliveryType: 'IMMEDIATE',
         },
       });
+    }
+
+    // Trigger task_completed automations if task was just completed and linked to a record
+    if (status === 'COMPLETED' && existingTask.status !== 'COMPLETED' && task.recordId) {
+      // Get ownerId from task creator (accountOwnerId or self if owner)
+      const taskCreator = await prisma.user.findUnique({
+        where: { id: existingTask.createdById },
+        select: { id: true, accountOwnerId: true },
+      });
+      
+      const ownerId = taskCreator?.accountOwnerId || taskCreator?.id;
+      if (ownerId) {
+        findMatchingAutomations('task_completed', ownerId).then(automations => {
+          for (const automation of automations) {
+            executeAutomation(automation.id, task.recordId!, 'task_completed').catch(err => {
+              console.error(`Error executing automation ${automation.id}:`, err);
+            });
+          }
+        }).catch(err => console.error('Error finding automations:', err));
+      }
     }
 
     return NextResponse.json(task);

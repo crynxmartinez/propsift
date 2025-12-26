@@ -4,6 +4,7 @@ import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser } from '@/lib/roles';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 interface ImportRequest {
   activityId?: string;
@@ -379,6 +380,15 @@ export async function POST(request: NextRequest) {
                 source: 'Bulk Import',
               },
             });
+
+            // Trigger record_created automations (async)
+            findMatchingAutomations('record_created', authUser.ownerId).then(automations => {
+              for (const automation of automations) {
+                executeAutomation(automation.id, newRecord.id, 'record_created').catch(err => {
+                  console.error(`Error executing automation ${automation.id}:`, err);
+                });
+              }
+            }).catch(err => console.error('Error finding automations:', err));
 
             added++;
           }

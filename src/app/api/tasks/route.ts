@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser, canViewAllData } from '@/lib/roles';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 // GET /api/tasks - Get all tasks with filters
 export async function GET(request: NextRequest) {
@@ -330,6 +331,17 @@ export async function POST(request: NextRequest) {
         status: 'completed',
       },
     });
+
+    // Trigger task_created automations if task is linked to a record
+    if (task.recordId) {
+      findMatchingAutomations('task_created', authUser.ownerId).then(automations => {
+        for (const automation of automations) {
+          executeAutomation(automation.id, task.recordId!, 'task_created').catch(err => {
+            console.error(`Error executing automation ${automation.id}:`, err);
+          });
+        }
+      }).catch(err => console.error('Error finding automations:', err));
+    }
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {

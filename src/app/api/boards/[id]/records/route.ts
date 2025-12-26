@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser } from '@/lib/roles';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 // POST /api/boards/[id]/records - Add a record to a board column
 export async function POST(
@@ -120,6 +121,15 @@ export async function POST(
       },
     });
 
+    // Trigger added_to_board automation
+    findMatchingAutomations('added_to_board', authUser.ownerId).then(automations => {
+      for (const automation of automations) {
+        executeAutomation(automation.id, recordId, 'added_to_board').catch(err => {
+          console.error(`Error executing automation ${automation.id}:`, err);
+        });
+      }
+    }).catch(err => console.error('Error finding automations:', err));
+
     return NextResponse.json(position, { status: 201 });
   } catch (error) {
     console.error('Error adding record to board:', error);
@@ -209,6 +219,17 @@ export async function PUT(
         },
       },
     });
+
+    // Trigger moved_to_column automation if column changed
+    if (columnId !== undefined && columnId !== existing.columnId) {
+      findMatchingAutomations('moved_to_column', authUser.ownerId).then(automations => {
+        for (const automation of automations) {
+          executeAutomation(automation.id, existing.recordId, 'moved_to_column').catch(err => {
+            console.error(`Error executing automation ${automation.id}:`, err);
+          });
+        }
+      }).catch(err => console.error('Error finding automations:', err));
+    }
 
     return NextResponse.json(position);
   } catch (error) {

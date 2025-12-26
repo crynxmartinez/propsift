@@ -4,6 +4,7 @@ import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser, canViewAllData } from '@/lib/roles';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 // Filter block interface
 interface FilterBlock {
@@ -466,6 +467,15 @@ export async function POST(request: NextRequest) {
         emails: true,
       },
     });
+
+    // Trigger record_created automations (async, don't block response)
+    findMatchingAutomations('record_created', authUser.ownerId).then(automations => {
+      for (const automation of automations) {
+        executeAutomation(automation.id, record.id, 'record_created').catch(err => {
+          console.error(`Error executing automation ${automation.id}:`, err);
+        });
+      }
+    }).catch(err => console.error('Error finding automations:', err));
 
     return NextResponse.json(record, { status: 201 });
   } catch (error) {

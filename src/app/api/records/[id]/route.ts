@@ -87,7 +87,7 @@ export async function GET(
 async function triggerAutomationsForChanges(
   recordId: string,
   ownerId: string,
-  existingRecord: { statusId: string | null; temperature: string | null; recordTags: { tagId: string }[] },
+  existingRecord: { statusId: string | null; temperature: string | null; assignedToId: string | null; recordTags: { tagId: string }[] },
   updateData: Record<string, unknown>,
   addTagIds?: string[],
   removeTagIds?: string[]
@@ -122,6 +122,30 @@ async function triggerAutomationsForChanges(
       const automations = await findMatchingAutomations('tag_removed', ownerId);
       for (const automation of automations) {
         await executeAutomation(automation.id, recordId, 'tag_removed');
+      }
+    }
+
+    // Check for record assigned trigger
+    if (updateData.assignedToId !== undefined && updateData.assignedToId && !existingRecord.assignedToId) {
+      const automations = await findMatchingAutomations('record_assigned', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'record_assigned');
+      }
+    }
+
+    // Check for record unassigned trigger
+    if (updateData.assignedToId !== undefined && !updateData.assignedToId && existingRecord.assignedToId) {
+      const automations = await findMatchingAutomations('record_unassigned', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'record_unassigned');
+      }
+    }
+
+    // Check for assignment changed (reassigned to different user)
+    if (updateData.assignedToId !== undefined && updateData.assignedToId && existingRecord.assignedToId && updateData.assignedToId !== existingRecord.assignedToId) {
+      const automations = await findMatchingAutomations('record_assigned', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'record_assigned');
       }
     }
 
