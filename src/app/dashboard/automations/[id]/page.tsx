@@ -894,8 +894,8 @@ export default function AutomationBuilderPage() {
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
                                   {log.recordId ? 'R' : '-'}
                                 </div>
-                                <span className="text-sm text-gray-900">
-                                  {log.recordId ? `Record ${log.recordId.slice(0, 8)}...` : 'Unknown'}
+                                <span className="text-sm text-gray-900 max-w-[200px] truncate" title={(log as unknown as { recordName?: string }).recordName || log.recordId || 'Unknown'}>
+                                  {(log as unknown as { recordName?: string }).recordName || (log.recordId ? `Record ${log.recordId.slice(0, 8)}...` : 'Unknown')}
                                 </span>
                               </div>
                             </td>
@@ -1177,7 +1177,7 @@ export default function AutomationBuilderPage() {
               <div>
                 <h3 className="font-semibold text-gray-900">Execution Steps</h3>
                 <p className="text-sm text-gray-500">
-                  Record: {selectedLog.recordId?.slice(0, 8)}... | {selectedLog.triggeredBy.replace(/_/g, ' ')}
+                  Record: {(selectedLog as unknown as { recordName?: string }).recordName || selectedLog.recordId?.slice(0, 8) || 'Unknown'} | {selectedLog.triggeredBy.replace(/_/g, ' ')}
                 </p>
               </div>
               <button

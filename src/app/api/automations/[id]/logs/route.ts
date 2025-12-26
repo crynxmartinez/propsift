@@ -51,6 +51,48 @@ export async function GET(
       skip: offset,
     })
 
+    // Fetch record details for each log
+    const recordIds = logs.map(log => log.recordId).filter(Boolean) as string[]
+    const records = await prisma.record.findMany({
+      where: { id: { in: recordIds } },
+      select: {
+        id: true,
+        ownerFullName: true,
+        isCompany: true,
+        propertyStreet: true,
+        propertyCity: true,
+        propertyState: true,
+        mailingStreet: true,
+        mailingCity: true,
+        mailingState: true,
+      },
+    })
+
+    // Create a map for quick lookup
+    const recordMap = new Map(records.map(r => [r.id, r]))
+
+    // Add record details to logs
+    const logsWithRecords = logs.map(log => {
+      const record = log.recordId ? recordMap.get(log.recordId) : null
+      let recordName = 'Unknown Record'
+      
+      if (record) {
+        if (record.ownerFullName) {
+          recordName = record.ownerFullName
+        } else if (record.propertyStreet) {
+          recordName = `${record.propertyStreet}${record.propertyCity ? `, ${record.propertyCity}` : ''}${record.propertyState ? `, ${record.propertyState}` : ''}`
+        } else if (record.mailingStreet) {
+          recordName = `${record.mailingStreet}${record.mailingCity ? `, ${record.mailingCity}` : ''}${record.mailingState ? `, ${record.mailingState}` : ''}`
+        }
+      }
+
+      return {
+        ...log,
+        recordName,
+        record: record || null,
+      }
+    })
+
     const total = await prisma.automationLog.count({
       where: {
         automationId: params.id,
@@ -59,7 +101,7 @@ export async function GET(
     })
 
     return NextResponse.json({
-      logs,
+      logs: logsWithRecords,
       total,
       limit,
       offset,
