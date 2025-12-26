@@ -430,13 +430,18 @@ export function computeQueryHash(input: WidgetQueryInput, ctx: CompileCtx): stri
   // Stable stringify with sorted keys
   // v2.2.2: Do NOT include globalFilters.dateRange separately (already in effectiveDateRange)
   // v2.2.2: Do NOT include preset strings, only resolved ISO timestamps
+  // v2.2.2 FIX: Normalize globalFilters to prevent hash instability from array order
+  const normalizedGlobalFilters = normalizeGlobalFilters(
+    omit(input.globalFilters, ['dateRange'])
+  )
+  
   const hashInput = {
     registryVersion: REGISTRY_VERSION,
     entityKey: input.entityKey,
     segmentKey: input.segmentKey || null,
     filters: sortFilters(input.filters),
-    // v2.2.2: Hash globalFilters WITHOUT dateRange (it's in effectiveDateRange)
-    globalFiltersExceptDate: sortObject(omit(input.globalFilters, ['dateRange'])),
+    // v2.2.2: Hash globalFilters WITHOUT dateRange, WITH sorted arrays
+    globalFiltersExceptDate: normalizedGlobalFilters,
     metric: input.metric,
     dimension: input.dimension || null,
     // v2.2.2: ONLY resolved ISO timestamps, no preset strings
@@ -477,6 +482,29 @@ function sortFilters(filters: FilterPredicate[]): FilterPredicate[] {
   return [...filters].sort((a, b) => 
     `${a.field}:${a.operator}`.localeCompare(`${b.field}:${b.operator}`)
   )
+}
+
+// v2.2.2 FIX: Normalize globalFilters to prevent hash instability
+// Problem: ['hot','warm'] vs ['warm','hot'] = different hash = cache fragmentation
+function normalizeGlobalFilters(gf: Omit<GlobalFilters, 'dateRange'>): Record<string, unknown> {
+  return {
+    // Sort tag arrays
+    tags: gf.tags ? {
+      include: gf.tags.include ? [...gf.tags.include].sort() : undefined,
+      exclude: gf.tags.exclude ? [...gf.tags.exclude].sort() : undefined,
+    } : undefined,
+    // Sort motivation arrays
+    motivations: gf.motivations ? {
+      include: gf.motivations.include ? [...gf.motivations.include].sort() : undefined,
+      exclude: gf.motivations.exclude ? [...gf.motivations.exclude].sort() : undefined,
+    } : undefined,
+    // Sort assignee arrays
+    assignees: gf.assignees ? [...gf.assignees].sort() : undefined,
+    // Sort status arrays
+    statuses: gf.statuses ? [...gf.statuses].sort() : undefined,
+    // Sort temperature arrays
+    temperatures: gf.temperatures ? [...gf.temperatures].sort() : undefined,
+  }
 }
 ```
 
@@ -539,10 +567,13 @@ export function compileQuery(
   // 4. Widget filters
   const filterWhere = compileFilters(input.entityKey, input.filters, ctx)
 
-  // 5. Global filters (excluding dateRange - handled separately)
-  const globalWhere = compileGlobalFilters(input.entityKey, input.globalFilters, ctx)
+  // 5. Global filters (v2.2.2: MUST exclude dateRange to prevent double-filtering)
+  const globalWhere = compileGlobalFilters(input.entityKey, input.globalFilters, ctx, {
+    excludeDateRange: true  // CRITICAL: dateRange handled in step 6 only
+  })
 
-  // 6. Date range (v2.2.2: use effective date range)
+  // 6. Date range (v2.2.2: SINGLE date filter - effective range only)
+  // Widget dateRange overrides globalFilters.dateRange (never both)
   const effectiveDateRange = input.dateRange ?? input.globalFilters.dateRange
   const dateMode = input.dateMode || entity.dateModes.default
   const dateWhere = compileDateRange(effectiveDateRange, dateMode, entity, ctx)
@@ -584,6 +615,11 @@ export function compileQuery(
 }
 
 // v2.2.2: Compute all entity dependencies for cache invalidation
+// v2.2.2 FIX: joinPath MUST use registry entity keys, not Prisma relation names
+// Registry keys: 'records', 'phones', 'emails', 'record_tags', etc.
+// Prisma relations: 'record', 'phone', 'email', 'recordTags', etc.
+// ALWAYS use registry keys in deps to match cacheVersion keys
+
 function computeQueryDeps(
   input: WidgetQueryInput,
   entity: EntityDefinition,
@@ -591,12 +627,13 @@ function computeQueryDeps(
 ): string[] {
   const deps = new Set<string>()
   
-  // 1. Always include the primary entity
+  // 1. Always include the primary entity (registry key)
   deps.add(input.entityKey)
   
   // 2. Include tenant scope join entity (via_join)
-  if (entity.tenantScope.mode === 'via_join' && entity.tenantScope.joinPath) {
-    deps.add(entity.tenantScope.joinPath)  // e.g., 'records' for phones
+  // v2.2.2 FIX: entity.tenantScope.joinEntity is the REGISTRY KEY, not Prisma relation
+  if (entity.tenantScope.mode === 'via_join' && entity.tenantScope.joinEntity) {
+    deps.add(entity.tenantScope.joinEntity)  // e.g., 'records' (not 'record')
   }
   
   // 3. Include entities referenced by global filters
@@ -1012,12 +1049,41 @@ export const INVALIDATION_MAP: Record<string, string[]> = {
   'task.delete': ['tasks'],
   
   'tag.create': ['tags'],
-  'tag.update': ['tags', 'record_tags'],  // label might change
+  // v2.2.2 FIX: tag.update does NOT bump widget cacheVersion
+  // It only bumps labelVersion (see invalidateLabelOnUpdate)
+  // 'tag.update': DO NOT ADD HERE - use invalidateLabelOnUpdate instead
   'tag.delete': ['tags', 'record_tags'],
   
   'motivation.create': ['motivations'],
-  'motivation.update': ['motivations', 'record_motivations'],
+  // v2.2.2 FIX: motivation.update does NOT bump widget cacheVersion
+  // It only bumps labelVersion (see invalidateLabelOnUpdate)
+  // 'motivation.update': DO NOT ADD HERE - use invalidateLabelOnUpdate instead
   'motivation.delete': ['motivations', 'record_motivations'],
+}
+
+// v2.2.2: Two-tier invalidation - widget vs label
+export const LABEL_ENTITIES = ['tags', 'motivations'] as const
+
+export async function invalidateOnMutation(
+  tenantId: string,
+  mutationType: string
+): Promise<void> {
+  // Check if this is a label-only update
+  const [entity, action] = mutationType.split('.')
+  
+  if (action === 'update' && LABEL_ENTITIES.includes(entity as any)) {
+    // Label update: bump labelVersion only, NOT widget cacheVersion
+    await redis.incr(`labelVersion:${tenantId}:${entity}`)
+    return
+  }
+  
+  // All other mutations: bump widget cacheVersion
+  const entitiesToInvalidate = INVALIDATION_MAP[mutationType] || []
+  await Promise.all(
+    entitiesToInvalidate.map(entityKey =>
+      redis.incr(`cacheVersion:${tenantId}:${entityKey}`)
+    )
+  )
 }
 ```
 
@@ -1100,24 +1166,29 @@ async function getLabels(
 }
 ```
 
-### Updated Invalidation Map (v2.2.2)
+### Two-Tier Invalidation Summary (v2.2.2)
 
-```typescript
-// v2.2.2: tag.update and motivation.update now bump LABEL version, not widget version
-
-// Invalidate affected entities
-export async function invalidateOnMutation(
-  tenantId: string,
-  mutationType: string
-): Promise<void> {
-  const entitiesToInvalidate = INVALIDATION_MAP[mutationType] || []
-  
-  await Promise.all(
-    entitiesToInvalidate.map(entityKey =>
-      redis.incr(`cacheVersion:${tenantId}:${entityKey}`)
-    )
-  )
-}
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 TWO-TIER INVALIDATION (v2.2.2)                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  WIDGET CACHE (cacheVersion):                                           │
+│    - Bumped on: create, delete, structural changes                      │
+│    - Keys: cacheVersion:${tenantId}:${entityKey}                        │
+│    - TTL: 5 minutes                                                     │
+│                                                                          │
+│  LABEL CACHE (labelVersion):                                            │
+│    - Bumped on: tag.update, motivation.update (name/color changes)      │
+│    - Keys: labelVersion:${tenantId}:${entityKey}                        │
+│    - TTL: 1 hour                                                        │
+│                                                                          │
+│  WHY SEPARATE:                                                          │
+│    - Tag rename shouldn't nuke all widget caches                        │
+│    - Widget data (counts) unchanged when label changes                  │
+│    - Prevents load spikes on common ops actions                         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Cache Flow (v2.2.2 - Updated)
@@ -1162,16 +1233,28 @@ Same as 2.2.1, with clarification:
 | Viewer sees all (read-only) | No |
 
 ```typescript
+// v2.2.2 FIX: Permission hash MUST use stableStringify for deterministic output
+// Problem: Object key order is not guaranteed → same permissions = different hash
+// Risk: Cross-user cache bugs or weird misses, worst case data leakage
+
 function computePermissionHash(ctx: CompileCtx): string {
+  // v2.2.2: Build hashInput with sorted, normalized structure
   const hashInput: Record<string, unknown> = {
     role: ctx.role
   }
   
   // Include rowFilters that affect data visibility
+  // v2.2.2 FIX: Sort entity keys for deterministic order
+  const entityKeys = Object.keys(ctx.permissions.entities).sort()
   const entityFilters: Record<string, unknown> = {}
-  for (const [entityKey, perm] of Object.entries(ctx.permissions.entities)) {
+  
+  for (const entityKey of entityKeys) {
+    const perm = ctx.permissions.entities[entityKey]
     if (perm.rowFilter?.length) {
-      entityFilters[entityKey] = perm.rowFilter
+      // v2.2.2 FIX: Sort rowFilters for deterministic order
+      entityFilters[entityKey] = [...perm.rowFilter].sort((a, b) => 
+        `${a.field}:${a.operator}`.localeCompare(`${b.field}:${b.operator}`)
+      )
     }
   }
   if (Object.keys(entityFilters).length > 0) {
@@ -1183,6 +1266,7 @@ function computePermissionHash(ctx: CompileCtx): string {
     hashInput.userId = ctx.userId
   }
   
+  // v2.2.2: stableStringify ensures deterministic JSON output
   return crypto.createHash('sha256')
     .update(stableStringify(hashInput))
     .digest('hex')
@@ -1598,7 +1682,7 @@ src/
 │       │   ├── versionBump.ts
 │       │   └── invalidationMap.ts   # v2.2.2
 │       ├── counters/
-│       │   ├── middleware.ts        # v2.2.2
+│       │   ├── counterService.ts    # v2.2.2: Service-layer transactions (NOT middleware)
 │       │   └── reconciliation.ts    # v2.2.2
 │       └── types.ts
 ├── app/
@@ -1716,8 +1800,155 @@ interface CompileCtx {
 | email.create/delete | emails, records |
 | recordTag.create/delete | record_tags, records |
 | recordMotivation.create/delete | record_motivations, records |
-| tag.update/delete | tags, record_tags |
-| motivation.update/delete | motivations, record_motivations |
+| tag.delete | tags, record_tags |
+| tag.update | **labelVersion only** (not widget cache) |
+| motivation.delete | motivations, record_motivations |
+| motivation.update | **labelVersion only** (not widget cache) |
+
+---
+
+## Appendix C: Golden Flow (Copy-Pasteable Patterns)
+
+### 1. Effective DateRange (Single Source of Truth)
+
+```typescript
+// GOLDEN RULE: Date filtering happens ONCE, in ONE place
+// Widget dateRange overrides globalFilters.dateRange (never both applied)
+
+function getEffectiveDateRange(input: WidgetQueryInput): DateRange {
+  return input.dateRange ?? input.globalFilters.dateRange
+}
+
+// In compileQuery:
+const effectiveDateRange = getEffectiveDateRange(input)
+const dateWhere = compileDateRange(effectiveDateRange, dateMode, entity, ctx)
+
+// In compileGlobalFilters: MUST exclude dateRange
+const globalWhere = compileGlobalFilters(input.entityKey, input.globalFilters, ctx, {
+  excludeDateRange: true  // CRITICAL
+})
+
+// In computeQueryHash: hash only effective range as ISO
+const resolved = resolveDateRange(getEffectiveDateRange(input), ctx.timezone)
+// hashInput includes: dateStartISO, dateEndISO (NOT preset string, NOT both ranges)
+```
+
+### 2. Deterministic Hashing (Normalized)
+
+```typescript
+// GOLDEN RULE: Same logical query = same hash, always
+
+// 1. Sort all arrays before hashing
+const normalizedGlobalFilters = {
+  tags: { include: [...tags.include].sort(), exclude: [...tags.exclude].sort() },
+  assignees: [...assignees].sort(),
+  // ... etc
+}
+
+// 2. Sort filters by field:operator
+const sortedFilters = [...filters].sort((a, b) => 
+  `${a.field}:${a.operator}`.localeCompare(`${b.field}:${b.operator}`)
+)
+
+// 3. Use stableStringify for all hash inputs
+function stableStringify(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.keys(value).sort().reduce((sorted, key) => {
+        sorted[key] = value[key]
+        return sorted
+      }, {} as Record<string, unknown>)
+    }
+    return value
+  })
+}
+
+// 4. Permission hash: sort entity keys + rowFilters
+const entityKeys = Object.keys(ctx.permissions.entities).sort()
+```
+
+### 3. Dependency-Based Cache Key
+
+```typescript
+// GOLDEN RULE: Cache key includes versions of ALL entities the query depends on
+
+// Step 1: Compiler computes deps
+const deps = computeQueryDeps(input, entity, ctx)
+// e.g., ['phones', 'records', 'record_tags'] for phones with tag filter
+
+// Step 2: Build cache key with ALL dep versions
+async function buildCacheKey(compiled: CompiledQuery, ctx: CompileCtx): Promise<string> {
+  const versionKeys = compiled.deps.map(k => `cacheVersion:${ctx.tenantId}:${k}`)
+  const versions = await redis.mget(versionKeys)
+  
+  const depSig = compiled.deps.map((k, i) => `${k}:${versions[i] ?? 0}`).join('|')
+  const depHash = crypto.createHash('sha256').update(depSig).digest('hex').substring(0, 8)
+  
+  return `w:${REGISTRY_VERSION}:${ctx.tenantId}:deps:${depHash}:p:${ctx.permissionHash}:q:${compiled.hash}`
+}
+
+// Step 3: Any dep change = cache miss = fresh data
+// phone.create bumps 'phones' version → all phone queries miss cache
+// record.update bumps 'records' version → phones with via_join also miss cache
+```
+
+### 4. Two-Tier Invalidation (Widget vs Label)
+
+```typescript
+// GOLDEN RULE: Label changes don't nuke widget caches
+
+// Two version types:
+// - cacheVersion:${tenantId}:${entity} → widget data cache
+// - labelVersion:${tenantId}:${entity} → label lookup cache
+
+export async function invalidateOnMutation(tenantId: string, mutationType: string): Promise<void> {
+  const [entity, action] = mutationType.split('.')
+  
+  // Label-only updates: bump labelVersion, NOT cacheVersion
+  if (action === 'update' && ['tags', 'motivations'].includes(entity)) {
+    await redis.incr(`labelVersion:${tenantId}:${entity}`)
+    return  // DO NOT bump widget cache
+  }
+  
+  // All other mutations: bump widget cacheVersion
+  const entitiesToInvalidate = INVALIDATION_MAP[mutationType] || []
+  await Promise.all(
+    entitiesToInvalidate.map(k => redis.incr(`cacheVersion:${tenantId}:${k}`))
+  )
+}
+
+// Client flow:
+// 1. Fetch widget data (uses cacheVersion)
+// 2. Widget returns IDs: { tagId: 'abc', count: 47 }
+// 3. Fetch labels separately (uses labelVersion)
+// 4. Tag rename → only step 3 cache misses, step 1 stays cached
+```
+
+### 5. Entity Key Convention
+
+```typescript
+// GOLDEN RULE: Always use registry entity keys, never Prisma relation names
+
+// Registry keys (use these everywhere):
+'records', 'phones', 'emails', 'record_tags', 'record_motivations', 'tasks', 'tags', 'motivations'
+
+// Prisma relations (internal to Prisma only):
+'record', 'phone', 'email', 'recordTags', 'recordMotivations', 'task', 'tag', 'motivation'
+
+// In entity definition:
+{
+  key: 'phones',
+  table: 'recordPhoneNumber',  // Prisma model name
+  tenantScope: {
+    mode: 'via_join',
+    joinEntity: 'records',     // Registry key, NOT 'record'
+    joinField: 'record.workspaceId'
+  }
+}
+
+// In deps computation:
+deps.add(entity.tenantScope.joinEntity)  // 'records', matches cacheVersion key
+```
 
 ---
 
