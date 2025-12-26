@@ -38,6 +38,9 @@ import BarChartWidget from '@/components/analytics/BarChartWidget'
 import PieChartWidget from '@/components/analytics/PieChartWidget'
 import LineChartWidget from '@/components/analytics/LineChartWidget'
 import ProgressWidget from '@/components/analytics/ProgressWidget'
+import GaugeWidget from '@/components/analytics/GaugeWidget'
+import LeaderboardWidget from '@/components/analytics/LeaderboardWidget'
+import FunnelWidget from '@/components/analytics/FunnelWidget'
 import TableWidget from '@/components/analytics/TableWidget'
 import WidgetConfigPanel from '@/components/analytics/WidgetConfigPanel'
 
@@ -742,6 +745,45 @@ function WidgetContent({ widget }: { widget: Widget }) {
           appearance={appearance}
         />
       )
+    case 'gauge':
+      return (
+        <GaugeWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            goalValue: (config as { goalValue?: number }).goalValue || 100,
+          }}
+          appearance={appearance}
+        />
+      )
+    case 'leaderboard':
+      return (
+        <LeaderboardWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            limit: config.limit || 10,
+          }}
+          appearance={appearance}
+        />
+      )
+    case 'funnel':
+      return (
+        <FunnelWidget
+          widgetId={widget.id}
+          title={widget.title}
+          subtitle={widget.subtitle}
+          config={{
+            ...config,
+            limit: config.limit || 5,
+          }}
+          appearance={appearance}
+        />
+      )
     default:
       return (
         <div className="h-full flex items-center justify-center text-gray-400 text-sm">
@@ -763,9 +805,14 @@ function WidgetTypeSelector({
     { type: 'number', label: 'Number', icon: '#', description: 'Display a single metric' },
     { type: 'bar_chart', label: 'Bar Chart', icon: '📊', description: 'Compare values' },
     { type: 'pie_chart', label: 'Pie Chart', icon: '🥧', description: 'Show distribution' },
+    { type: 'donut_chart', label: 'Donut Chart', icon: '🍩', description: 'Distribution with center' },
     { type: 'line_chart', label: 'Line Chart', icon: '📈', description: 'Track trends' },
+    { type: 'area_chart', label: 'Area Chart', icon: '📉', description: 'Filled trend chart' },
     { type: 'progress', label: 'Progress', icon: '▓', description: 'Goal tracking' },
+    { type: 'gauge', label: 'Gauge', icon: '⏱️', description: 'Circular progress' },
     { type: 'table', label: 'Table', icon: '📋', description: 'List data' },
+    { type: 'leaderboard', label: 'Leaderboard', icon: '🏆', description: 'Ranked list' },
+    { type: 'funnel', label: 'Funnel', icon: '🔻', description: 'Pipeline stages' },
   ]
 
   return (
