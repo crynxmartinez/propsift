@@ -151,17 +151,24 @@ export async function executeGroupedCount(
 ): Promise<{ value: string | null; count: number }[]> {
   const delegate = getDelegate(compiled.delegate)
   
-  const result = await delegate.groupBy({
-    by: [groupByField],
-    where: compiled.where,
-    _count: { _all: true },
-    orderBy: { _count: { _all: 'desc' } }
-  })
-  
-  return result.map((row: any) => ({
-    value: row[groupByField] as string | null,
-    count: row._count._all
-  }))
+  try {
+    const result = await delegate.groupBy({
+      by: [groupByField],
+      where: compiled.where,
+      _count: true
+    })
+    
+    // Sort by count descending
+    const sorted = result.sort((a: any, b: any) => (b._count || 0) - (a._count || 0))
+    
+    return sorted.map((row: any) => ({
+      value: row[groupByField] as string | null,
+      count: row._count || 0
+    }))
+  } catch (error) {
+    console.error('executeGroupedCount error:', error)
+    throw error
+  }
 }
 
 /**
