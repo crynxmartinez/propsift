@@ -4,6 +4,7 @@ import { detectCompany } from '@/lib/companyDetection';
 import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser } from '@/lib/roles';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
 
 // GET /api/records/[id] - Get a single record with full details
 export async function GET(
@@ -79,6 +80,60 @@ export async function GET(
       { error: 'Failed to fetch record' },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to trigger automations based on record changes
+async function triggerAutomationsForChanges(
+  recordId: string,
+  ownerId: string,
+  existingRecord: { statusId: string | null; temperature: string | null; recordTags: { tagId: string }[] },
+  updateData: Record<string, unknown>,
+  addTagIds?: string[],
+  removeTagIds?: string[]
+) {
+  try {
+    // Check for status change trigger
+    if (updateData.statusId !== undefined && updateData.statusId !== existingRecord.statusId) {
+      const automations = await findMatchingAutomations('status_changed', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'status_changed');
+      }
+    }
+
+    // Check for temperature change trigger
+    if (updateData.temperature !== undefined && updateData.temperature !== existingRecord.temperature) {
+      const automations = await findMatchingAutomations('temperature_changed', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'temperature_changed');
+      }
+    }
+
+    // Check for tag added trigger
+    if (addTagIds && addTagIds.length > 0) {
+      const automations = await findMatchingAutomations('tag_added', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'tag_added');
+      }
+    }
+
+    // Check for tag removed trigger
+    if (removeTagIds && removeTagIds.length > 0) {
+      const automations = await findMatchingAutomations('tag_removed', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'tag_removed');
+      }
+    }
+
+    // Check for record updated trigger (any field change)
+    if (Object.keys(updateData).length > 0) {
+      const automations = await findMatchingAutomations('record_updated', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'record_updated');
+      }
+    }
+  } catch (error) {
+    console.error('Error in triggerAutomationsForChanges:', error);
   }
 }
 
@@ -572,6 +627,11 @@ export async function PUT(
           orderBy: { createdAt: 'asc' },
         },
       },
+    });
+
+    // Trigger automations based on changes (run async, don't block response)
+    triggerAutomationsForChanges(params.id, authUser.ownerId, existingRecord, updateData, addTagIds, removeTagIds).catch(err => {
+      console.error('Error triggering automations:', err);
     });
 
     return NextResponse.json(updatedRecord);
