@@ -38,7 +38,7 @@ const DEFAULT_DASHBOARD: DashboardConfig = {
       title: 'Hot Leads',
       type: 'metric',
       entityKey: 'records',
-      segmentKey: 'hot_leads',
+      segmentKey: 'records:hot',
       metric: { key: 'count' },
       x: 6,
       y: 0,
@@ -46,11 +46,11 @@ const DEFAULT_DASHBOARD: DashboardConfig = {
       h: 1
     },
     {
-      id: 'call-ready',
-      title: 'Call Ready',
+      id: 'with-phone',
+      title: 'With Phone',
       type: 'metric',
       entityKey: 'records',
-      segmentKey: 'call_ready',
+      segmentKey: 'records:with_phone',
       metric: { key: 'count' },
       x: 9,
       y: 0,
