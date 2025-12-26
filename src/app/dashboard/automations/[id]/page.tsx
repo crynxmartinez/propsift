@@ -1169,15 +1169,27 @@ export default function AutomationBuilderPage() {
         )}
       </div>
 
-      {/* Execution Steps Modal */}
+      {/* Execution Steps Slide-in Panel */}
       {showStepsModal && selectedLog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+            onClick={() => {
+              setShowStepsModal(false)
+              setSelectedLog(null)
+            }}
+          />
+          {/* Slide-in Panel */}
+          <div className="fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">Execution Steps</h3>
                 <p className="text-sm text-gray-500">
-                  Record: {(selectedLog as unknown as { recordName?: string }).recordName || selectedLog.recordId?.slice(0, 8) || 'Unknown'} | {selectedLog.triggeredBy.replace(/_/g, ' ')}
+                  {(selectedLog as unknown as { recordName?: string }).recordName || selectedLog.recordId?.slice(0, 8) || 'Unknown'}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {selectedLog.triggeredBy.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </p>
               </div>
               <button
@@ -1190,7 +1202,7 @@ export default function AutomationBuilderPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
+            <div className="flex-1 p-4 overflow-y-auto">
               {(() => {
                 const steps = (selectedLog as unknown as { steps?: Array<{
                   nodeId: string
@@ -1231,7 +1243,7 @@ export default function AutomationBuilderPage() {
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                             step.status === 'completed'
                               ? 'bg-green-500 text-white'
                               : step.status === 'failed'
@@ -1240,8 +1252,8 @@ export default function AutomationBuilderPage() {
                           }`}>
                             {index + 1}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 step.nodeType === 'trigger'
                                   ? 'bg-purple-100 text-purple-700'
@@ -1251,7 +1263,7 @@ export default function AutomationBuilderPage() {
                               }`}>
                                 {step.nodeType}
                               </span>
-                              <span className="font-medium text-gray-900">{step.nodeLabel}</span>
+                              <span className="font-medium text-gray-900 text-sm">{step.nodeLabel}</span>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">{step.message}</p>
                             {step.result && (
@@ -1277,19 +1289,8 @@ export default function AutomationBuilderPage() {
                 )
               })()}
             </div>
-            <div className="p-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowStepsModal(false)
-                  setSelectedLog(null)
-                }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
