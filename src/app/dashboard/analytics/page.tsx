@@ -11,8 +11,24 @@ import {
   RefreshCw,
   ChevronDown,
   Loader2,
-  GripVertical,
 } from 'lucide-react'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const GridLayout = require('react-grid-layout') as any
+
+interface LayoutItem {
+  i: string
+  x: number
+  y: number
+  w: number
+  h: number
+  minW?: number
+  minH?: number
+  maxW?: number
+  maxH?: number
+}
 import NumberWidget from '@/components/analytics/NumberWidget'
 import BarChartWidget from '@/components/analytics/BarChartWidget'
 import PieChartWidget from '@/components/analytics/PieChartWidget'
@@ -346,6 +362,19 @@ function DashboardGrid({
 }) {
   const [showAddWidget, setShowAddWidget] = useState(false)
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
+  const [containerWidth, setContainerWidth] = useState(1200)
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = document.getElementById('dashboard-grid-container')
+      if (container) {
+        setContainerWidth(container.offsetWidth)
+      }
+    }
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
 
   const addWidget = async (type: string, title: string) => {
     try {
@@ -365,8 +394,8 @@ function DashboardGrid({
           title,
           x: 0,
           y: maxY,
-          w: type === 'number' ? 3 : 4,
-          h: type === 'number' ? 2 : 3,
+          w: type === 'number' ? 3 : type === 'progress' ? 4 : 4,
+          h: type === 'number' ? 2 : type === 'progress' ? 1 : 3,
           config: { dataSource: 'records', metric: 'count' },
         }),
       })
@@ -400,6 +429,58 @@ function DashboardGrid({
     }
   }
 
+  const handleLayoutChange = async (newLayout: LayoutItem[]) => {
+    // Update local state immediately
+    const updatedWidgets = dashboard.widgets.map(widget => {
+      const layoutItem = newLayout.find(l => l.i === widget.id)
+      if (layoutItem) {
+        return {
+          ...widget,
+          x: layoutItem.x,
+          y: layoutItem.y,
+          w: layoutItem.w,
+          h: layoutItem.h,
+        }
+      }
+      return widget
+    })
+    onUpdate(updatedWidgets)
+
+    // Save to backend
+    try {
+      const token = localStorage.getItem('token')
+      await fetch(`/api/analytics-dashboards/${dashboard.id}/widgets`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          widgets: newLayout.map(l => ({
+            id: l.i,
+            x: l.x,
+            y: l.y,
+            w: l.w,
+            h: l.h,
+          })),
+        }),
+      })
+    } catch (error) {
+      console.error('Error saving layout:', error)
+    }
+  }
+
+  // Convert widgets to layout format
+  const layout: LayoutItem[] = dashboard.widgets.map(widget => ({
+    i: widget.id,
+    x: widget.x,
+    y: widget.y,
+    w: widget.w,
+    h: widget.h,
+    minW: 2,
+    minH: 1,
+  }))
+
   if (dashboard.widgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
@@ -431,7 +512,7 @@ function DashboardGrid({
   }
 
   return (
-    <div className="relative">
+    <div className="relative" id="dashboard-grid-container">
       {/* Add Widget Button */}
       <div className="absolute top-0 right-0 z-10">
         <button
@@ -443,52 +524,66 @@ function DashboardGrid({
         </button>
       </div>
 
-      {/* Widgets Grid */}
-      <div className="grid grid-cols-12 gap-4 pt-10">
-        {dashboard.widgets.map((widget) => (
-          <div
-            key={widget.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 group relative"
-            style={{
-              gridColumn: `span ${widget.w}`,
-              minHeight: `${widget.h * 80}px`,
-            }}
-          >
-            {/* Widget Header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <GripVertical className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 cursor-move" />
-                <h4 
-                  className="font-medium text-gray-900 text-sm cursor-pointer hover:text-blue-600"
-                  onClick={() => setEditingWidget(widget)}
-                >
-                  {widget.title}
-                </h4>
+      {/* Widgets Grid with react-grid-layout */}
+      <div className="pt-10">
+        <GridLayout
+          className="layout"
+          layout={layout}
+          cols={12}
+          rowHeight={80}
+          width={containerWidth}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onLayoutChange={handleLayoutChange as any}
+          draggableHandle=".widget-drag-handle"
+          isResizable={true}
+          isDraggable={true}
+          margin={[16, 16]}
+        >
+          {dashboard.widgets.map((widget) => (
+            <div
+              key={widget.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 group"
+            >
+              {/* Widget Header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="widget-drag-handle cursor-move p-1 -ml-1 hover:bg-gray-100 rounded">
+                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                    </svg>
+                  </div>
+                  <h4 
+                    className="font-medium text-gray-900 text-sm cursor-pointer hover:text-blue-600"
+                    onClick={() => setEditingWidget(widget)}
+                  >
+                    {widget.title}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => setEditingWidget(widget)}
+                    className="p-1 hover:bg-blue-100 rounded text-gray-400 hover:text-blue-600"
+                    title="Edit widget"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteWidget(widget.id)}
+                    className="p-1 hover:bg-red-100 rounded text-gray-400 hover:text-red-600"
+                    title="Delete widget"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setEditingWidget(widget)}
-                  className="p-1 hover:bg-blue-100 rounded text-gray-400 hover:text-blue-600"
-                  title="Edit widget"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => deleteWidget(widget.id)}
-                  className="p-1 hover:bg-red-100 rounded text-gray-400 hover:text-red-600"
-                  title="Delete widget"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              
+              {/* Widget Content */}
+              <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                <WidgetContent widget={widget} />
               </div>
             </div>
-            
-            {/* Widget Content */}
-            <div className="h-[calc(100%-2rem)]">
-              <WidgetContent widget={widget} />
-            </div>
-          </div>
-        ))}
+          ))}
+        </GridLayout>
       </div>
 
       {showAddWidget && (
