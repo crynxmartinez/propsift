@@ -59,7 +59,6 @@ model User {
   createdBoards        Board[]               @relation("BoardCreator")
   createdAutomationFolders AutomationFolder[] @relation("AutomationFolderCreator")
   createdAutomations   Automation[]          @relation("AutomationCreator")
-  createdDashboards    AnalyticsDashboard[]  @relation("DashboardCreator")
 }
 
 model Property {
@@ -592,102 +591,4 @@ model AutomationLog {
   @@index([recordId])
   @@index([status])
   @@index([createdAt])
-}
-
-// ==========================================
-// ANALYTICS DASHBOARD SYSTEM
-// ==========================================
-
-model AnalyticsDashboard {
-  id          String            @id @default(cuid())
-  name        String
-  description String?
-  isDefault   Boolean           @default(false)
-  
-  // Layout settings
-  gridCols    Int               @default(12)
-  rowHeight   Int               @default(80)
-  
-  // Appearance
-  backgroundColor String?       @default("#f9fafb")
-  
-  // Auto refresh interval in seconds (0 = disabled)
-  autoRefresh Int               @default(0)
-  
-  // Global date range filter
-  dateRangeType   String?       // last_7_days, last_30_days, last_90_days, custom, all_time
-  dateRangeStart  DateTime?
-  dateRangeEnd    DateTime?
-  
-  createdById String
-  createdBy   User              @relation("DashboardCreator", fields: [createdById], references: [id])
-  
-  widgets     AnalyticsWidget[]
-  
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  @@unique([name, createdById])
-  @@index([createdById])
-  @@index([isDefault])
-}
-
-model AnalyticsWidget {
-  id          String             @id @default(cuid())
-  dashboardId String
-  dashboard   AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  
-  // Layout position (react-grid-layout format)
-  x           Int                @default(0)
-  y           Int                @default(0)
-  w           Int                @default(4)   // width in grid units (out of 12)
-  h           Int                @default(2)   // height in grid units
-  minW        Int?               // minimum width
-  minH        Int?               // minimum height
-  maxW        Int?               // maximum width
-  maxH        Int?               // maximum height
-  
-  // Widget type
-  // number, bar_chart, horizontal_bar, pie_chart, donut_chart, 
-  // line_chart, area_chart, progress, gauge, table, leaderboard, funnel
-  type        String
-  
-  // Display
-  title       String
-  subtitle    String?
-  icon        String?            // lucide icon name
-  
-  // Data configuration (JSON)
-  // {
-  //   dataSource: "records" | "tasks" | "activity" | etc,
-  //   metric: "count" | "sum" | "average",
-  //   field: "estimatedValue" | null (for count),
-  //   groupBy: "status" | "temperature" | "tag" | etc,
-  //   filters: [{ field, operator, value }],
-  //   sortBy: "value" | "label",
-  //   sortOrder: "asc" | "desc",
-  //   limit: 10,
-  //   timePeriod: "last_7_days" | "last_30_days" | etc,
-  //   granularity: "daily" | "weekly" | "monthly"
-  // }
-  config      Json
-  
-  // Appearance (JSON)
-  // {
-  //   colors: ["#3B82F6", "#10B981"],
-  //   showLegend: true,
-  //   showLabels: true,
-  //   showValues: true,
-  //   prefix: "$",
-  //   suffix: "%",
-  //   comparison: "previous_period" | null,
-  //   thresholds: { warning: 30, danger: 10 }
-  // }
-  appearance  Json?
-  
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
-  @@index([dashboardId])
-  @@index([type])
 }
