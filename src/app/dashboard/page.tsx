@@ -87,7 +87,7 @@ const DEFAULT_DASHBOARD: DashboardConfig = {
       type: 'table',
       entityKey: 'tasks',
       metric: { key: 'count' },
-      dimension: 'task_status',
+      dimension: 'taskStatus',
       x: 0,
       y: 3,
       w: 6,
