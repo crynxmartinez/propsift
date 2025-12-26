@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
-  Home, 
   Settings, 
   LogOut,
   Building2,
@@ -19,8 +18,7 @@ import {
 } from 'lucide-react'
 
 const menuItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Board', href: '/dashboard/board', icon: LayoutGrid },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
