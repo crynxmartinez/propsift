@@ -532,9 +532,13 @@ export default function PropertyDetailsPage() {
 
   const updateRecord = async (updates: Partial<RecordData>) => {
     try {
+      const token = localStorage.getItem('token')
       const res = await fetch(`/api/records/${recordId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(updates),
       })
       if (res.ok) {
