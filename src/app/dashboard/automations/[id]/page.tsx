@@ -42,7 +42,8 @@ import {
 // Custom node components
 import TriggerNode from '@/components/automation/TriggerNode'
 import ActionNode from '@/components/automation/ActionNode'
-import ConditionNode from '@/components/automation/ConditionNode'
+import ConditionNode, { branchColors, noneColor } from '@/components/automation/ConditionNode'
+import BranchNode from '@/components/automation/BranchNode'
 import NodeConfigPanel from '@/components/automation/NodeConfigPanel'
 import AddButtonEdge from '@/components/automation/AddButtonEdge'
 
@@ -50,6 +51,7 @@ const nodeTypes = {
   trigger: TriggerNode,
   action: ActionNode,
   condition: ConditionNode,
+  branch: BranchNode,
 }
 
 const edgeTypes = {
@@ -987,6 +989,9 @@ export default function AutomationBuilderPage() {
                     setSelectedNode(null)
                   }}
                   onSave={(nodeId, config) => {
+                    const node = nodes.find(n => n.id === nodeId)
+                    
+                    // Update the node config
                     setNodes((nds) =>
                       nds.map((n) =>
                         n.id === nodeId
@@ -994,6 +999,68 @@ export default function AutomationBuilderPage() {
                           : n
                       )
                     )
+
+                    // If this is a condition node, create/update branch nodes
+                    if (node?.type === 'condition' && config.branches) {
+                      const branches = config.branches as Array<{id: string, name: string, conditions: Array<{field: string, operator: string, value: string, logic?: string}>}>
+                      const conditionNode = node
+                      
+                      // Remove existing branch nodes for this condition
+                      const existingBranchIds = nodes
+                        .filter(n => n.type === 'branch' && n.data.parentConditionId === nodeId)
+                        .map(n => n.id)
+                      
+                      setNodes((nds) => nds.filter(n => !existingBranchIds.includes(n.id)))
+                      setEdges((eds) => eds.filter(e => 
+                        !existingBranchIds.includes(e.source) && !existingBranchIds.includes(e.target)
+                      ))
+
+                      // Create new branch nodes
+                      const allBranches = [
+                        ...branches,
+                        { id: 'none', name: 'None', conditions: [] }
+                      ]
+                      
+                      const newBranchNodes: Node[] = allBranches.map((branch, index) => {
+                        const color = branch.id === 'none' ? noneColor : branchColors[index % branchColors.length]
+                        const xOffset = (index - (allBranches.length - 1) / 2) * 220
+                        
+                        return {
+                          id: `branch-${nodeId}-${branch.id}`,
+                          type: 'branch',
+                          position: { 
+                            x: conditionNode.position.x + xOffset, 
+                            y: conditionNode.position.y + 150 
+                          },
+                          data: {
+                            label: branch.name,
+                            branchName: branch.name,
+                            branchIndex: index,
+                            conditions: branch.conditions,
+                            color,
+                            parentConditionId: nodeId,
+                            onAddAction: openAddActionPanel,
+                            onDelete: () => deleteNode(`branch-${nodeId}-${branch.id}`),
+                            onCopy: () => copyNode(`branch-${nodeId}-${branch.id}`),
+                          },
+                        }
+                      })
+
+                      // Create edges from condition to branches
+                      const newEdges: Edge[] = allBranches.map((branch, index) => ({
+                        id: `edge-${nodeId}-branch-${branch.id}`,
+                        source: nodeId,
+                        target: `branch-${nodeId}-${branch.id}`,
+                        type: 'addButton',
+                        markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
+                        style: { strokeWidth: 2, stroke: '#6366f1' },
+                        data: { onAddAction: openAddActionPanel },
+                      }))
+
+                      setNodes((nds) => [...nds, ...newBranchNodes])
+                      setEdges((eds) => [...eds, ...newEdges])
+                    }
+
                     setShowPanel(false)
                     setSelectedNode(null)
                   }}

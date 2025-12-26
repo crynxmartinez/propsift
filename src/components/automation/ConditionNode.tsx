@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { GitBranch, MoreVertical, Plus, Copy, Trash2 } from 'lucide-react'
+import { GitBranch, MoreVertical, Copy, Trash2 } from 'lucide-react'
 
 interface Branch {
   id: string
@@ -21,14 +21,12 @@ interface ConditionNodeData {
   config: {
     branches?: Branch[]
   }
-  branchEdges?: Record<string, boolean> // branchId -> hasEdge
-  onAddAction?: (branchId: string) => void
   onDelete?: () => void
   onCopy?: () => void
 }
 
-// Color palette for branches
-const branchColors = [
+// Color palette for branches - exported for use in other components
+export const branchColors = [
   { bg: 'bg-blue-500', text: 'text-blue-600', light: 'bg-blue-100', border: 'border-blue-300' },
   { bg: 'bg-purple-500', text: 'text-purple-600', light: 'bg-purple-100', border: 'border-purple-300' },
   { bg: 'bg-green-500', text: 'text-green-600', light: 'bg-green-100', border: 'border-green-300' },
@@ -36,21 +34,17 @@ const branchColors = [
   { bg: 'bg-pink-500', text: 'text-pink-600', light: 'bg-pink-100', border: 'border-pink-300' },
 ]
 
+export const noneColor = { bg: 'bg-gray-400', text: 'text-gray-600', light: 'bg-gray-100', border: 'border-gray-300' }
+
 function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
   const [showMenu, setShowMenu] = useState(false)
 
-  // Get branches from config, default to empty array + None branch
+  // Get branches from config
   const branches: Branch[] = data.config?.branches || []
   const allBranches = [
     ...branches,
-    { id: 'none', name: 'None', conditions: [] } // Always have a None branch
+    { id: 'none', name: 'None', conditions: [] }
   ]
-
-  // Calculate handle positions based on number of branches
-  const getHandlePosition = (index: number, total: number) => {
-    const spacing = 100 / (total + 1)
-    return `${spacing * (index + 1)}%`
-  }
 
   return (
     <div className="relative">
@@ -110,13 +104,10 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
         </div>
         <div className="font-medium text-gray-900">{data.label}</div>
         
-        {/* Branch outputs */}
-        <div className="flex flex-wrap gap-1 mt-3">
+        {/* Branch list with colors */}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
           {allBranches.map((branch, index) => {
-            const colorIndex = index % branchColors.length
-            const color = branch.id === 'none' 
-              ? { bg: 'bg-gray-400', text: 'text-gray-600', light: 'bg-gray-100', border: 'border-gray-300' }
-              : branchColors[colorIndex]
+            const color = branch.id === 'none' ? noneColor : branchColors[index % branchColors.length]
             
             return (
               <div key={branch.id} className="flex items-center gap-1 text-xs">
@@ -127,52 +118,12 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
           })}
         </div>
         
-        {/* Dynamic handles for each branch */}
-        {allBranches.map((branch, index) => {
-          const colorIndex = index % branchColors.length
-          const bgColor = branch.id === 'none' ? '!bg-gray-400' : `!${branchColors[colorIndex].bg.replace('bg-', 'bg-')}`
-          
-          return (
-            <Handle
-              key={branch.id}
-              type="source"
-              position={Position.Bottom}
-              id={branch.id}
-              style={{ left: getHandlePosition(index, allBranches.length) }}
-              className={`w-3 h-3 border-2 border-white ${branch.id === 'none' ? '!bg-gray-400' : branchColors[index % branchColors.length].bg}`}
-            />
-          )
-        })}
-      </div>
-
-      {/* Add Action Buttons below card for each branch - only show if no edge */}
-      <div className="flex justify-around mt-2 px-2">
-        {allBranches.map((branch, index) => {
-          const hasEdge = data.branchEdges?.[branch.id]
-          const colorIndex = index % branchColors.length
-          const color = branch.id === 'none' 
-            ? { bg: 'bg-gray-400', border: 'border-gray-300' }
-            : branchColors[colorIndex]
-          
-          if (hasEdge) {
-            return <div key={branch.id} className="w-6" />
-          }
-          
-          return (
-            <div key={branch.id} className="flex flex-col items-center">
-              <div className={`w-px h-6 ${color.border.replace('border-', 'bg-')}`}></div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  data.onAddAction?.(branch.id)
-                }}
-                className={`w-6 h-6 rounded-full ${color.bg} hover:opacity-80 text-white flex items-center justify-center shadow-md transition`}
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-          )
-        })}
+        {/* Single output handle - branches are separate nodes */}
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 !bg-orange-500 border-2 border-white"
+        />
       </div>
     </div>
   )
