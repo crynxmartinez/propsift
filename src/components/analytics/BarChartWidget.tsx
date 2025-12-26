@@ -125,8 +125,8 @@ export default function BarChartWidget({
       {subtitle && (
         <p className="text-xs text-gray-500 mb-2">{subtitle}</p>
       )}
-      <div className="flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 min-h-0" style={{ minHeight: 100 }}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={100}>
           <BarChart
             data={data}
             layout={appearance?.horizontal ? 'vertical' : 'horizontal'}

@@ -154,8 +154,8 @@ export default function PieChartWidget({
       {subtitle && (
         <p className="text-xs text-gray-500 mb-2">{subtitle}</p>
       )}
-      <div className="flex-1 min-h-0 relative">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 min-h-0 relative" style={{ minHeight: 100 }}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={100}>
           <PieChart>
             <Pie
               data={data}

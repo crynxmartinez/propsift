@@ -463,8 +463,8 @@ function DashboardGrid({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          widgets: newLayout.map(l => ({
-            id: l.i,
+          layouts: newLayout.map(l => ({
+            i: l.i,
             x: l.x,
             y: l.y,
             w: l.w,
