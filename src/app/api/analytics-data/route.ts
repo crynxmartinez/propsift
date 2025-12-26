@@ -780,83 +780,148 @@ async function getGroupedData(
           where: { createdById: ownerId },
           orderBy: { order: 'asc' },
         })
-
         for (const status of statuses) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const count = await prisma.record.count({
-            where: {
-              ...whereClause,
-              statusId: status.id,
-            } as any,
-          })
+          const count = await prisma.record.count({ where: { ...whereClause, statusId: status.id } as any })
           data.push({ label: status.name, value: count, color: status.color })
         }
       } else if (config.groupBy === 'temperature') {
         const temps = ['hot', 'warm', 'cold']
-        const tempColors: Record<string, string> = {
-          hot: '#EF4444',
-          warm: '#F59E0B',
-          cold: '#3B82F6',
-        }
-
+        const tempColors: Record<string, string> = { hot: '#EF4444', warm: '#F59E0B', cold: '#3B82F6' }
         for (const temp of temps) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const count = await prisma.record.count({
-            where: {
-              ...whereClause,
-              temperature: temp,
-            } as any,
-          })
-          data.push({
-            label: temp.charAt(0).toUpperCase() + temp.slice(1),
-            value: count,
-            color: tempColors[temp],
-          })
+          const count = await prisma.record.count({ where: { ...whereClause, temperature: temp } as any })
+          data.push({ label: temp.charAt(0).toUpperCase() + temp.slice(1), value: count, color: tempColors[temp] })
         }
       } else if (config.groupBy === 'tag') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tags = await prisma.tag.findMany({
-          where: { createdById: ownerId },
-          include: {
-            records: true,
-          },
-        })
-
+        const tags = await prisma.tag.findMany({ where: { createdById: ownerId }, include: { records: true } })
         for (const tag of tags) {
           data.push({ label: tag.name, value: tag.records.length })
         }
-      } else if (config.groupBy === 'assignedTo') {
+      } else if (config.groupBy === 'motivation') {
+        const motivations = await prisma.motivation.findMany({ where: { createdById: ownerId }, include: { records: true } })
+        for (const motivation of motivations) {
+          data.push({ label: motivation.name, value: motivation.records.length })
+        }
+      } else if (config.groupBy === 'assignedTo' || config.groupBy === 'createdBy') {
         const users = await prisma.user.findMany({
-          where: {
-            OR: [
-              { id: ownerId },
-              { accountOwnerId: ownerId },
-            ],
-          },
+          where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }] },
           select: { id: true, name: true, email: true },
         })
-
+        const field = config.groupBy === 'assignedTo' ? 'assignedToId' : 'createdById'
         for (const user of users) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const count = await prisma.record.count({
-            where: {
-              ...whereClause,
-              assignedToId: user.id,
-            } as any,
-          })
+          const count = await prisma.record.count({ where: { ...whereClause, [field]: user.id } as any })
           data.push({ label: user.name || user.email, value: count })
         }
-
-        // Add unassigned
+        if (config.groupBy === 'assignedTo') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const unassigned = await prisma.record.count({ where: { ...whereClause, assignedToId: null } as any })
+          if (unassigned > 0) data.push({ label: 'Unassigned', value: unassigned, color: '#9CA3AF' })
+        }
+      } else if (config.groupBy === 'propertyState') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const unassigned = await prisma.record.count({
-          where: {
-            ...whereClause,
-            assignedToId: null,
-          } as any,
-        })
-        if (unassigned > 0) {
-          data.push({ label: 'Unassigned', value: unassigned, color: '#9CA3AF' })
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { propertyState: true } })
+        const stateCounts: Record<string, number> = {}
+        for (const r of records) {
+          const state = r.propertyState || 'Unknown'
+          stateCounts[state] = (stateCounts[state] || 0) + 1
+        }
+        for (const [state, count] of Object.entries(stateCounts).sort((a, b) => b[1] - a[1])) {
+          data.push({ label: state, value: count })
+        }
+      } else if (config.groupBy === 'propertyCity') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { propertyCity: true } })
+        const cityCounts: Record<string, number> = {}
+        for (const r of records) {
+          const city = r.propertyCity || 'Unknown'
+          cityCounts[city] = (cityCounts[city] || 0) + 1
+        }
+        for (const [city, count] of Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).slice(0, 20)) {
+          data.push({ label: city, value: count })
+        }
+      } else if (config.groupBy === 'structureType') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { structureType: true } })
+        const typeCounts: Record<string, number> = {}
+        for (const r of records) {
+          const type = r.structureType || 'Unknown'
+          typeCounts[type] = (typeCounts[type] || 0) + 1
+        }
+        for (const [type, count] of Object.entries(typeCounts).sort((a, b) => b[1] - a[1])) {
+          data.push({ label: type, value: count })
+        }
+      } else if (config.groupBy === 'yearBuilt') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { yearBuilt: true } })
+        const yearCounts: Record<string, number> = {}
+        for (const r of records) {
+          const decade = r.yearBuilt ? `${Math.floor(r.yearBuilt / 10) * 10}s` : 'Unknown'
+          yearCounts[decade] = (yearCounts[decade] || 0) + 1
+        }
+        for (const [decade, count] of Object.entries(yearCounts).sort((a, b) => a[0].localeCompare(b[0]))) {
+          data.push({ label: decade, value: count })
+        }
+      } else if (config.groupBy === 'bedrooms') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { bedrooms: true } })
+        const bedCounts: Record<string, number> = {}
+        for (const r of records) {
+          const beds = r.bedrooms !== null ? `${r.bedrooms} BR` : 'Unknown'
+          bedCounts[beds] = (bedCounts[beds] || 0) + 1
+        }
+        for (const [beds, count] of Object.entries(bedCounts).sort((a, b) => {
+          const aNum = parseInt(a[0]) || 999
+          const bNum = parseInt(b[0]) || 999
+          return aNum - bNum
+        })) {
+          data.push({ label: beds, value: count })
+        }
+      } else if (config.groupBy === 'bathrooms') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { bathrooms: true } })
+        const bathCounts: Record<string, number> = {}
+        for (const r of records) {
+          const baths = r.bathrooms !== null ? `${Number(r.bathrooms)} BA` : 'Unknown'
+          bathCounts[baths] = (bathCounts[baths] || 0) + 1
+        }
+        for (const [baths, count] of Object.entries(bathCounts).sort((a, b) => {
+          const aNum = parseFloat(a[0]) || 999
+          const bNum = parseFloat(b[0]) || 999
+          return aNum - bNum
+        })) {
+          data.push({ label: baths, value: count })
+        }
+      } else if (config.groupBy === 'day' || config.groupBy === 'week' || config.groupBy === 'month' || config.groupBy === 'quarter' || config.groupBy === 'year') {
+        // Time-based grouping - delegate to time series logic
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({ where: whereClause as any, select: { createdAt: true } })
+        const timeCounts: Record<string, number> = {}
+        for (const r of records) {
+          const date = new Date(r.createdAt)
+          let key: string
+          if (config.groupBy === 'day') key = date.toISOString().split('T')[0]
+          else if (config.groupBy === 'week') {
+            const weekStart = new Date(date)
+            weekStart.setDate(date.getDate() - date.getDay())
+            key = `Week of ${weekStart.toISOString().split('T')[0]}`
+          }
+          else if (config.groupBy === 'month') key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          else if (config.groupBy === 'quarter') key = `${date.getFullYear()} Q${Math.floor(date.getMonth() / 3) + 1}`
+          else key = `${date.getFullYear()}`
+          timeCounts[key] = (timeCounts[key] || 0) + 1
+        }
+        for (const [time, count] of Object.entries(timeCounts).sort((a, b) => a[0].localeCompare(b[0]))) {
+          data.push({ label: time, value: count })
+        }
+      } else {
+        // Default: group by status
+        const defaultStatuses = await prisma.status.findMany({ where: { createdById: ownerId }, orderBy: { order: 'asc' } })
+        for (const status of defaultStatuses) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const count = await prisma.record.count({ where: { ...whereClause, statusId: status.id } as any })
+          data.push({ label: status.name, value: count, color: status.color })
         }
       }
       break
@@ -864,46 +929,54 @@ async function getGroupedData(
     case 'tasks':
       if (config.groupBy === 'status') {
         const statuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED']
-        const statusColors: Record<string, string> = {
-          PENDING: '#F59E0B',
-          IN_PROGRESS: '#3B82F6',
-          COMPLETED: '#10B981',
-        }
-
+        const statusColors: Record<string, string> = { PENDING: '#F59E0B', IN_PROGRESS: '#3B82F6', COMPLETED: '#10B981' }
         for (const status of statuses) {
-          const count = await prisma.task.count({
-            where: {
-              createdById: ownerId,
-              status,
-            },
-          })
-          data.push({
-            label: status.replace('_', ' '),
-            value: count,
-            color: statusColors[status],
-          })
+          const count = await prisma.task.count({ where: { createdById: ownerId, status } })
+          data.push({ label: status.replace('_', ' '), value: count, color: statusColors[status] })
         }
       } else if (config.groupBy === 'priority') {
         const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
-        const priorityColors: Record<string, string> = {
-          LOW: '#9CA3AF',
-          MEDIUM: '#3B82F6',
-          HIGH: '#F59E0B',
-          URGENT: '#EF4444',
-        }
-
+        const priorityColors: Record<string, string> = { LOW: '#9CA3AF', MEDIUM: '#3B82F6', HIGH: '#F59E0B', URGENT: '#EF4444' }
         for (const priority of priorities) {
-          const count = await prisma.task.count({
-            where: {
-              createdById: ownerId,
-              priority,
-            },
-          })
-          data.push({
-            label: priority,
-            value: count,
-            color: priorityColors[priority],
-          })
+          const count = await prisma.task.count({ where: { createdById: ownerId, priority } })
+          data.push({ label: priority, value: count, color: priorityColors[priority] })
+        }
+      } else if (config.groupBy === 'assignedTo') {
+        const users = await prisma.user.findMany({
+          where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }] },
+          select: { id: true, name: true, email: true },
+        })
+        for (const user of users) {
+          const count = await prisma.task.count({ where: { createdById: ownerId, assignedToId: user.id } })
+          data.push({ label: user.name || user.email, value: count })
+        }
+        const unassigned = await prisma.task.count({ where: { createdById: ownerId, assignedToId: null } })
+        if (unassigned > 0) data.push({ label: 'Unassigned', value: unassigned, color: '#9CA3AF' })
+      } else if (config.groupBy === 'day' || config.groupBy === 'week' || config.groupBy === 'month') {
+        const tasks = await prisma.task.findMany({ where: { createdById: ownerId }, select: { createdAt: true } })
+        const timeCounts: Record<string, number> = {}
+        for (const t of tasks) {
+          const date = new Date(t.createdAt)
+          let key: string
+          if (config.groupBy === 'day') key = date.toISOString().split('T')[0]
+          else if (config.groupBy === 'week') {
+            const weekStart = new Date(date)
+            weekStart.setDate(date.getDate() - date.getDay())
+            key = `Week of ${weekStart.toISOString().split('T')[0]}`
+          }
+          else key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          timeCounts[key] = (timeCounts[key] || 0) + 1
+        }
+        for (const [time, count] of Object.entries(timeCounts).sort((a, b) => a[0].localeCompare(b[0]))) {
+          data.push({ label: time, value: count })
+        }
+      } else {
+        // Default: group by status
+        const defaultStatuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED']
+        const defaultColors: Record<string, string> = { PENDING: '#F59E0B', IN_PROGRESS: '#3B82F6', COMPLETED: '#10B981' }
+        for (const status of defaultStatuses) {
+          const count = await prisma.task.count({ where: { createdById: ownerId, status } })
+          data.push({ label: status.replace('_', ' '), value: count, color: defaultColors[status] })
         }
       }
       break
