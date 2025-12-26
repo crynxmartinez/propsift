@@ -532,7 +532,15 @@ function normalizeGlobalFilters(gf: Omit<GlobalFilters, 'dateRange'>): Record<st
         exclude: nested.exclude ? [...nested.exclude].sort() : undefined,
       }
     }
-    // All other keys: pass-through as-is (market, board, callReady, etc.)
+    // v2.2.2 FIX: market.states/cities are also set-like arrays that need sorting
+    else if (key === 'market') {
+      const m = value as { states?: string[]; cities?: string[] }
+      result[key] = {
+        states: m.states ? [...m.states].sort() : undefined,
+        cities: m.cities ? [...m.cities].sort() : undefined,
+      }
+    }
+    // All other keys: pass-through as-is (board, callReady, etc.)
     // These are query-affecting and MUST be included in hash
     else {
       result[key] = value
@@ -689,14 +697,23 @@ function computeQueryDeps(
   // v2.2.2 CRITICAL FIX: Any filter that applies "via record" join requires records in deps
   // This includes: status, temperature, assignees, market, board, callReady, etc.
   // If entity is NOT records but these filters are present, they apply via record join
-  const filtersApplyViaRecord = [
-    gf.assignees?.length,
-    gf.status?.length,
-    gf.temperature?.length,
-    (gf as any).market,      // Pass-through filters
-    (gf as any).board,
-    (gf as any).callReady,
-  ].some(Boolean)
+  
+  // v2.2.2 FIX: Check presence, not truthiness (callReady: false is still query-affecting)
+  const hasAssignees = Array.isArray(gf.assignees) && gf.assignees.length > 0
+  const hasStatus = Array.isArray(gf.status) && gf.status.length > 0
+  const hasTemperature = Array.isArray(gf.temperature) && gf.temperature.length > 0
+  const hasMarket = !!((gf as any).market && (
+    ((gf as any).market.states?.length ?? 0) > 0 || 
+    ((gf as any).market.cities?.length ?? 0) > 0
+  ))
+  const hasBoard = !!((gf as any).board && (
+    (gf as any).board.boardId || (gf as any).board.columnId
+  ))
+  // IMPORTANT: callReady: false is still a filter, so check presence not truthiness
+  const hasCallReady = (gf as any).callReady !== undefined
+  
+  const filtersApplyViaRecord = 
+    hasAssignees || hasStatus || hasTemperature || hasMarket || hasBoard || hasCallReady
   
   if (filtersApplyViaRecord && input.entityKey !== 'records') {
     deps.add('records')  // These filters join through records
