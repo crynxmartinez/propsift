@@ -15,6 +15,12 @@ interface WidgetConfig {
   timePeriod?: string
   granularity?: string
   comparison?: string
+  // Cross-filtering options
+  filterByTag?: string
+  filterByMotivation?: string
+  filterByStatus?: string
+  filterByAssignee?: string
+  filterByTemperature?: string
 }
 
 // POST /api/analytics-data - Get data for a widget
@@ -181,7 +187,7 @@ function applyFilters(
   return where
 }
 
-// Get data for number widget
+// Get data for number widget - COMPREHENSIVE IMPLEMENTATION
 async function getNumberData(
   config: WidgetConfig,
   whereClause: Record<string, unknown>,
@@ -190,57 +196,99 @@ async function getNumberData(
 ) {
   let value = 0
   let previousValue: number | undefined
+  let total: number | undefined // For percentage calculations
 
+  // Helper to get previous period value
+  const getPreviousValue = async (countFn: () => Promise<number>) => {
+    if (config.comparison === 'previous_period' && dateRange) {
+      const duration = dateRange.end.getTime() - dateRange.start.getTime()
+      const prevStart = new Date(dateRange.start.getTime() - duration)
+      const prevEnd = new Date(dateRange.start.getTime() - 1)
+      return countFn()
+    }
+    return undefined
+  }
+
+  // ==========================================
+  // RECORDS DATA SOURCES
+  // ==========================================
   switch (config.dataSource) {
     case 'records':
-      if (config.metric === 'count') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value = await prisma.record.count({ where: whereClause as any })
-        
-        // Get previous period for comparison
-        if (config.comparison === 'previous_period' && dateRange) {
-          const duration = dateRange.end.getTime() - dateRange.start.getTime()
-          const prevStart = new Date(dateRange.start.getTime() - duration)
-          const prevEnd = new Date(dateRange.start.getTime() - 1)
-          
-          previousValue = await prisma.record.count({
-            where: {
-              ...whereClause,
-              createdAt: { gte: prevStart, lte: prevEnd },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any,
-          })
-        }
-      } else if (config.metric === 'sum' && config.field) {
-        const result = await prisma.record.aggregate({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          where: whereClause as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          _sum: { [config.field]: true } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: whereClause as any })
+      if (config.comparison === 'previous_period' && dateRange) {
+        const duration = dateRange.end.getTime() - dateRange.start.getTime()
+        const prevStart = new Date(dateRange.start.getTime() - duration)
+        const prevEnd = new Date(dateRange.start.getTime() - 1)
+        previousValue = await prisma.record.count({
+          where: { createdById: ownerId, createdAt: { gte: prevStart, lte: prevEnd } },
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value = (result._sum as any)[config.field] || 0
       }
       break
 
+    case 'records_hot':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, temperature: 'hot' } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_warm':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, temperature: 'warm' } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_cold':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, temperature: 'cold' } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_contacts':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, isContact: true } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_non_contacts':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, isContact: false } as any })
+      break
+
+    case 'records_completed':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, isComplete: true } as any })
+      break
+
+    case 'records_unassigned':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: { ...whereClause, assignedToId: null } as any })
+      break
+
+    // ==========================================
+    // TASKS DATA SOURCES
+    // ==========================================
     case 'tasks':
-      if (config.metric === 'count') {
-        value = await prisma.task.count({
-          where: {
-            createdById: ownerId,
-            ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
-          },
-        })
-      }
-      break
-
-    case 'tasks_pending':
       value = await prisma.task.count({
         where: {
           createdById: ownerId,
-          status: 'PENDING',
+          ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
         },
       })
+      break
+
+    case 'tasks_pending':
+      value = await prisma.task.count({ where: { createdById: ownerId, status: 'PENDING' } })
+      total = await prisma.task.count({ where: { createdById: ownerId } })
+      break
+
+    case 'tasks_in_progress':
+      value = await prisma.task.count({ where: { createdById: ownerId, status: 'IN_PROGRESS' } })
+      total = await prisma.task.count({ where: { createdById: ownerId } })
       break
 
     case 'tasks_completed':
@@ -251,94 +299,377 @@ async function getNumberData(
           ...(dateRange ? { completedAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
         },
       })
+      total = await prisma.task.count({ where: { createdById: ownerId } })
       break
 
     case 'tasks_overdue':
       value = await prisma.task.count({
-        where: {
-          createdById: ownerId,
-          status: { not: 'COMPLETED' },
-          dueDate: { lt: new Date() },
-        },
+        where: { createdById: ownerId, status: { not: 'COMPLETED' }, dueDate: { lt: new Date() } },
       })
       break
 
-    case 'hot_leads':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      value = await prisma.record.count({
-        where: {
-          ...whereClause,
-          temperature: 'hot',
-        } as any,
+    case 'tasks_due_today':
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const todayEnd = new Date()
+      todayEnd.setHours(23, 59, 59, 999)
+      value = await prisma.task.count({
+        where: { createdById: ownerId, status: { not: 'COMPLETED' }, dueDate: { gte: todayStart, lte: todayEnd } },
       })
       break
 
-    case 'contacts':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      value = await prisma.record.count({
-        where: {
-          ...whereClause,
-          isContact: true,
-        } as any,
+    case 'tasks_due_this_week':
+      const weekStart = new Date()
+      weekStart.setHours(0, 0, 0, 0)
+      const weekEnd = new Date()
+      weekEnd.setDate(weekEnd.getDate() + 7)
+      value = await prisma.task.count({
+        where: { createdById: ownerId, status: { not: 'COMPLETED' }, dueDate: { gte: weekStart, lte: weekEnd } },
       })
       break
 
+    case 'tasks_unassigned':
+      value = await prisma.task.count({ where: { createdById: ownerId, assignedToId: null } })
+      break
+
+    case 'tasks_recurring':
+      value = await prisma.task.count({ where: { createdById: ownerId, recurrence: { not: null } } })
+      break
+
+    // ==========================================
+    // TAGS DATA SOURCES
+    // ==========================================
     case 'tags':
       value = await prisma.tag.count({ where: { createdById: ownerId } })
       break
 
+    case 'tags_most_used':
+      const tagsWithRecords = await prisma.tag.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      value = tagsWithRecords.filter(t => t.records.length > 0).length
+      break
+
+    case 'tags_unused':
+      const allTagsForUnused = await prisma.tag.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      value = allTagsForUnused.filter(t => t.records.length === 0).length
+      break
+
+    case 'records_with_tags':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recordsWithTags: any[] = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { recordTags: true },
+      })
+      value = recordsWithTags.filter(r => r.recordTags && r.recordTags.length > 0).length
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_without_tags':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recordsForTagCheck: any[] = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { recordTags: true },
+      })
+      value = recordsForTagCheck.filter(r => !r.recordTags || r.recordTags.length === 0).length
+      break
+
+    case 'records_multiple_tags':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recordsMultiTags: any[] = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { recordTags: true },
+      })
+      value = recordsMultiTags.filter(r => r.recordTags && r.recordTags.length > 1).length
+      break
+
+    // ==========================================
+    // MOTIVATIONS DATA SOURCES
+    // ==========================================
     case 'motivations':
       value = await prisma.motivation.count({ where: { createdById: ownerId } })
       break
 
+    case 'motivations_most_used':
+      const motivationsWithRecords = await prisma.motivation.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      value = motivationsWithRecords.filter(m => m.records.length > 0).length
+      break
+
+    case 'motivations_unused':
+      const allMotivationsForUnused = await prisma.motivation.findMany({
+        where: { createdById: ownerId },
+        include: { records: true },
+      })
+      value = allMotivationsForUnused.filter(m => m.records.length === 0).length
+      break
+
+    case 'records_with_motivations':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recordsWithMotivations: any[] = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { recordMotivations: true },
+      })
+      value = recordsWithMotivations.filter(r => r.recordMotivations && r.recordMotivations.length > 0).length
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_without_motivations':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recordsForMotivationCheck: any[] = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { recordMotivations: true },
+      })
+      value = recordsForMotivationCheck.filter(r => !r.recordMotivations || r.recordMotivations.length === 0).length
+      break
+
+    // ==========================================
+    // STATUSES DATA SOURCES
+    // ==========================================
     case 'statuses':
       value = await prisma.status.count({ where: { createdById: ownerId } })
       break
 
+    case 'statuses_active':
+      value = await prisma.status.count({ where: { createdById: ownerId, isActive: true } })
+      break
+
+    case 'statuses_inactive':
+      value = await prisma.status.count({ where: { createdById: ownerId, isActive: false } })
+      break
+
+    // ==========================================
+    // PHONES DATA SOURCES
+    // ==========================================
+    case 'phones':
+      value = await prisma.recordPhoneNumber.count({ where: { record: { createdById: ownerId } } })
+      break
+
+    case 'phones_mobile':
+      value = await prisma.recordPhoneNumber.count({ where: { record: { createdById: ownerId }, type: 'mobile' } })
+      break
+
+    case 'phones_landline':
+      value = await prisma.recordPhoneNumber.count({ where: { record: { createdById: ownerId }, type: 'landline' } })
+      break
+
+    case 'phones_voip':
+      value = await prisma.recordPhoneNumber.count({ where: { record: { createdById: ownerId }, type: 'voip' } })
+      break
+
+    case 'phones_dnc':
+      // DNC phones have 'DNC' in their statuses array
+      const allPhones = await prisma.recordPhoneNumber.findMany({ where: { record: { createdById: ownerId } } })
+      value = allPhones.filter(p => p.statuses.includes('DNC')).length
+      break
+
+    case 'records_with_phones':
+      const recordsWithPhones = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { phoneNumbers: true },
+      })
+      value = recordsWithPhones.filter(r => r.phoneNumbers.length > 0).length
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_without_phones':
+      const recordsForPhoneCheck = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { phoneNumbers: true },
+      })
+      value = recordsForPhoneCheck.filter(r => r.phoneNumbers.length === 0).length
+      break
+
+    case 'records_multiple_phones':
+      const recordsMultiPhones = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { phoneNumbers: true },
+      })
+      value = recordsMultiPhones.filter(r => r.phoneNumbers.length > 1).length
+      break
+
+    // ==========================================
+    // EMAILS DATA SOURCES
+    // ==========================================
+    case 'emails':
+      value = await prisma.recordEmail.count({ where: { record: { createdById: ownerId } } })
+      break
+
+    case 'emails_primary':
+      value = await prisma.recordEmail.count({ where: { record: { createdById: ownerId }, isPrimary: true } })
+      break
+
+    case 'records_with_emails':
+      const recordsWithEmails = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { emails: true },
+      })
+      value = recordsWithEmails.filter(r => r.emails.length > 0).length
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      total = await prisma.record.count({ where: whereClause as any })
+      break
+
+    case 'records_without_emails':
+      const recordsForEmailCheck = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { emails: true },
+      })
+      value = recordsForEmailCheck.filter(r => r.emails.length === 0).length
+      break
+
+    case 'records_multiple_emails':
+      const recordsMultiEmails = await prisma.record.findMany({
+        where: { createdById: ownerId },
+        include: { emails: true },
+      })
+      value = recordsMultiEmails.filter(r => r.emails.length > 1).length
+      break
+
+    // ==========================================
+    // BOARDS DATA SOURCES
+    // ==========================================
     case 'boards':
       value = await prisma.board.count({ where: { createdById: ownerId } })
       break
 
+    case 'board_columns':
+      value = await prisma.boardColumn.count({ where: { board: { createdById: ownerId } } })
+      break
+
+    case 'records_on_boards':
+      value = await prisma.recordBoardPosition.count({ where: { column: { board: { createdById: ownerId } } } })
+      break
+
+    case 'records_not_on_boards':
+      const totalRecordsForBoards = await prisma.record.count({ where: { createdById: ownerId } })
+      const recordsOnBoardsList = await prisma.recordBoardPosition.findMany({
+        where: { column: { board: { createdById: ownerId } } },
+        select: { recordId: true },
+        distinct: ['recordId'],
+      })
+      value = totalRecordsForBoards - recordsOnBoardsList.length
+      break
+
+    // ==========================================
+    // AUTOMATIONS DATA SOURCES
+    // ==========================================
     case 'automations':
       value = await prisma.automation.count({ where: { createdById: ownerId } })
       break
 
     case 'automations_active':
       value = await prisma.automation.count({ where: { createdById: ownerId, isActive: true } })
+      total = await prisma.automation.count({ where: { createdById: ownerId } })
       break
 
+    case 'automations_inactive':
+      value = await prisma.automation.count({ where: { createdById: ownerId, isActive: false } })
+      break
+
+    case 'automation_runs':
+      const automationsForRuns = await prisma.automation.findMany({
+        where: { createdById: ownerId },
+        select: { runCount: true },
+      })
+      value = automationsForRuns.reduce((sum, a) => sum + a.runCount, 0)
+      break
+
+    case 'automation_runs_completed':
+      value = await prisma.automationLog.count({
+        where: { automation: { createdById: ownerId }, status: 'COMPLETED' },
+      })
+      break
+
+    case 'automation_runs_failed':
+      value = await prisma.automationLog.count({
+        where: { automation: { createdById: ownerId }, status: 'FAILED' },
+      })
+      break
+
+    case 'automation_runs_running':
+      value = await prisma.automationLog.count({
+        where: { automation: { createdById: ownerId }, status: 'RUNNING' },
+      })
+      break
+
+    // ==========================================
+    // TEAM DATA SOURCES
+    // ==========================================
     case 'team':
-      value = await prisma.user.count({
-        where: {
-          OR: [{ id: ownerId }, { accountOwnerId: ownerId }],
-        },
-      })
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }] } })
       break
 
-    case 'phones':
-      value = await prisma.recordPhoneNumber.count({
-        where: { record: { createdById: ownerId } },
-      })
+    case 'team_owners':
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }], role: 'OWNER' } })
       break
 
-    case 'emails':
-      value = await prisma.recordEmail.count({
-        where: { record: { createdById: ownerId } },
-      })
+    case 'team_admins':
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }], role: 'ADMIN' } })
       break
 
-    case 'custom_fields':
-      value = await prisma.customFieldDefinition.count({ where: { createdById: ownerId } })
+    case 'team_members':
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }], role: 'MEMBER' } })
       break
 
+    case 'team_active':
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }], status: 'active' } })
+      break
+
+    case 'team_inactive':
+      value = await prisma.user.count({ where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }], status: 'inactive' } })
+      break
+
+    // ==========================================
+    // ACTIVITY DATA SOURCES
+    // ==========================================
     case 'activity':
       value = await prisma.activityLog.count({
         where: dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {},
       })
       break
 
+    case 'activity_record':
+      value = await prisma.activityLog.count({
+        where: {
+          type: 'RECORD',
+          ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
+        },
+      })
+      break
+
+    case 'activity_imports':
+      value = await prisma.activityLog.count({
+        where: {
+          action: { contains: 'import' },
+          ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
+        },
+      })
+      break
+
+    // ==========================================
+    // CUSTOM FIELDS DATA SOURCES
+    // ==========================================
+    case 'custom_fields':
+      value = await prisma.customFieldDefinition.count({ where: { createdById: ownerId } })
+      break
+
+    case 'custom_field_values':
+      value = await prisma.customFieldValue.count({ where: { field: { createdById: ownerId } } })
+      break
+
+    // ==========================================
+    // DEFAULT
+    // ==========================================
     default:
-      // Default to records count
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       value = await prisma.record.count({ where: whereClause as any })
   }
@@ -347,8 +678,9 @@ async function getNumberData(
   const changePercent = previousValue && previousValue > 0
     ? ((value - previousValue) / previousValue) * 100
     : undefined
+  const percentage = total && total > 0 ? (value / total) * 100 : undefined
 
-  return { value, previousValue, change, changePercent }
+  return { value, previousValue, change, changePercent, total, percentage }
 }
 
 // Get grouped data for bar/pie charts
