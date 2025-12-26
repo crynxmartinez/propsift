@@ -8,24 +8,45 @@
 
 ## Changelog (2.2.1 → 2.2.2)
 
-### Patches Applied
+### Production Contracts Locked
 
-| # | Issue | Fix |
-|---|-------|-----|
+| # | Contract | Implementation |
+|---|----------|----------------|
 | 1 | **GroupBy on relation trap** | Many-to-many dimensions must use junction entity (Prisma can't groupBy through relations) |
-| 2 | **Counter drift** | Defined counter update mechanism: transaction hooks + async reconciliation |
+| 2 | **Counter drift** | Service-layer transactions + async reconciliation (NOT middleware) |
 | 3 | **Cache explosion** | Cache key uses `permissionHash`, not raw `userId` |
-| 4 | **Stale dependent widgets** | Added invalidation dependency map (phone add → bump records + phones) |
-| 5 | **Hash collisions** | Query hash includes ALL query-affecting inputs with stable stringify |
+| 4 | **Stale dependent widgets** | Dependency-version caching (cache key includes ALL entity versions query depends on) |
+| 5 | **Hash collisions** | Query hash includes ALL query-affecting inputs with stable stringify + `ctx` |
 | 6 | **Operator ambiguity** | `between` requires `[min, max]` array format |
 | 7 | **Search injection** | Drilldown search is entity-scoped with `searchFields` registry (resolver-based) |
 | 8 | **Acceptance criteria** | Added comprehensive Phase 1 checklist |
-| 9 | **Search relation fields** | `searchFields` now supports scalar + relation_some for phones/emails |
-| 10 | **Counter transaction safety** | Service-layer transactions, not middleware (avoids recursion + tx isolation) |
-| 11 | **Timezone in query hash** | Date presets resolve to ISO timestamps before hashing (no midnight cache bugs) |
+| 9 | **Search relation fields** | `searchFields` supports scalar + relation_some for phones/emails |
+| 10 | **Counter transaction safety** | Service-layer `$transaction`, not middleware (avoids recursion + tx isolation) |
+| 11 | **Timezone in query hash** | Date presets resolve to ISO timestamps before hashing (no preset strings) |
 | 12 | **Wildcard check robustness** | `dimension.entities.includes('*')` instead of `[0] !== '*'` |
-| 13 | **Label join caching rule** | Explicit: widgets return IDs, labels resolved separately |
+| 13 | **Label join caching rule** | Widgets return IDs, labels resolved separately with own versioning |
 | 14 | **Registry version in cache** | `REGISTRY_VERSION` in cache key prevents stale shapes after deploy |
+| 15 | **Canonical dateRange** | `globalFilters.dateRange` is default, widget can override; hash only effective range |
+| 16 | **Dependency-version caching** | Cache key includes versions of ALL entities query depends on |
+| 17 | **Rate limit enforcement** | Redis-based rate limiter for drilldown search |
+| 18 | **Label versioning** | Separate `labelVersion` keys for tags/motivations |
+
+---
+
+## Non-Negotiables (Frozen After 2.2.2)
+
+These contracts are **locked** and must not be changed without a major version bump:
+
+| Contract | Why It's Frozen |
+|----------|-----------------|
+| **Tenant scope = `workspaceId`** | Security foundation |
+| **Permission hash in cache key** | Prevents cross-user data leaks |
+| **Junction entity for many-to-many groupBy** | Prisma limitation, no workaround |
+| **Dependency-version caching** | Prevents stale cross-entity data |
+| **Service-layer transactions for counters** | Middleware is not transaction-safe |
+| **Server recompiles drilldown** | Client cannot submit CompiledQuery |
+| **`computeQueryHash(input, ctx)` signature** | Timezone resolution requires ctx |
+| **Resolved ISO timestamps in hash** | No preset strings, no midnight bugs |
 
 ---
 
@@ -320,15 +341,39 @@ export interface WidgetQueryInput {
   entityKey: string
   segmentKey?: string
   filters: FilterPredicate[]
-  globalFilters: GlobalFilters
+  globalFilters: GlobalFilters  // includes dateRange (dashboard default)
   metric: MetricConfig
   dimension?: string
-  dateRange: DateRange
+  dateRange?: DateRangePreset | { start: Date; end: Date }  // v2.2.2: OPTIONAL override
   dateMode?: DateModeKey
   granularity?: 'day' | 'week' | 'month' | 'quarter' | 'year'
   sort?: SortConfig
   limit?: number
 }
+```
+
+### Canonical DateRange Rule (v2.2.2)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 CANONICAL DATERANGE RULE (v2.2.2)                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  globalFilters.dateRange = dashboard default (always present)           │
+│  input.dateRange = widget-level override (optional)                     │
+│                                                                          │
+│  Compiler rule:                                                          │
+│    const effectiveDateRange = input.dateRange ?? input.globalFilters.dateRange │
+│                                                                          │
+│  Hash rule:                                                              │
+│    Hash ONLY the resolved effective date range (ISO timestamps)         │
+│    Do NOT hash both, do NOT hash preset strings                         │
+│                                                                          │
+│  This prevents:                                                          │
+│    - Double-filtering bugs ("why is my chart empty")                    │
+│    - Midnight cache bugs (preset strings in hash)                       │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Compile Context
@@ -370,27 +415,33 @@ function hasPerUserScope(ctx: CompileCtx): boolean {
 
 ```typescript
 // v2.2.2: Hash MUST include ALL query-affecting inputs
-// v2.2.2 Patch: Date presets must be resolved to ISO timestamps BEFORE hashing
-//               to prevent midnight cache bugs (e.g., "today" caching wrong across midnight)
+// v2.2.2: Date presets must be resolved to ISO timestamps BEFORE hashing
+// v2.2.2: Signature is computeQueryHash(input, ctx) - ctx is REQUIRED for timezone
 
 const REGISTRY_VERSION = '2.2.2'  // Bump on registry changes to invalidate old cached shapes
 
 export function computeQueryHash(input: WidgetQueryInput, ctx: CompileCtx): string {
-  // v2.2.2: Resolve date range to actual timestamps using tenant timezone
-  const resolvedDateRange = resolveDateRange(input.dateRange, ctx.timezone)
+  // v2.2.2: Use effective date range (widget override OR global default)
+  const effectiveDateRange = input.dateRange ?? input.globalFilters.dateRange
+  
+  // v2.2.2: Resolve to actual timestamps using tenant timezone
+  const resolvedDateRange = resolveDateRange(effectiveDateRange, ctx.timezone)
   
   // Stable stringify with sorted keys
+  // v2.2.2: Do NOT include globalFilters.dateRange separately (already in effectiveDateRange)
+  // v2.2.2: Do NOT include preset strings, only resolved ISO timestamps
   const hashInput = {
-    registryVersion: REGISTRY_VERSION,  // v2.2.2: Invalidate on deploy
+    registryVersion: REGISTRY_VERSION,
     entityKey: input.entityKey,
     segmentKey: input.segmentKey || null,
     filters: sortFilters(input.filters),
-    globalFilters: sortObject(input.globalFilters),
+    // v2.2.2: Hash globalFilters WITHOUT dateRange (it's in effectiveDateRange)
+    globalFiltersExceptDate: sortObject(omit(input.globalFilters, ['dateRange'])),
     metric: input.metric,
     dimension: input.dimension || null,
-    // v2.2.2: Use resolved ISO timestamps, not preset string
-    dateStart: resolvedDateRange.start.toISOString(),
-    dateEnd: resolvedDateRange.end.toISOString(),
+    // v2.2.2: ONLY resolved ISO timestamps, no preset strings
+    dateStartISO: resolvedDateRange.start.toISOString(),
+    dateEndISO: resolvedDateRange.end.toISOString(),
     dateMode: input.dateMode || null,
     granularity: input.granularity || null,
     sort: input.sort || null,
@@ -401,6 +452,12 @@ export function computeQueryHash(input: WidgetQueryInput, ctx: CompileCtx): stri
     .update(stableStringify(hashInput))
     .digest('hex')
     .substring(0, 16)
+}
+
+function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+  const result = { ...obj }
+  for (const key of keys) delete result[key]
+  return result
 }
 
 // Stable stringify: sorted keys, consistent output
@@ -482,12 +539,13 @@ export function compileQuery(
   // 4. Widget filters
   const filterWhere = compileFilters(input.entityKey, input.filters, ctx)
 
-  // 5. Global filters
+  // 5. Global filters (excluding dateRange - handled separately)
   const globalWhere = compileGlobalFilters(input.entityKey, input.globalFilters, ctx)
 
-  // 6. Date range
+  // 6. Date range (v2.2.2: use effective date range)
+  const effectiveDateRange = input.dateRange ?? input.globalFilters.dateRange
   const dateMode = input.dateMode || entity.dateModes.default
-  const dateWhere = compileDateRange(input.dateRange, dateMode, entity, ctx)
+  const dateWhere = compileDateRange(effectiveDateRange, dateMode, entity, ctx)
 
   // Combine all conditions
   const where: PrismaWhere = {
@@ -507,8 +565,11 @@ export function compileQuery(
     orderBy = { [input.sort.field]: input.sort.dir }
   }
 
-  // v2.2.2: Complete hash
-  const hash = computeQueryHash(input)
+  // v2.2.2: Compute dependencies for cache invalidation
+  const deps = computeQueryDeps(input, entity, ctx)
+
+  // v2.2.2: Complete hash with ctx (required for timezone)
+  const hash = computeQueryHash(input, ctx)
 
   return {
     entityKey: input.entityKey,
@@ -517,8 +578,49 @@ export function compileQuery(
     orderBy,
     take: input.limit,
     dateMode,
-    hash
+    hash,
+    deps  // v2.2.2: Cache dependencies
   }
+}
+
+// v2.2.2: Compute all entity dependencies for cache invalidation
+function computeQueryDeps(
+  input: WidgetQueryInput,
+  entity: EntityDefinition,
+  ctx: CompileCtx
+): string[] {
+  const deps = new Set<string>()
+  
+  // 1. Always include the primary entity
+  deps.add(input.entityKey)
+  
+  // 2. Include tenant scope join entity (via_join)
+  if (entity.tenantScope.mode === 'via_join' && entity.tenantScope.joinPath) {
+    deps.add(entity.tenantScope.joinPath)  // e.g., 'records' for phones
+  }
+  
+  // 3. Include entities referenced by global filters
+  if (input.globalFilters.tags?.include?.length || input.globalFilters.tags?.exclude?.length) {
+    deps.add('record_tags')
+  }
+  if (input.globalFilters.motivations?.include?.length || input.globalFilters.motivations?.exclude?.length) {
+    deps.add('record_motivations')
+  }
+  if (input.globalFilters.assignees?.length) {
+    // Assignee filter may reference team/user data
+    deps.add('records')
+  }
+  
+  // 4. Include entities used by permission filters
+  const entityPerm = ctx.permissions.entities[input.entityKey]
+  if (entityPerm?.rowFilter?.length) {
+    // If permission filter references assignedTo, add records
+    if (entityPerm.rowFilter.some(f => f.field === 'assignedToId')) {
+      deps.add('records')
+    }
+  }
+  
+  return Array.from(deps).sort()
 }
 
 // v2.2.2: Validate dimension is groupable on this entity
@@ -707,13 +809,42 @@ function sanitizeSearchInput(input: string, maxLength: number): string {
 }
 ```
 
-### Server-Side Enforcement
+### Rate Limit Enforcement (v2.2.2)
+
+```typescript
+// v2.2.2: Redis-based rate limiter for drilldown search
+const SEARCH_RATE_LIMIT = 10  // requests per second per user
+
+async function assertRateLimit(
+  userId: string, 
+  key: string, 
+  limitPerSec: number
+): Promise<void> {
+  const bucket = `rl:${userId}:${key}:${Math.floor(Date.now() / 1000)}`
+  const count = await redis.incr(bucket)
+  
+  if (count === 1) {
+    await redis.expire(bucket, 2)  // Auto-expire after 2 seconds
+  }
+  
+  if (count > limitPerSec) {
+    throw new RateLimitError(`Rate limit exceeded: ${limitPerSec} requests per second`)
+  }
+}
+```
+
+### Server-Side Enforcement (v2.2.2)
 
 ```typescript
 export async function handleDrilldown(
   request: DrilldownRequest,
   ctx: CompileCtx
 ): Promise<DrilldownResponse> {
+  // v2.2.2: Enforce rate limit for search
+  if (request.search) {
+    await assertRateLimit(ctx.userId, 'drilldown-search', SEARCH_RATE_LIMIT)
+  }
+  
   // v2.2.2: Enforce max pageSize
   const MAX_PAGE_SIZE = 100
   const pageSize = Math.min(request.pageSize, MAX_PAGE_SIZE)
@@ -797,22 +928,58 @@ Same as 2.2.1, plus:
 
 ## 17. Caching Strategy (v2.2.2 - Permission Hash + Dependency Map)
 
-### Cache Key Structure (v2.2.2 + REGISTRY_VERSION)
+### Cache Key Structure (v2.2.2 + Dependency Versions)
 
 ```typescript
 const REGISTRY_VERSION = '2.2.2'  // Bump on registry/schema changes
 
-function buildCacheKey(
-  input: WidgetQueryInput,
-  ctx: CompileCtx,
-  version: number
-): string {
-  const queryHash = computeQueryHash(input, ctx)  // v2.2.2: Now takes ctx for timezone
+async function buildCacheKey(
+  compiled: CompiledQuery,
+  ctx: CompileCtx
+): Promise<string> {
+  // v2.2.2: Get versions for ALL dependencies, not just primary entity
+  const versionKeys = compiled.deps.map(k => `cacheVersion:${ctx.tenantId}:${k}`)
+  const versions = await redis.mget(versionKeys)
   
-  // v2.2.2: Use permissionHash, not raw userId
-  // v2.2.2: Include REGISTRY_VERSION to invalidate on deploy
-  return `w:${REGISTRY_VERSION}:${ctx.tenantId}:${input.entityKey}:v${version}:p:${ctx.permissionHash}:q:${queryHash}`
+  // Build dependency signature: "records:5|record_tags:3|phones:2"
+  const depSig = compiled.deps.map((k, i) => `${k}:${versions[i] ?? 0}`).join('|')
+  const depHash = crypto.createHash('sha256').update(depSig).digest('hex').substring(0, 8)
+  
+  // v2.2.2: Cache key includes:
+  // - REGISTRY_VERSION (invalidate on deploy)
+  // - tenantId (tenant isolation)
+  // - depHash (all dependency versions)
+  // - permissionHash (permission isolation)
+  // - queryHash (query uniqueness)
+  return `w:${REGISTRY_VERSION}:${ctx.tenantId}:deps:${depHash}:p:${ctx.permissionHash}:q:${compiled.hash}`
 }
+```
+
+### Dependency-Version Caching (v2.2.2)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 DEPENDENCY-VERSION CACHING (v2.2.2)                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Problem: phones entity with globalFilters.tags depends on:             │
+│    - phones (primary entity)                                            │
+│    - records (via_join tenant scope)                                    │
+│    - record_tags (tag filter)                                           │
+│                                                                          │
+│  Old approach: cache key only includes phones version                   │
+│  → Stale data when records or record_tags change                        │
+│                                                                          │
+│  v2.2.2 approach: cache key includes ALL dependency versions            │
+│  → Any dependency change = cache miss = fresh data                      │
+│                                                                          │
+│  CompiledQuery.deps computed by compiler:                               │
+│    1. Primary entity (always)                                           │
+│    2. Tenant scope join entity (via_join)                               │
+│    3. Entities referenced by global filters                             │
+│    4. Entities used by permission filters                               │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Invalidation Dependency Map (v2.2.2)
@@ -854,7 +1021,7 @@ export const INVALIDATION_MAP: Record<string, string[]> = {
 }
 ```
 
-### Label Join Caching Rule (v2.2.2 Patch)
+### Label Join Caching Rule (v2.2.2)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -878,9 +1045,65 @@ export const INVALIDATION_MAP: Record<string, string[]> = {
 │  Implementation:                                                         │
 │  - Widget API returns raw IDs in groupBy results                        │
 │  - Client calls label lookup API to resolve display names               │
-│  - Label cache: `labels:{entityKey}:{id}` with 1 hour TTL               │
+│  - Label cache uses separate versioning (see below)                     │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Label Versioning (v2.2.2)
+
+```typescript
+// v2.2.2: Separate label versions from widget versions
+// tag.update bumps labelVersion, NOT cacheVersion
+
+// Label cache keys
+function buildLabelCacheKey(entityKey: string, id: string, tenantId: string): string {
+  return `label:${tenantId}:${entityKey}:${id}`
+}
+
+// Label version keys (separate from widget versions)
+// labelVersion:${tenantId}:tags
+// labelVersion:${tenantId}:motivations
+
+async function getLabelVersion(tenantId: string, entityKey: string): Promise<number> {
+  return Number(await redis.get(`labelVersion:${tenantId}:${entityKey}`)) || 0
+}
+
+// On tag.update: bump label version, NOT widget version
+async function invalidateLabelOnUpdate(tenantId: string, entityKey: string): Promise<void> {
+  await redis.incr(`labelVersion:${tenantId}:${entityKey}`)
+}
+
+// Labels endpoint with versioned caching
+async function getLabels(
+  entityKey: string,
+  ids: string[],
+  tenantId: string
+): Promise<Record<string, LabelData>> {
+  const version = await getLabelVersion(tenantId, entityKey)
+  const results: Record<string, LabelData> = {}
+  
+  for (const id of ids) {
+    const cacheKey = `${buildLabelCacheKey(entityKey, id, tenantId)}:v${version}`
+    const cached = await redis.get(cacheKey)
+    
+    if (cached) {
+      results[id] = JSON.parse(cached)
+    } else {
+      const label = await fetchLabelFromDb(entityKey, id)
+      await redis.setex(cacheKey, 3600, JSON.stringify(label)) // 1 hour TTL
+      results[id] = label
+    }
+  }
+  
+  return results
+}
+```
+
+### Updated Invalidation Map (v2.2.2)
+
+```typescript
+// v2.2.2: tag.update and motivation.update now bump LABEL version, not widget version
 
 // Invalidate affected entities
 export async function invalidateOnMutation(
@@ -897,24 +1120,24 @@ export async function invalidateOnMutation(
 }
 ```
 
-### Cache Flow
+### Cache Flow (v2.2.2 - Updated)
 
 ```typescript
 async function fetchWidgetData(
   input: WidgetQueryInput,
   ctx: CompileCtx
 ): Promise<WidgetData> {
-  // Get current version for all relevant entities
-  const version = await redis.get(`cacheVersion:${ctx.tenantId}:${input.entityKey}`) || 0
+  // v2.2.2: Compile first to get dependencies
+  const compiled = compileQuery(input, ctx)
   
-  const cacheKey = buildCacheKey(input, ctx, Number(version))
+  // v2.2.2: Build cache key with ALL dependency versions
+  const cacheKey = await buildCacheKey(compiled, ctx)
   
   const cached = await redis.get(cacheKey)
   if (cached) {
     return JSON.parse(cached)
   }
   
-  const compiled = compileQuery(input, ctx)
   const data = await executeQuery(compiled, ctx)
   
   await redis.setex(cacheKey, 300, JSON.stringify(data)) // 5 min TTL
@@ -1241,15 +1464,17 @@ Same as 2.2.1.
 | Tenant scope system | P0 | Direct + via_join working |
 | Junction entities | P0 | `record_tags`, `record_motivations` exist with `workspaceId` |
 | Denormalized counters | P0 | `phoneCount`, `tagCount`, etc. on Record |
-| Counter update hooks | P0 | Prisma middleware updates counters |
-| Entity Registry | P0 | All entities with `searchFields` |
-| Segment Registry | P0 | All operators including `between` |
+| Counter update service | P0 | Service-layer `$transaction` updates counters (NOT middleware) |
+| Entity Registry | P0 | All entities with resolver-based `searchFields` |
+| Segment Registry | P0 | All operators including `between` with value contracts |
 | Dimension Registry | P0 | `groupByMode` defined for all |
-| Query Compiler | P0 | Validates dimension groupBy compatibility |
-| Complete query hash | P0 | Includes all inputs with stable stringify |
-| Permission hash | P0 | Cache key uses hash, not userId |
-| Invalidation map | P0 | Mutations bump dependent entities |
-| Date Semantics | P0 | Timezone-aware resolution |
+| Query Compiler | P0 | Validates dimension groupBy + computes `deps` |
+| Complete query hash | P0 | `computeQueryHash(input, ctx)` with resolved ISO timestamps |
+| Permission hash | P0 | Cache key uses permissionHash, not userId |
+| Dependency-version caching | P0 | Cache key includes ALL entity dependency versions |
+| Date Semantics | P0 | Timezone-aware resolution, canonical dateRange rule |
+| Rate limiting | P0 | Redis-based rate limiter for drilldown search |
+| Label versioning | P0 | Separate `labelVersion` keys for tags/motivations |
 
 ### Phase 1 Acceptance Checklist (v2.2.2)
 
@@ -1270,6 +1495,11 @@ Same as 2.2.1.
 - [ ] REGISTRY_VERSION in cache key
 - [ ] Label lookup API exists (widgets return IDs, labels resolved separately)
 - [ ] Service-layer transactions for counter updates (not middleware)
+- [ ] Canonical dateRange rule: globalFilters.dateRange is default, widget can override
+- [ ] `computeQueryHash(input, ctx)` signature locked (ctx required for timezone)
+- [ ] Dependency-version caching: cache key includes ALL entity dependency versions
+- [ ] Rate limit enforcement for drilldown search
+- [ ] Label versioning separate from widget versioning
 
 ### Phase 2-6
 
