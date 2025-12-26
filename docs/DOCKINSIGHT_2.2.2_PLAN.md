@@ -319,17 +319,19 @@ export interface DimensionDefinition {
 
 ### Dimension Definitions (v2.2.2)
 
-| Dimension | Entities | GroupBy Mode | Notes |
-|-----------|----------|--------------|-------|
-| `status` | records | direct | Scalar field |
-| `temperature` | records | direct | Enum field |
-| `assignedTo` | records, tasks | direct | FK field (assignedToId) |
-| `tag` | record_tags | direct | Use junction entity |
-| `motivation` | record_motivations | direct | Use junction entity |
-| `day`, `week`, `month` | * | direct | Date bucket on createdAt |
-| `phoneType` | phones | direct | Enum field |
-| `taskStatus` | tasks | direct | Enum field |
-| `priority` | tasks | direct | Enum field |
+| Dimension | Entities | GroupBy Mode | Junction Entity | Notes |
+|-----------|----------|--------------|-----------------|-------|
+| `status` | records | direct | - | Scalar field |
+| `temperature` | records | direct | - | Enum field |
+| `assignedTo` | records, tasks | direct | - | FK field (assignedToId) |
+| `tag` | record_tags | junction_required | `record_tags` | Use junction entity |
+| `motivation` | record_motivations | junction_required | `record_motivations` | Use junction entity |
+| `day`, `week`, `month` | * | direct | - | Date bucket on createdAt |
+| `phoneType` | phones | direct | - | Enum field |
+| `taskStatus` | tasks | direct | - | Enum field |
+| `priority` | tasks | direct | - | Enum field |
+
+**v2.2.2 FIX:** `tag` and `motivation` dimensions now have `groupByMode: 'junction_required'` with explicit `junctionEntity` for clearer error messages.
 
 **Removed from records dimensions:** `tag`, `motivation` (must use junction entities)
 
@@ -479,7 +481,8 @@ function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K
 }
 
 // Stable stringify: sorted keys, consistent output
-// v2.2.2 FIX: Also sort arrays when order is not semantically meaningful
+// v2.2.2 FIX: Do NOT auto-sort arrays - only sort known set-like arrays explicitly
+// Auto-sorting can accidentally canonicalize arrays where order matters
 function stableStringify(obj: unknown): string {
   return JSON.stringify(obj, (_, value) => {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -488,11 +491,7 @@ function stableStringify(obj: unknown): string {
         return sorted
       }, {} as Record<string, unknown>)
     }
-    // v2.2.2 FIX: Sort primitive arrays for deterministic output
-    // (string[], number[] - but NOT object arrays which may have meaningful order)
-    if (Array.isArray(value) && value.length > 0 && typeof value[0] !== 'object') {
-      return [...value].sort()
-    }
+    // Arrays: pass through as-is (sorting done explicitly in normalizeGlobalFilters, sortFilters, etc.)
     return value
   })
 }
@@ -508,25 +507,39 @@ function sortFilters(filters: FilterPredicate[]): FilterPredicate[] {
 
 // v2.2.2 FIX: Normalize globalFilters to prevent hash instability
 // Problem: ['hot','warm'] vs ['warm','hot'] = different hash = cache fragmentation
-// v2.2.2 FIX: Use singular field names to match GlobalFilters interface
+// v2.2.2 CRITICAL FIX: Must include ALL filter keys, not just known ones
+// Otherwise market, board, callReady, etc. are dropped → cache collisions
 function normalizeGlobalFilters(gf: Omit<GlobalFilters, 'dateRange'>): Record<string, unknown> {
-  return {
-    // Sort tag arrays
-    tags: gf.tags ? {
-      include: gf.tags.include ? [...gf.tags.include].sort() : undefined,
-      exclude: gf.tags.exclude ? [...gf.tags.exclude].sort() : undefined,
-    } : undefined,
-    // Sort motivation arrays
-    motivations: gf.motivations ? {
-      include: gf.motivations.include ? [...gf.motivations.include].sort() : undefined,
-      exclude: gf.motivations.exclude ? [...gf.motivations.exclude].sort() : undefined,
-    } : undefined,
-    // Sort assignee arrays
-    assignees: gf.assignees ? [...gf.assignees].sort() : undefined,
-    // v2.2.2 FIX: Use singular names to match interface (status, temperature)
-    status: gf.status ? [...gf.status].sort() : undefined,
-    temperature: gf.temperature ? [...gf.temperature].sort() : undefined,
+  const result: Record<string, unknown> = {}
+  
+  // Process all keys from the input (don't drop any!)
+  for (const key of Object.keys(gf).sort()) {
+    const value = (gf as Record<string, unknown>)[key]
+    
+    if (value === undefined || value === null) {
+      continue  // Skip undefined/null
+    }
+    
+    // Known array fields that should be sorted (set-like semantics)
+    if (key === 'assignees' || key === 'status' || key === 'temperature') {
+      result[key] = Array.isArray(value) ? [...value].sort() : value
+    }
+    // Known nested include/exclude objects
+    else if (key === 'tags' || key === 'motivations') {
+      const nested = value as { include?: string[]; exclude?: string[] }
+      result[key] = {
+        include: nested.include ? [...nested.include].sort() : undefined,
+        exclude: nested.exclude ? [...nested.exclude].sort() : undefined,
+      }
+    }
+    // All other keys: pass-through as-is (market, board, callReady, etc.)
+    // These are query-affecting and MUST be included in hash
+    else {
+      result[key] = value
+    }
   }
+  
+  return result
 }
 ```
 
@@ -642,6 +655,10 @@ export function compileQuery(
 // Prisma relations: 'record', 'phone', 'email', 'recordTags', etc.
 // ALWAYS use registry keys in deps to match cacheVersion keys
 
+// v2.2.2 CRITICAL FIX: deps must include ALL entities the query depends on
+// If any global filter applies "via record" join, records must be in deps
+// Otherwise record.update won't invalidate phone/email widgets that filter by record fields
+
 function computeQueryDeps(
   input: WidgetQueryInput,
   entity: EntityDefinition,
@@ -653,28 +670,43 @@ function computeQueryDeps(
   deps.add(input.entityKey)
   
   // 2. Include tenant scope join entity (via_join)
-  // v2.2.2 FIX: entity.tenantScope.joinEntity is the REGISTRY KEY, not Prisma relation
   if (entity.tenantScope.mode === 'via_join' && entity.tenantScope.joinEntity) {
     deps.add(entity.tenantScope.joinEntity)  // e.g., 'records' (not 'record')
   }
   
   // 3. Include entities referenced by global filters
-  if (input.globalFilters.tags?.include?.length || input.globalFilters.tags?.exclude?.length) {
+  // v2.2.2 CRITICAL FIX: Check ALL global filters, not just a few
+  const gf = input.globalFilters
+  
+  // Tag/motivation filters → junction entities
+  if (gf.tags?.include?.length || gf.tags?.exclude?.length) {
     deps.add('record_tags')
   }
-  if (input.globalFilters.motivations?.include?.length || input.globalFilters.motivations?.exclude?.length) {
+  if (gf.motivations?.include?.length || gf.motivations?.exclude?.length) {
     deps.add('record_motivations')
   }
-  if (input.globalFilters.assignees?.length) {
-    // Assignee filter may reference team/user data
-    deps.add('records')
+  
+  // v2.2.2 CRITICAL FIX: Any filter that applies "via record" join requires records in deps
+  // This includes: status, temperature, assignees, market, board, callReady, etc.
+  // If entity is NOT records but these filters are present, they apply via record join
+  const filtersApplyViaRecord = [
+    gf.assignees?.length,
+    gf.status?.length,
+    gf.temperature?.length,
+    (gf as any).market,      // Pass-through filters
+    (gf as any).board,
+    (gf as any).callReady,
+  ].some(Boolean)
+  
+  if (filtersApplyViaRecord && input.entityKey !== 'records') {
+    deps.add('records')  // These filters join through records
   }
   
   // 4. Include entities used by permission filters
   const entityPerm = ctx.permissions.entities[input.entityKey]
   if (entityPerm?.rowFilter?.length) {
-    // If permission filter references assignedTo, add records
-    if (entityPerm.rowFilter.some(f => f.field === 'assignedToId')) {
+    // Any permission filter on a via_join entity likely references records
+    if (entity.tenantScope.mode === 'via_join') {
       deps.add('records')
     }
   }
@@ -1286,9 +1318,12 @@ function computePermissionHash(ctx: CompileCtx): string {
   for (const entityKey of entityKeys) {
     const perm = ctx.permissions.entities[entityKey]
     if (perm.rowFilter?.length) {
-      // v2.2.2 FIX: Sort rowFilters for deterministic order
+      // v2.2.2 FIX: Sort rowFilters by field:operator:value for deterministic order
+      // Same pattern as sortFilters() - must include value to prevent instability
       entityFilters[entityKey] = [...perm.rowFilter].sort((a, b) => 
-        `${a.field}:${a.operator}`.localeCompare(`${b.field}:${b.operator}`)
+        `${a.field}:${a.operator}:${stableStringify(a.value)}`.localeCompare(
+          `${b.field}:${b.operator}:${stableStringify(b.value)}`
+        )
       )
     }
   }
