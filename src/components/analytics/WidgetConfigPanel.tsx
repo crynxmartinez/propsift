@@ -572,11 +572,11 @@ export default function WidgetConfigPanel({
   }
 
   const updateConfig = (key: keyof WidgetConfig, value: unknown) => {
-    setConfig({ ...config, [key]: value })
+    setConfig(prev => ({ ...prev, [key]: value }))
   }
 
   const updateAppearance = (key: keyof WidgetAppearance, value: unknown) => {
-    setAppearance({ ...appearance, [key]: value })
+    setAppearance(prev => ({ ...prev, [key]: value }))
   }
 
   const isChartWidget = ['bar_chart', 'horizontal_bar', 'pie_chart', 'donut_chart', 'line_chart', 'area_chart'].includes(widget.type)
