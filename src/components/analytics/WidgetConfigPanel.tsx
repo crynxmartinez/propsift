@@ -365,6 +365,156 @@ const TIME_PERIODS = [
 const COMPARISON_OPTIONS = [
   { value: '', label: 'No Comparison' },
   { value: 'previous_period', label: 'Previous Period' },
+  { value: 'previous_week', label: 'Same Day Last Week' },
+  { value: 'previous_month', label: 'Same Day Last Month' },
+  { value: 'previous_year', label: 'Same Day Last Year' },
+]
+
+// ==========================================
+// PHASE 3: FILTER OPTIONS PER DATA SOURCE
+// ==========================================
+const FILTER_FIELDS_BY_SOURCE: Record<string, Array<{ value: string; label: string; type: 'select' | 'text' | 'number' | 'boolean' | 'date'; options?: Array<{ value: string; label: string }> }>> = {
+  records: [
+    { 
+      value: 'temperature', 
+      label: 'Temperature', 
+      type: 'select',
+      options: [
+        { value: 'Hot', label: 'Hot' },
+        { value: 'Warm', label: 'Warm' },
+        { value: 'Cold', label: 'Cold' },
+      ]
+    },
+    { value: 'statusId', label: 'Status', type: 'select' },
+    { value: 'assignedToId', label: 'Assigned To', type: 'select' },
+    { value: 'createdById', label: 'Created By', type: 'select' },
+    { value: 'propertyState', label: 'Property State', type: 'text' },
+    { value: 'propertyCity', label: 'Property City', type: 'text' },
+    { value: 'propertyZip', label: 'Property Zip', type: 'text' },
+    { value: 'structureType', label: 'Structure Type', type: 'text' },
+    { value: 'yearBuilt', label: 'Year Built', type: 'number' },
+    { value: 'bedrooms', label: 'Bedrooms', type: 'number' },
+    { value: 'bathrooms', label: 'Bathrooms', type: 'number' },
+    { value: 'estimatedValue', label: 'Estimated Value', type: 'number' },
+    { value: 'sqft', label: 'Square Feet', type: 'number' },
+    { value: 'callAttempts', label: 'Call Attempts', type: 'number' },
+    { value: 'smsAttempts', label: 'SMS Attempts', type: 'number' },
+    { value: 'directMailAttempts', label: 'Direct Mail Attempts', type: 'number' },
+    { value: 'rvmAttempts', label: 'RVM Attempts', type: 'number' },
+    { value: 'isContact', label: 'Is Contact', type: 'boolean' },
+    { value: 'isComplete', label: 'Is Complete', type: 'boolean' },
+    { value: 'createdAt', label: 'Created Date', type: 'date' },
+    { value: 'updatedAt', label: 'Updated Date', type: 'date' },
+  ],
+  tasks: [
+    { 
+      value: 'status', 
+      label: 'Status', 
+      type: 'select',
+      options: [
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'IN_PROGRESS', label: 'In Progress' },
+        { value: 'COMPLETED', label: 'Completed' },
+      ]
+    },
+    { 
+      value: 'priority', 
+      label: 'Priority', 
+      type: 'select',
+      options: [
+        { value: 'LOW', label: 'Low' },
+        { value: 'MEDIUM', label: 'Medium' },
+        { value: 'HIGH', label: 'High' },
+        { value: 'URGENT', label: 'Urgent' },
+      ]
+    },
+    { value: 'assignedToId', label: 'Assigned To', type: 'select' },
+    { value: 'recordId', label: 'Record', type: 'select' },
+    { value: 'dueDate', label: 'Due Date', type: 'date' },
+    { value: 'createdAt', label: 'Created Date', type: 'date' },
+  ],
+  automations: [
+    { value: 'isActive', label: 'Is Active', type: 'boolean' },
+    { value: 'isDraft', label: 'Is Draft', type: 'boolean' },
+  ],
+  team: [
+    { 
+      value: 'role', 
+      label: 'Role', 
+      type: 'select',
+      options: [
+        { value: 'owner', label: 'Owner' },
+        { value: 'super_admin', label: 'Super Admin' },
+        { value: 'admin', label: 'Admin' },
+        { value: 'member', label: 'Member' },
+      ]
+    },
+    { 
+      value: 'status', 
+      label: 'Status', 
+      type: 'select',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ]
+    },
+  ],
+  phones: [
+    { 
+      value: 'type', 
+      label: 'Phone Type', 
+      type: 'select',
+      options: [
+        { value: 'MOBILE', label: 'Mobile' },
+        { value: 'LANDLINE', label: 'Landline' },
+        { value: 'VOIP', label: 'VOIP' },
+      ]
+    },
+  ],
+  notifications: [
+    { value: 'isRead', label: 'Is Read', type: 'boolean' },
+    { value: 'isDismissed', label: 'Is Dismissed', type: 'boolean' },
+    { value: 'type', label: 'Type', type: 'text' },
+  ],
+  activity: [
+    { value: 'action', label: 'Action Type', type: 'text' },
+    { value: 'type', label: 'Log Type', type: 'text' },
+  ],
+  custom_fields: [
+    { 
+      value: 'fieldType', 
+      label: 'Field Type', 
+      type: 'select',
+      options: [
+        { value: 'text', label: 'Text' },
+        { value: 'number', label: 'Number' },
+        { value: 'date', label: 'Date' },
+        { value: 'select', label: 'Select' },
+        { value: 'checkbox', label: 'Checkbox' },
+      ]
+    },
+    { 
+      value: 'displayType', 
+      label: 'Display Type', 
+      type: 'select',
+      options: [
+        { value: 'card', label: 'Card' },
+        { value: 'additional_info', label: 'Additional Info' },
+      ]
+    },
+  ],
+}
+
+const FILTER_OPERATORS = [
+  { value: 'equals', label: 'Equals' },
+  { value: 'not_equals', label: 'Not Equals' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'greater_than', label: 'Greater Than' },
+  { value: 'less_than', label: 'Less Than' },
+  { value: 'greater_or_equal', label: 'Greater or Equal' },
+  { value: 'less_or_equal', label: 'Less or Equal' },
+  { value: 'is_empty', label: 'Is Empty' },
+  { value: 'is_not_empty', label: 'Is Not Empty' },
 ]
 
 export default function WidgetConfigPanel({
@@ -670,6 +820,146 @@ export default function WidgetConfigPanel({
                   />
                 </div>
               )}
+
+              {/* Filters Section */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filters
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newFilters = [...(config.filters || []), { field: '', operator: 'equals', value: '' }]
+                      updateConfig('filters', newFilters)
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + Add Filter
+                  </button>
+                </div>
+                
+                {(config.filters || []).length === 0 ? (
+                  <p className="text-xs text-gray-500 italic">No filters applied</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(config.filters || []).map((filter, index) => {
+                      const availableFilters = FILTER_FIELDS_BY_SOURCE[baseSource] || []
+                      const selectedField = availableFilters.find(f => f.value === filter.field)
+                      
+                      return (
+                        <div key={index} className="flex gap-1 items-start">
+                          <div className="flex-1 space-y-1">
+                            {/* Field selector */}
+                            <select
+                              value={filter.field}
+                              onChange={(e) => {
+                                const newFilters = [...(config.filters || [])]
+                                newFilters[index] = { ...filter, field: e.target.value, value: '' }
+                                updateConfig('filters', newFilters)
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="">Select field...</option>
+                              {availableFilters.map((f) => (
+                                <option key={f.value} value={f.value}>{f.label}</option>
+                              ))}
+                            </select>
+                            
+                            {filter.field && (
+                              <div className="flex gap-1">
+                                {/* Operator */}
+                                <select
+                                  value={filter.operator}
+                                  onChange={(e) => {
+                                    const newFilters = [...(config.filters || [])]
+                                    newFilters[index] = { ...filter, operator: e.target.value }
+                                    updateConfig('filters', newFilters)
+                                  }}
+                                  className="w-1/2 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                >
+                                  {FILTER_OPERATORS.filter(op => {
+                                    // Filter operators based on field type
+                                    if (selectedField?.type === 'boolean') {
+                                      return ['equals'].includes(op.value)
+                                    }
+                                    if (selectedField?.type === 'select') {
+                                      return ['equals', 'not_equals'].includes(op.value)
+                                    }
+                                    return true
+                                  }).map((op) => (
+                                    <option key={op.value} value={op.value}>{op.label}</option>
+                                  ))}
+                                </select>
+                                
+                                {/* Value input - varies by field type */}
+                                {!['is_empty', 'is_not_empty'].includes(filter.operator) && (
+                                  <>
+                                    {selectedField?.type === 'boolean' ? (
+                                      <select
+                                        value={filter.value}
+                                        onChange={(e) => {
+                                          const newFilters = [...(config.filters || [])]
+                                          newFilters[index] = { ...filter, value: e.target.value }
+                                          updateConfig('filters', newFilters)
+                                        }}
+                                        className="w-1/2 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                      >
+                                        <option value="">Select...</option>
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                      </select>
+                                    ) : selectedField?.options ? (
+                                      <select
+                                        value={filter.value}
+                                        onChange={(e) => {
+                                          const newFilters = [...(config.filters || [])]
+                                          newFilters[index] = { ...filter, value: e.target.value }
+                                          updateConfig('filters', newFilters)
+                                        }}
+                                        className="w-1/2 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                      >
+                                        <option value="">Select...</option>
+                                        {selectedField.options.map((opt) => (
+                                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <input
+                                        type={selectedField?.type === 'number' ? 'number' : selectedField?.type === 'date' ? 'date' : 'text'}
+                                        value={filter.value}
+                                        onChange={(e) => {
+                                          const newFilters = [...(config.filters || [])]
+                                          newFilters[index] = { ...filter, value: e.target.value }
+                                          updateConfig('filters', newFilters)
+                                        }}
+                                        placeholder="Value..."
+                                        className="w-1/2 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                      />
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Remove filter button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newFilters = (config.filters || []).filter((_, i) => i !== index)
+                              updateConfig('filters', newFilters)
+                            }}
+                            className="p-1 text-gray-400 hover:text-red-500"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
