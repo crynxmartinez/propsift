@@ -72,7 +72,7 @@ export function ChartWidget({
                 tick={{ fontSize: 12 }}
               />
               <Tooltip 
-                formatter={(value: number) => [value.toLocaleString(), 'Count']}
+                formatter={(value) => [String(value ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), 'Count']}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry, index) => (

@@ -78,7 +78,7 @@ export function PieWidget({
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => value.toLocaleString()}
+                formatter={(value) => String(value ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               />
               <Legend 
                 layout="vertical" 
