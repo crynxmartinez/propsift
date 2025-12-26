@@ -14,11 +14,13 @@ import {
   Activity,
   CheckSquare,
   LayoutGrid,
-  Workflow
+  Workflow,
+  BarChart3
 } from 'lucide-react'
 
 const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Board', href: '/dashboard/board', icon: LayoutGrid },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
