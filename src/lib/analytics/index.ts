@@ -28,3 +28,9 @@ export {
   sanitizeSearchInput,
   compileSearch
 } from './executor/search'
+
+// Counters
+export * from './counters'
+
+// Utils
+export * from './utils'
