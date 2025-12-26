@@ -9,12 +9,12 @@ interface TriggerNodeData {
   type: string
   config: Record<string, unknown>
   hasOutgoingEdge?: boolean
-  onAddAction?: () => void
+  onAddAction?: (nodeId?: string) => void
   onDelete?: () => void
   onCopy?: () => void
 }
 
-function TriggerNode({ data, selected }: NodeProps<TriggerNodeData>) {
+function TriggerNode({ id, data, selected }: NodeProps<TriggerNodeData>) {
   const [showMenu, setShowMenu] = useState(false)
 
   return (
@@ -86,7 +86,7 @@ function TriggerNode({ data, selected }: NodeProps<TriggerNodeData>) {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                data.onAddAction?.()
+                data.onAddAction?.(id)
               }}
               className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
             >

@@ -9,14 +9,14 @@ interface ActionNodeData {
   type: string
   config: Record<string, unknown>
   hasOutgoingEdge?: boolean
-  onAddAction?: () => void
+  onAddAction?: (nodeId?: string) => void
   onDelete?: () => void
   onCopy?: () => void
   onDeleteFromHere?: () => void
   onCopyFromHere?: () => void
 }
 
-function ActionNode({ data, selected }: NodeProps<ActionNodeData>) {
+function ActionNode({ id, data, selected }: NodeProps<ActionNodeData>) {
   const [showMenu, setShowMenu] = useState(false)
 
   return (
@@ -115,7 +115,7 @@ function ActionNode({ data, selected }: NodeProps<ActionNodeData>) {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                data.onAddAction?.()
+                data.onAddAction?.(id)
               }}
               className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition"
             >

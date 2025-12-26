@@ -24,7 +24,7 @@ interface BranchNodeData {
     light: string
   }
   hasOutgoingEdge?: boolean
-  onAddAction?: () => void
+  onAddAction?: (nodeId?: string) => void
   onDelete?: () => void
   onCopy?: () => void
 }
@@ -69,7 +69,7 @@ function getConditionSummary(conditions: BranchCondition[]): string {
   return summary.length > 40 ? summary.substring(0, 37) + '...' : summary
 }
 
-function BranchNode({ data, selected }: NodeProps<BranchNodeData>) {
+function BranchNode({ id, data, selected }: NodeProps<BranchNodeData>) {
   const [showMenu, setShowMenu] = useState(false)
   const conditionSummary = getConditionSummary(data.conditions)
   const isNoneBranch = data.branchName === 'None'
@@ -167,7 +167,7 @@ function BranchNode({ data, selected }: NodeProps<BranchNodeData>) {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                data.onAddAction?.()
+                data.onAddAction?.(id)
               }}
               className={`w-8 h-8 rounded-full ${data.color.bg} hover:opacity-80 text-white flex items-center justify-center shadow-md transition`}
             >

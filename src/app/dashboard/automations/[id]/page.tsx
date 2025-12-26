@@ -205,6 +205,7 @@ export default function AutomationBuilderPage() {
   const [panelMode, setPanelMode] = useState<'trigger' | 'action' | 'edit'>('trigger')
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [sourceNodeId, setSourceNodeId] = useState<string | null>(null) // Track which node triggered add action
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -417,7 +418,8 @@ export default function AutomationBuilderPage() {
     setShowPanel(true)
   }, [])
 
-  const openAddActionPanel = () => {
+  const openAddActionPanel = (fromNodeId?: string) => {
+    setSourceNodeId(fromNodeId || null)
     setPanelMode('action')
     setShowPanel(true)
   }
@@ -425,15 +427,20 @@ export default function AutomationBuilderPage() {
   const addNode = (type: string, label: string, nodeType: string = 'action') => {
     const nodeId = `${nodeType}-${Date.now()}`
     
-    // Find the last node to connect from (node without outgoing edges)
-    const nodesWithoutOutgoing = nodes.filter(
-      (n) => !edges.some((e) => e.source === n.id)
-    )
-    const lastNode = nodesWithoutOutgoing[nodesWithoutOutgoing.length - 1]
+    // Use sourceNodeId if set, otherwise find the last node without outgoing edges
+    let connectFromNode: Node | undefined
+    if (sourceNodeId) {
+      connectFromNode = nodes.find(n => n.id === sourceNodeId)
+    } else {
+      const nodesWithoutOutgoing = nodes.filter(
+        (n) => !edges.some((e) => e.source === n.id)
+      )
+      connectFromNode = nodesWithoutOutgoing[nodesWithoutOutgoing.length - 1]
+    }
     
-    // Calculate position below the last node
-    const yPosition = lastNode ? lastNode.position.y + 200 : nodes.length * 150 + 100
-    const xPosition = lastNode ? lastNode.position.x : 250
+    // Calculate position below the source node
+    const yPosition = connectFromNode ? connectFromNode.position.y + 200 : nodes.length * 150 + 100
+    const xPosition = connectFromNode ? connectFromNode.position.x : 250
 
     const newNode: Node = {
       id: nodeId,
@@ -450,11 +457,11 @@ export default function AutomationBuilderPage() {
     }
     setNodes((nds) => [...nds, newNode])
     
-    // Create edge from last node to new node
-    if (lastNode) {
+    // Create edge from source node to new node
+    if (connectFromNode) {
       const newEdge: Edge = {
-        id: `edge-${lastNode.id}-${nodeId}`,
-        source: lastNode.id,
+        id: `edge-${connectFromNode.id}-${nodeId}`,
+        source: connectFromNode.id,
         target: nodeId,
         type: 'addButton',
         markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
@@ -464,6 +471,7 @@ export default function AutomationBuilderPage() {
       setEdges((eds) => [...eds, newEdge])
     }
     
+    setSourceNodeId(null) // Reset source node
     setShowPanel(false)
   }
 
@@ -1046,15 +1054,14 @@ export default function AutomationBuilderPage() {
                         }
                       })
 
-                      // Create edges from condition to branches
+                      // Create edges from condition to branches (no + button on these edges)
                       const newEdges: Edge[] = allBranches.map((branch, index) => ({
                         id: `edge-${nodeId}-branch-${branch.id}`,
                         source: nodeId,
                         target: `branch-${nodeId}-${branch.id}`,
-                        type: 'addButton',
+                        type: 'default',
                         markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
                         style: { strokeWidth: 2, stroke: '#6366f1' },
-                        data: { onAddAction: openAddActionPanel },
                       }))
 
                       setNodes((nds) => [...nds, ...newBranchNodes])
