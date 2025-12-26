@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Node } from 'reactflow'
-import { X, Trash2, Save } from 'lucide-react'
+import { X, Trash2, Save, Calendar, Users, Bell } from 'lucide-react'
 
 interface Status {
   id: string
@@ -718,7 +718,8 @@ export default function NodeConfigPanel({
 
       case 'create_task':
         return (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Task Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Task Title <span className="text-red-500">*</span>
@@ -727,51 +728,199 @@ export default function NodeConfigPanel({
                 type="text"
                 value={(config.title as string) || ''}
                 onChange={(e) => updateConfig('title', e.target.value)}
-                placeholder="e.g., Follow up with lead"
+                placeholder="Enter task title"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
+
+            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (optional)
+                Description
               </label>
               <textarea
                 value={(config.description as string) || ''}
                 onChange={(e) => updateConfig('description', e.target.value)}
-                placeholder="Task description..."
+                placeholder="Enter task description"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign To (optional)
-              </label>
-              <select
-                value={(config.assignedToId as string) || ''}
-                onChange={(e) => updateConfig('assignedToId', e.target.value || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                ))}
-              </select>
+
+            {/* Priority & Link to Property Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-blue-600 mb-1">
+                  Priority
+                </label>
+                <div className="relative">
+                  <select
+                    value={(config.priority as string) || 'MEDIUM'}
+                    onChange={(e) => updateConfig('priority', e.target.value)}
+                    className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                  <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${
+                    config.priority === 'LOW' ? 'bg-gray-400' :
+                    config.priority === 'HIGH' ? 'bg-orange-500' :
+                    config.priority === 'URGENT' ? 'bg-red-500' :
+                    'bg-yellow-400'
+                  }`} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Link to Property
+                </label>
+                <input
+                  type="text"
+                  value="Current Record"
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority
+
+            {/* Scheduling Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Scheduling</span>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={(config.noDueDate as boolean) ?? true}
+                    onChange={(e) => updateConfig('noDueDate', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">No due date</span>
+                </label>
+
+                {!config.noDueDate && (
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      value={(config.dueDate as string) || ''}
+                      onChange={(e) => updateConfig('dueDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                {/* Notify After */}
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Notify after</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={(config.notifyAfterValue as number) || ''}
+                      onChange={(e) => updateConfig('notifyAfterValue', e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder="e.g. 7"
+                      min="1"
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                      value={(config.notifyAfterUnit as string) || 'Days'}
+                      onChange={(e) => updateConfig('notifyAfterUnit', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Hours">Hours</option>
+                      <option value="Days">Days</option>
+                      <option value="Weeks">Weeks</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Leave empty for no notification</p>
+                </div>
+
+                {/* Recurrence */}
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Recurrence</label>
+                  <select
+                    value={(config.recurrence as string) || 'one_time'}
+                    onChange={(e) => updateConfig('recurrence', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="one_time">One time</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Assignment</span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Assignment Type */}
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="assignmentType"
+                      value="manual"
+                      checked={(config.assignmentType as string) !== 'round_robin'}
+                      onChange={() => updateConfig('assignmentType', 'manual')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Manual Assignment</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="assignmentType"
+                      value="round_robin"
+                      checked={(config.assignmentType as string) === 'round_robin'}
+                      onChange={() => updateConfig('assignmentType', 'round_robin')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Round Robin</span>
+                  </label>
+                </div>
+
+                {/* Assign To */}
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Assign to</label>
+                  <select
+                    value={(config.assignedToId as string) || ''}
+                    onChange={(e) => updateConfig('assignedToId', e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    disabled={(config.assignmentType as string) === 'round_robin'}
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Save as Template */}
+            <div className="border-t border-gray-200 pt-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={(config.saveAsTemplate as boolean) || false}
+                  onChange={(e) => updateConfig('saveAsTemplate', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Save as template</span>
               </label>
-              <select
-                value={(config.priority as string) || 'MEDIUM'}
-                onChange={(e) => updateConfig('priority', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-              </select>
             </div>
           </div>
         )

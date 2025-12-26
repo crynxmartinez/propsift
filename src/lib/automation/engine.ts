@@ -321,17 +321,29 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
         })
 
         if (record?.createdById) {
+          // Calculate due date if not "no due date"
+          let dueDate: Date | null = null
+          if (!config.noDueDate && config.dueDate) {
+            dueDate = new Date(config.dueDate as string)
+          }
+
           await prisma.task.create({
             data: {
               title: config.title as string,
               description: (config.description as string) || null,
               recordId,
               createdById: record.createdById,
-              assignedToId: (config.assignedToId as string) || null,
-              dueDate: config.dueDate ? new Date(config.dueDate as string) : null,
+              assignedToId: (config.assignmentType === 'round_robin') ? null : ((config.assignedToId as string) || null),
+              dueDate,
               priority: (config.priority as string) || 'MEDIUM',
+              assignmentType: ((config.assignmentType as string) || 'manual').toUpperCase(),
+              notifyAfter: (config.notifyAfterValue as number) || null,
+              notifyAfterUnit: (config.notifyAfterUnit as string) || null,
+              recurrence: (config.recurrence as string) || null,
             },
           })
+
+          await logAutomationActivity(recordId, automationId, type, `Task "${config.title}" created`, config.title as string)
         }
       }
       break
