@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply filters
-    const whereClause = applyFilters(baseWhere, config.filters || [])
+    let whereClause = applyFilters(baseWhere, config.filters || [])
+    
+    // Apply cross-filters from config
+    whereClause = applyCrossFilters(config, whereClause, authUser.ownerId)
 
     let result
 
@@ -196,7 +199,162 @@ function applyFilters(
           where.assignedToId = filter.value
         }
         break
+      // Cross-filtering: Tags
+      case 'tag':
+        if (filter.operator === 'equals' || filter.operator === 'has') {
+          where.recordTags = { some: { tagId: filter.value } }
+        } else if (filter.operator === 'not_equals' || filter.operator === 'not_has') {
+          where.recordTags = { none: { tagId: filter.value } }
+        } else if (filter.operator === 'has_any') {
+          // Multiple tags (comma-separated)
+          const tagIds = filter.value.split(',').map(t => t.trim())
+          where.recordTags = { some: { tagId: { in: tagIds } } }
+        } else if (filter.operator === 'has_all') {
+          // Must have all tags
+          const allTagIds = filter.value.split(',').map(t => t.trim())
+          where.AND = allTagIds.map(tagId => ({ recordTags: { some: { tagId } } }))
+        }
+        break
+      // Cross-filtering: Motivations
+      case 'motivation':
+        if (filter.operator === 'equals' || filter.operator === 'has') {
+          where.recordMotivations = { some: { motivationId: filter.value } }
+        } else if (filter.operator === 'not_equals' || filter.operator === 'not_has') {
+          where.recordMotivations = { none: { motivationId: filter.value } }
+        } else if (filter.operator === 'has_any') {
+          const motivationIds = filter.value.split(',').map(m => m.trim())
+          where.recordMotivations = { some: { motivationId: { in: motivationIds } } }
+        } else if (filter.operator === 'has_all') {
+          const allMotivationIds = filter.value.split(',').map(m => m.trim())
+          where.AND = allMotivationIds.map(motivationId => ({ recordMotivations: { some: { motivationId } } }))
+        }
+        break
+      // Cross-filtering: Property location
+      case 'propertyState':
+        if (filter.operator === 'equals') {
+          where.propertyState = filter.value
+        } else if (filter.operator === 'not_equals') {
+          where.propertyState = { not: filter.value }
+        } else if (filter.operator === 'in') {
+          where.propertyState = { in: filter.value.split(',').map(s => s.trim()) }
+        }
+        break
+      case 'propertyCity':
+        if (filter.operator === 'equals') {
+          where.propertyCity = filter.value
+        } else if (filter.operator === 'contains') {
+          where.propertyCity = { contains: filter.value, mode: 'insensitive' }
+        }
+        break
+      case 'propertyZip':
+        if (filter.operator === 'equals') {
+          where.propertyZip = filter.value
+        } else if (filter.operator === 'starts_with') {
+          where.propertyZip = { startsWith: filter.value }
+        }
+        break
+      // Cross-filtering: Property attributes
+      case 'bedrooms':
+        if (filter.operator === 'equals') {
+          where.bedrooms = parseInt(filter.value)
+        } else if (filter.operator === 'gte') {
+          where.bedrooms = { gte: parseInt(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.bedrooms = { lte: parseInt(filter.value) }
+        }
+        break
+      case 'bathrooms':
+        if (filter.operator === 'equals') {
+          where.bathrooms = parseFloat(filter.value)
+        } else if (filter.operator === 'gte') {
+          where.bathrooms = { gte: parseFloat(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.bathrooms = { lte: parseFloat(filter.value) }
+        }
+        break
+      case 'sqft':
+        if (filter.operator === 'gte') {
+          where.sqft = { gte: parseInt(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.sqft = { lte: parseInt(filter.value) }
+        } else if (filter.operator === 'between') {
+          const [min, max] = filter.value.split(',').map(v => parseInt(v.trim()))
+          where.sqft = { gte: min, lte: max }
+        }
+        break
+      case 'estimatedValue':
+        if (filter.operator === 'gte') {
+          where.estimatedValue = { gte: parseFloat(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.estimatedValue = { lte: parseFloat(filter.value) }
+        } else if (filter.operator === 'between') {
+          const [minVal, maxVal] = filter.value.split(',').map(v => parseFloat(v.trim()))
+          where.estimatedValue = { gte: minVal, lte: maxVal }
+        }
+        break
+      case 'yearBuilt':
+        if (filter.operator === 'equals') {
+          where.yearBuilt = parseInt(filter.value)
+        } else if (filter.operator === 'gte') {
+          where.yearBuilt = { gte: parseInt(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.yearBuilt = { lte: parseInt(filter.value) }
+        }
+        break
+      // Cross-filtering: Attempts
+      case 'callAttempts':
+        if (filter.operator === 'equals') {
+          where.callAttempts = parseInt(filter.value)
+        } else if (filter.operator === 'gte') {
+          where.callAttempts = { gte: parseInt(filter.value) }
+        } else if (filter.operator === 'lte') {
+          where.callAttempts = { lte: parseInt(filter.value) }
+        }
+        break
+      case 'totalAttempts':
+        // This requires a computed filter - handled separately
+        break
     }
+  }
+
+  return where
+}
+
+// Apply cross-filtering from config options
+function applyCrossFilters(
+  config: WidgetConfig,
+  baseWhere: Record<string, unknown>,
+  ownerId: string
+): Record<string, unknown> {
+  const where = { ...baseWhere }
+
+  // Filter by specific tag
+  if (config.filterByTag) {
+    where.recordTags = { some: { tagId: config.filterByTag } }
+  }
+
+  // Filter by specific motivation
+  if (config.filterByMotivation) {
+    where.recordMotivations = { some: { motivationId: config.filterByMotivation } }
+  }
+
+  // Filter by specific status
+  if (config.filterByStatus) {
+    where.statusId = config.filterByStatus
+  }
+
+  // Filter by specific assignee
+  if (config.filterByAssignee) {
+    if (config.filterByAssignee === 'unassigned') {
+      where.assignedToId = null
+    } else {
+      where.assignedToId = config.filterByAssignee
+    }
+  }
+
+  // Filter by temperature
+  if (config.filterByTemperature) {
+    where.temperature = config.filterByTemperature
   }
 
   return where
