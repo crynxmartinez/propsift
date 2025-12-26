@@ -21,6 +21,15 @@ interface WidgetConfig {
   filterByStatus?: string
   filterByAssignee?: string
   filterByTemperature?: string
+  // Calculated metrics
+  calculatedMetric?: {
+    formula: string // e.g., "A / B * 100"
+    sources: Array<{
+      variable: string // e.g., "A", "B"
+      dataSource: string
+      metric?: string
+    }>
+  }
 }
 
 // POST /api/analytics-data - Get data for a widget
@@ -57,6 +66,12 @@ export async function POST(request: NextRequest) {
     const whereClause = applyFilters(baseWhere, config.filters || [])
 
     let result
+
+    // Handle calculated metrics first
+    if (config.calculatedMetric && config.calculatedMetric.sources.length > 0) {
+      result = await getCalculatedMetric(config, authUser.ownerId, dateRange)
+      return NextResponse.json(result)
+    }
 
     switch (type) {
       case 'number':
@@ -763,6 +778,158 @@ async function getNumberData(
   const percentage = total && total > 0 ? (value / total) * 100 : undefined
 
   return { value, previousValue, change, changePercent, total, percentage }
+}
+
+// ==========================================
+// CALCULATED METRICS - Formula-based calculations
+// ==========================================
+async function getCalculatedMetric(
+  config: WidgetConfig,
+  ownerId: string,
+  dateRange: { start: Date; end: Date } | null
+) {
+  if (!config.calculatedMetric) {
+    return { value: 0 }
+  }
+
+  const { formula, sources } = config.calculatedMetric
+  const values: Record<string, number> = {}
+
+  // Get value for each source variable
+  for (const source of sources) {
+    const sourceConfig: WidgetConfig = {
+      dataSource: source.dataSource,
+      metric: source.metric || 'count',
+      timePeriod: config.timePeriod,
+    }
+    
+    const baseWhere = {
+      createdById: ownerId,
+      ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
+    }
+    
+    const result = await getNumberData(sourceConfig, baseWhere, ownerId, dateRange)
+    values[source.variable] = result.value
+  }
+
+  // Evaluate the formula
+  let calculatedValue = 0
+  try {
+    // Replace variables with values in the formula
+    let evalFormula = formula
+    for (const [variable, val] of Object.entries(values)) {
+      evalFormula = evalFormula.replace(new RegExp(variable, 'g'), String(val))
+    }
+    
+    // Safe evaluation (only allow numbers and basic operators)
+    if (/^[\d\s+\-*/().]+$/.test(evalFormula)) {
+      calculatedValue = eval(evalFormula)
+    }
+    
+    // Handle NaN and Infinity
+    if (!isFinite(calculatedValue)) {
+      calculatedValue = 0
+    }
+  } catch {
+    calculatedValue = 0
+  }
+
+  return {
+    value: Math.round(calculatedValue * 100) / 100, // Round to 2 decimal places
+    sourceValues: values,
+    formula,
+  }
+}
+
+// ==========================================
+// PRESET CALCULATED METRICS
+// ==========================================
+async function getPresetCalculatedMetric(
+  preset: string,
+  ownerId: string,
+  dateRange: { start: Date; end: Date } | null
+) {
+  const baseWhere = {
+    createdById: ownerId,
+    ...(dateRange ? { createdAt: { gte: dateRange.start, lte: dateRange.end } } : {}),
+  }
+
+  switch (preset) {
+    case 'hot_lead_percentage': {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const hotLeads = await prisma.record.count({ where: { ...baseWhere, temperature: 'hot' } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalRecords = await prisma.record.count({ where: baseWhere as any })
+      return {
+        value: totalRecords > 0 ? Math.round((hotLeads / totalRecords) * 100 * 10) / 10 : 0,
+        label: 'Hot Lead %',
+        sourceValues: { hotLeads, totalRecords },
+      }
+    }
+    
+    case 'contact_rate': {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contacts = await prisma.record.count({ where: { ...baseWhere, isContact: true } as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalRecords = await prisma.record.count({ where: baseWhere as any })
+      return {
+        value: totalRecords > 0 ? Math.round((contacts / totalRecords) * 100 * 10) / 10 : 0,
+        label: 'Contact Rate %',
+        sourceValues: { contacts, totalRecords },
+      }
+    }
+    
+    case 'task_completion_rate': {
+      const completedTasks = await prisma.task.count({ where: { createdById: ownerId, status: 'COMPLETED' } })
+      const totalTasks = await prisma.task.count({ where: { createdById: ownerId } })
+      return {
+        value: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100 * 10) / 10 : 0,
+        label: 'Task Completion Rate %',
+        sourceValues: { completedTasks, totalTasks },
+      }
+    }
+    
+    case 'avg_tasks_per_record': {
+      const totalTasks = await prisma.task.count({ where: { createdById: ownerId } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalRecords = await prisma.record.count({ where: baseWhere as any })
+      return {
+        value: totalRecords > 0 ? Math.round((totalTasks / totalRecords) * 100) / 100 : 0,
+        label: 'Avg Tasks per Record',
+        sourceValues: { totalTasks, totalRecords },
+      }
+    }
+    
+    case 'automation_success_rate': {
+      const successfulRuns = await prisma.automationLog.count({
+        where: { automation: { createdById: ownerId }, status: 'COMPLETED' },
+      })
+      const totalRuns = await prisma.automationLog.count({
+        where: { automation: { createdById: ownerId } },
+      })
+      return {
+        value: totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100 * 10) / 10 : 0,
+        label: 'Automation Success Rate %',
+        sourceValues: { successfulRuns, totalRuns },
+      }
+    }
+    
+    case 'records_per_team_member': {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalRecords = await prisma.record.count({ where: baseWhere as any })
+      const teamMembers = await prisma.user.count({
+        where: { OR: [{ id: ownerId }, { accountOwnerId: ownerId }] },
+      })
+      return {
+        value: teamMembers > 0 ? Math.round((totalRecords / teamMembers) * 10) / 10 : 0,
+        label: 'Records per Team Member',
+        sourceValues: { totalRecords, teamMembers },
+      }
+    }
+    
+    default:
+      return { value: 0, label: 'Unknown', sourceValues: {} }
+  }
 }
 
 // Get grouped data for bar/pie charts
