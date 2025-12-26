@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
+import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // Helper to create system log
 async function createSystemLog(description: string, action: string, total: number) {
@@ -15,9 +18,45 @@ async function createSystemLog(description: string, action: string, total: numbe
   });
 }
 
+// Helper to trigger automations for bulk actions
+async function triggerBulkAutomations(
+  triggerType: string,
+  recordIds: string[],
+  ownerId: string
+) {
+  try {
+    const automations = await findMatchingAutomations(triggerType, ownerId);
+    for (const automation of automations) {
+      for (const recordId of recordIds) {
+        // Execute async, don't await each one to avoid blocking
+        executeAutomation(automation.id, recordId, triggerType).catch(err => {
+          console.error(`Error executing automation ${automation.id} for record ${recordId}:`, err);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error triggering bulk automations:', error);
+  }
+}
+
 // POST /api/records/bulk - Handle bulk actions on records
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user to get ownerId for automation triggers
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    let ownerId: string | null = null;
+    
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        const authUser = await getAuthUser(decoded.userId);
+        if (authUser) {
+          ownerId = authUser.ownerId;
+        }
+      }
+    }
+
     const body = await request.json();
     const { action, recordIds, tagIds, motivationIds, statusId, temperature, userId } = body;
 
@@ -66,6 +105,11 @@ export async function POST(request: NextRequest) {
           'bulk_add_tags',
           recordIds.length
         );
+        
+        // Trigger automations for tag added
+        if (ownerId) {
+          triggerBulkAutomations('tag_added', recordIds, ownerId);
+        }
         break;
 
       case 'removeTags':
@@ -99,6 +143,11 @@ export async function POST(request: NextRequest) {
           'bulk_remove_tags',
           recordIds.length
         );
+        
+        // Trigger automations for tag removed
+        if (ownerId) {
+          triggerBulkAutomations('tag_removed', recordIds, ownerId);
+        }
         break;
 
       case 'addMotivations':
@@ -196,6 +245,11 @@ export async function POST(request: NextRequest) {
           'bulk_update_status',
           recordIds.length
         );
+        
+        // Trigger automations for status changed
+        if (ownerId) {
+          triggerBulkAutomations('status_changed', recordIds, ownerId);
+        }
         break;
 
       case 'updateTemperature':
@@ -224,6 +278,11 @@ export async function POST(request: NextRequest) {
           'bulk_update_temperature',
           recordIds.length
         );
+        
+        // Trigger automations for temperature changed
+        if (ownerId) {
+          triggerBulkAutomations('temperature_changed', recordIds, ownerId);
+        }
         break;
 
       case 'assignToUser':
