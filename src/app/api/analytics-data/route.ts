@@ -66,6 +66,19 @@ export async function POST(request: NextRequest) {
       case 'area_chart':
         result = await getTimeSeriesData(config, whereClause, authUser.ownerId)
         break
+      case 'gauge':
+      case 'progress':
+        result = await getGaugeData(config, whereClause, authUser.ownerId)
+        break
+      case 'leaderboard':
+        result = await getLeaderboardData(config, whereClause, authUser.ownerId)
+        break
+      case 'funnel':
+        result = await getFunnelData(config, whereClause, authUser.ownerId)
+        break
+      case 'table':
+        result = await getTableData(config, whereClause, authUser.ownerId)
+        break
       default:
         result = { value: 0 }
     }
@@ -493,6 +506,281 @@ async function getTimeSeriesData(
       date: start.toISOString().split('T')[0],
       value: count,
     })
+  }
+
+  return { data }
+}
+
+// Get data for gauge/progress widget
+async function getGaugeData(
+  config: WidgetConfig,
+  whereClause: Record<string, unknown>,
+  ownerId: string
+) {
+  let value = 0
+
+  switch (config.dataSource) {
+    case 'records':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: whereClause as any })
+      break
+    case 'tasks':
+      value = await prisma.task.count({ where: { createdById: ownerId } })
+      break
+    case 'tasks_completed':
+      value = await prisma.task.count({ where: { createdById: ownerId, status: 'COMPLETED' } })
+      break
+    case 'automations':
+      value = await prisma.automation.count({ where: { createdById: ownerId } })
+      break
+    case 'automations_active':
+      value = await prisma.automation.count({ where: { createdById: ownerId, isActive: true } })
+      break
+    default:
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = await prisma.record.count({ where: whereClause as any })
+  }
+
+  return { value }
+}
+
+// Get data for leaderboard widget
+async function getLeaderboardData(
+  config: WidgetConfig,
+  whereClause: Record<string, unknown>,
+  ownerId: string
+) {
+  const data: Array<{ name: string; value: number; avatar?: string }> = []
+  const limit = config.limit || 10
+
+  // Get team members
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { id: ownerId },
+        { accountOwnerId: ownerId },
+      ],
+    },
+    select: { id: true, name: true, email: true },
+  })
+
+  switch (config.dataSource) {
+    case 'records':
+      for (const user of users) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: {
+            ...whereClause,
+            assignedToId: user.id,
+          } as any,
+        })
+        data.push({ name: user.name || user.email, value: count })
+      }
+      break
+
+    case 'tasks':
+    case 'tasks_completed':
+      for (const user of users) {
+        const count = await prisma.task.count({
+          where: {
+            createdById: ownerId,
+            assignedToId: user.id,
+            ...(config.dataSource === 'tasks_completed' ? { status: 'COMPLETED' } : {}),
+          },
+        })
+        data.push({ name: user.name || user.email, value: count })
+      }
+      break
+
+    case 'activity':
+      for (const user of users) {
+        const count = await prisma.activityLog.count({
+          where: {
+            userId: user.id,
+          },
+        })
+        data.push({ name: user.name || user.email, value: count })
+      }
+      break
+
+    default:
+      for (const user of users) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: {
+            ...whereClause,
+            assignedToId: user.id,
+          } as any,
+        })
+        data.push({ name: user.name || user.email, value: count })
+      }
+  }
+
+  // Sort by value descending and limit
+  data.sort((a, b) => b.value - a.value)
+  return { data: data.slice(0, limit) }
+}
+
+// Get data for funnel widget
+async function getFunnelData(
+  config: WidgetConfig,
+  whereClause: Record<string, unknown>,
+  ownerId: string
+) {
+  const data: Array<{ name: string; value: number }> = []
+
+  switch (config.dataSource) {
+    case 'records':
+      // Funnel by status (pipeline stages)
+      const statuses = await prisma.status.findMany({
+        where: { createdById: ownerId },
+        orderBy: { order: 'asc' },
+      })
+
+      for (const status of statuses) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: {
+            ...whereClause,
+            statusId: status.id,
+          } as any,
+        })
+        data.push({ name: status.name, value: count })
+      }
+      break
+
+    case 'tasks':
+      // Funnel by task status
+      const taskStatuses = [
+        { key: 'PENDING', label: 'Pending' },
+        { key: 'IN_PROGRESS', label: 'In Progress' },
+        { key: 'COMPLETED', label: 'Completed' },
+      ]
+
+      for (const status of taskStatuses) {
+        const count = await prisma.task.count({
+          where: {
+            createdById: ownerId,
+            status: status.key,
+          },
+        })
+        data.push({ name: status.label, value: count })
+      }
+      break
+
+    default:
+      // Default: temperature funnel
+      const temps = [
+        { key: 'cold', label: 'Cold' },
+        { key: 'warm', label: 'Warm' },
+        { key: 'hot', label: 'Hot' },
+      ]
+
+      for (const temp of temps) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = await prisma.record.count({
+          where: {
+            ...whereClause,
+            temperature: temp.key,
+          } as any,
+        })
+        data.push({ name: temp.label, value: count })
+      }
+  }
+
+  return { data }
+}
+
+// Get data for table widget
+async function getTableData(
+  config: WidgetConfig,
+  whereClause: Record<string, unknown>,
+  ownerId: string
+) {
+  const limit = config.limit || 10
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let data: any[] = []
+
+  switch (config.dataSource) {
+    case 'records':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const records: any[] = await prisma.record.findMany({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        where: whereClause as any,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          status: { select: { name: true, color: true } },
+          assignedTo: { select: { name: true, email: true } },
+        },
+      })
+      data = records.map(r => ({
+        id: r.id,
+        name: r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : r.propertyAddress || 'Unknown',
+        status: r.status?.name || 'No Status',
+        temperature: r.temperature || 'cold',
+        assignedTo: r.assignedTo?.name || r.assignedTo?.email || 'Unassigned',
+        createdAt: r.createdAt,
+      }))
+      break
+
+    case 'tasks':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tasks: any[] = await prisma.task.findMany({
+        where: { createdById: ownerId },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          assignedTo: { select: { name: true, email: true } },
+          record: true,
+        },
+      })
+      data = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        assignedTo: t.assignedTo?.name || t.assignedTo?.email || 'Unassigned',
+        dueDate: t.dueDate,
+        record: t.record ? `${t.record.firstName || ''} ${t.record.lastName || ''}`.trim() || t.record.propertyAddress : null,
+      }))
+      break
+
+    case 'activity':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activities: any[] = await prisma.activityLog.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { name: true, email: true } },
+        },
+      })
+      data = activities.map(a => ({
+        id: a.id,
+        action: a.action,
+        type: a.type,
+        user: a.user?.name || a.user?.email || 'System',
+        createdAt: a.createdAt,
+      }))
+      break
+
+    case 'automations':
+      const automations = await prisma.automation.findMany({
+        where: { createdById: ownerId },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      })
+      data = automations.map(a => ({
+        id: a.id,
+        name: a.name,
+        isActive: a.isActive,
+        runCount: a.runCount,
+        lastRunAt: a.lastRunAt,
+      }))
+      break
+
+    default:
+      data = []
   }
 
   return { data }
