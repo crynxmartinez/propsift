@@ -155,22 +155,29 @@ export default function NodeConfigPanel({
   }
 
   const renderConditionRow = (branchId: string, condition: BranchCondition, index: number, isFirst: boolean) => (
-    <div key={index} className="space-y-2">
+    <div key={index} className="space-y-2 p-3 bg-white rounded-lg border border-gray-200">
       {!isFirst && (
-        <select
-          value={condition.logic || 'AND'}
-          onChange={(e) => updateCondition(branchId, index, { logic: e.target.value as 'AND' | 'OR' })}
-          className="px-2 py-1 text-xs border border-gray-300 rounded bg-blue-50 text-blue-700"
-        >
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-        </select>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex-1 h-px bg-gray-200"></div>
+          <select
+            value={condition.logic || 'AND'}
+            onChange={(e) => updateCondition(branchId, index, { logic: e.target.value as 'AND' | 'OR' })}
+            className="px-3 py-1 text-xs font-medium border border-blue-300 rounded-full bg-blue-50 text-blue-700"
+          >
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+          </select>
+          <div className="flex-1 h-px bg-gray-200"></div>
+        </div>
       )}
-      <div className="flex gap-2 items-center">
+      
+      {/* Field Selection */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Field</label>
         <select
           value={condition.field}
           onChange={(e) => updateCondition(branchId, index, { field: e.target.value, value: '' })}
-          className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select field...</option>
           <option value="status">Status</option>
@@ -180,10 +187,15 @@ export default function NodeConfigPanel({
           <option value="hasMotivation">Has Motivation</option>
           <option value="isAssigned">Is Assigned</option>
         </select>
+      </div>
+
+      {/* Operator Selection */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Operator</label>
         <select
           value={condition.operator}
           onChange={(e) => updateCondition(branchId, index, { operator: e.target.value })}
-          className="px-2 py-1.5 text-sm border border-gray-300 rounded"
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="equals">Equals</option>
           <option value="not_equals">Not Equals</option>
@@ -191,84 +203,105 @@ export default function NodeConfigPanel({
           <option value="is_empty">Is Empty</option>
           <option value="is_not_empty">Is Not Empty</option>
         </select>
-        {condition.field === 'status' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        )}
-        {condition.field === 'temperature' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            <option value="HOT">Hot</option>
-            <option value="WARM">Warm</option>
-            <option value="COLD">Cold</option>
-          </select>
-        )}
-        {condition.field === 'hasTag' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        )}
-        {condition.field === 'hasMotivation' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            {motivations.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-        )}
-        {condition.field === 'isAssigned' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            <option value="any">Anyone</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>{u.name || u.email}</option>
-            ))}
-          </select>
-        )}
-        {(condition.field === 'isComplete' || !condition.field) && condition.field !== '' && (
-          <select
-            value={condition.value}
-            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
-          >
-            <option value="">Select...</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-        )}
+      </div>
+
+      {/* Value Selection - only show if operator needs a value */}
+      {condition.operator !== 'is_empty' && condition.operator !== 'is_not_empty' && (
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Value</label>
+          {condition.field === 'status' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select status...</option>
+              {statuses.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          {condition.field === 'temperature' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select temperature...</option>
+              <option value="HOT">Hot</option>
+              <option value="WARM">Warm</option>
+              <option value="COLD">Cold</option>
+            </select>
+          )}
+          {condition.field === 'hasTag' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select tag...</option>
+              {tags.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          )}
+          {condition.field === 'hasMotivation' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select motivation...</option>
+              {motivations.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          )}
+          {condition.field === 'isAssigned' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select user...</option>
+              <option value="any">Anyone (is assigned)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name || u.email}</option>
+              ))}
+            </select>
+          )}
+          {condition.field === 'isComplete' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select...</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          )}
+          {!condition.field && (
+            <input
+              type="text"
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              placeholder="Enter value..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Delete Button */}
+      <div className="flex justify-end pt-1">
         <button
           onClick={() => deleteCondition(branchId, index)}
-          className="p-1 text-gray-400 hover:text-red-500"
+          className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1"
           type="button"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3 h-3" />
+          Remove
         </button>
       </div>
     </div>

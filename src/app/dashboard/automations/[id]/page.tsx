@@ -892,7 +892,7 @@ export default function AutomationBuilderPage() {
 
         {/* Right Panel */}
         {showPanel && (
-          <div className="w-80 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+          <div className="w-[420px] bg-white border-l border-gray-200 flex flex-col overflow-hidden">
             {/* Panel Header */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">
