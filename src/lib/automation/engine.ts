@@ -227,8 +227,43 @@ async function executeNode(
         completedAt: new Date(),
       })
     } else if (node.type === 'condition') {
-      const result = await evaluateCondition(node, context)
-      const branchTaken = result ? 'Yes (True)' : 'No (False)'
+      // Find all branch nodes connected to this condition
+      const edges = workflowData.edges.filter((e) => e.source === nodeId)
+      const branchNodes = edges
+        .map(e => workflowData.nodes.find(n => n.id === e.target))
+        .filter(n => n && n.id.startsWith('branch-'))
+      
+      let matchedBranch: WorkflowNode | null = null
+      let noneBranch: WorkflowNode | null = null
+      
+      // Evaluate each branch's conditions
+      for (const branchNode of branchNodes) {
+        if (!branchNode) continue
+        
+        const branchData = branchNode.data as unknown as { 
+          branchName: string
+          conditions: Array<{ field: string; operator: string; value: string; logic?: string }>
+        }
+        
+        // Check for "None" branch (fallback/else branch)
+        if (branchData.branchName === 'None' || !branchData.conditions || branchData.conditions.length === 0) {
+          noneBranch = branchNode
+          continue
+        }
+        
+        // Evaluate this branch's conditions
+        const branchResult = await evaluateBranchConditions(branchData.conditions, context)
+        if (branchResult) {
+          matchedBranch = branchNode
+          break
+        }
+      }
+      
+      // Use matched branch or fall back to None branch
+      const selectedBranch = matchedBranch || noneBranch
+      const branchName = selectedBranch 
+        ? (selectedBranch.data as unknown as { branchName: string }).branchName 
+        : 'No match'
       
       await addStepToLog(context.logId, {
         nodeId: node.id,
@@ -237,18 +272,14 @@ async function executeNode(
         actionType: node.data.type,
         status: 'completed',
         message: `Condition evaluated: ${node.data.label}`,
-        result: branchTaken,
+        result: `Branch: ${branchName}`,
         startedAt: stepStartedAt,
         completedAt: new Date(),
       })
       
-      // Find the appropriate edge based on condition result
-      const edges = workflowData.edges.filter((e) => e.source === nodeId)
-      const nextEdge = edges.find((e) => 
-        result ? e.sourceHandle === 'yes' : e.sourceHandle === 'no'
-      )
-      if (nextEdge) {
-        await executeNode(nextEdge.target, workflowData, context)
+      // Execute the selected branch
+      if (selectedBranch) {
+        await executeNode(selectedBranch.id, workflowData, context)
       }
       return
     }
@@ -470,7 +501,105 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
   }
 }
 
-// Evaluate a condition node
+// Evaluate branch conditions (for multi-branch conditions)
+async function evaluateBranchConditions(
+  conditions: Array<{ field: string; operator: string; value: string; logic?: string }>,
+  context: ExecutionContext
+): Promise<boolean> {
+  const { recordId } = context
+
+  const record = await prisma.record.findUnique({
+    where: { id: recordId },
+    include: {
+      status: true,
+      recordTags: { include: { tag: true } },
+      recordMotivations: { include: { motivation: true } },
+    },
+  })
+
+  if (!record) return false
+
+  let result = true
+  let isFirstCondition = true
+
+  for (const condition of conditions) {
+    const conditionResult = evaluateSingleCondition(record, condition.field, condition.operator, condition.value)
+    
+    if (isFirstCondition) {
+      result = conditionResult
+      isFirstCondition = false
+    } else {
+      if (condition.logic === 'OR') {
+        result = result || conditionResult
+      } else {
+        // Default to AND
+        result = result && conditionResult
+      }
+    }
+  }
+
+  return result
+}
+
+// Evaluate a single condition against a record
+function evaluateSingleCondition(
+  record: {
+    statusId: string | null
+    temperature: string | null
+    isComplete: boolean
+    assignedToId: string | null
+    recordTags: Array<{ tagId: string }>
+    recordMotivations: Array<{ motivationId: string }>
+  },
+  field: string,
+  operator: string,
+  value: string
+): boolean {
+  switch (field) {
+    case 'status':
+      if (operator === 'equals') return record.statusId === value
+      if (operator === 'not_equals') return record.statusId !== value
+      break
+
+    case 'temperature':
+      if (operator === 'equals') return record.temperature === value
+      if (operator === 'not_equals') return record.temperature !== value
+      break
+
+    case 'isComplete':
+      return record.isComplete === (value === 'true')
+
+    case 'hasTag':
+      if (operator === 'equals' || operator === 'contains') {
+        return record.recordTags.some((rt) => rt.tagId === value)
+      }
+      if (operator === 'not_equals' || operator === 'not_contains') {
+        return !record.recordTags.some((rt) => rt.tagId === value)
+      }
+      break
+
+    case 'hasMotivation':
+      if (operator === 'equals' || operator === 'contains') {
+        return record.recordMotivations.some((rm) => rm.motivationId === value)
+      }
+      if (operator === 'not_equals' || operator === 'not_contains') {
+        return !record.recordMotivations.some((rm) => rm.motivationId === value)
+      }
+      break
+
+    case 'isAssigned':
+      if (value === 'any') return record.assignedToId !== null
+      if (value === 'none') return record.assignedToId === null
+      return record.assignedToId === value
+
+    default:
+      console.log(`Unknown condition field: ${field}`)
+  }
+
+  return false
+}
+
+// Evaluate a condition node (legacy - for simple yes/no conditions)
 async function evaluateCondition(
   node: WorkflowNode,
   context: ExecutionContext
