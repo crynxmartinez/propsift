@@ -215,6 +215,8 @@ export default function AutomationBuilderPage() {
   // Logs state
   const [logs, setLogs] = useState<AutomationLog[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
+  const [selectedLog, setSelectedLog] = useState<AutomationLog | null>(null)
+  const [showStepsModal, setShowStepsModal] = useState(false)
 
   // Test workflow state
   const [showTestModal, setShowTestModal] = useState(false)
@@ -229,7 +231,7 @@ export default function AutomationBuilderPage() {
   }, [automationId])
 
   useEffect(() => {
-    if (activeTab === 'logs') {
+    if (activeTab === 'logs' || activeTab === 'history') {
       fetchLogs()
     }
   }, [activeTab, automationId])
@@ -921,8 +923,8 @@ export default function AutomationBuilderPage() {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => {
-                                    // TODO: Implement execution path view
-                                    alert('Execution path visualization coming soon!')
+                                    setSelectedLog(log)
+                                    setShowStepsModal(true)
                                   }}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
                                   title="View Execution Path"
@@ -1166,6 +1168,129 @@ export default function AutomationBuilderPage() {
           </div>
         )}
       </div>
+
+      {/* Execution Steps Modal */}
+      {showStepsModal && selectedLog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Execution Steps</h3>
+                <p className="text-sm text-gray-500">
+                  Record: {selectedLog.recordId?.slice(0, 8)}... | {selectedLog.triggeredBy.replace(/_/g, ' ')}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowStepsModal(false)
+                  setSelectedLog(null)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {(() => {
+                const steps = (selectedLog as unknown as { steps?: Array<{
+                  nodeId: string
+                  nodeType: string
+                  nodeLabel: string
+                  actionType?: string
+                  status: string
+                  message?: string
+                  result?: string
+                  startedAt: string
+                  completedAt?: string
+                  error?: string
+                }> }).steps || []
+                
+                if (steps.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <History className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>No execution steps recorded</p>
+                    </div>
+                  )
+                }
+
+                // Filter to only show completed steps (not started duplicates)
+                const completedSteps = steps.filter(s => s.status !== 'started')
+
+                return (
+                  <div className="space-y-3">
+                    {completedSteps.map((step, index) => (
+                      <div 
+                        key={`${step.nodeId}-${index}`}
+                        className={`p-3 rounded-lg border ${
+                          step.status === 'completed' 
+                            ? 'bg-green-50 border-green-200'
+                            : step.status === 'failed'
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            step.status === 'completed'
+                              ? 'bg-green-500 text-white'
+                              : step.status === 'failed'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-gray-400 text-white'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                step.nodeType === 'trigger'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : step.nodeType === 'action'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-orange-100 text-orange-700'
+                              }`}>
+                                {step.nodeType}
+                              </span>
+                              <span className="font-medium text-gray-900">{step.nodeLabel}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">{step.message}</p>
+                            {step.result && (
+                              <p className="text-sm text-gray-500 mt-1">
+                                <span className="font-medium">Result:</span> {step.result}
+                              </p>
+                            )}
+                            {step.error && (
+                              <p className="text-sm text-red-600 mt-1">
+                                <span className="font-medium">Error:</span> {step.error}
+                              </p>
+                            )}
+                            {step.completedAt && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(step.completedAt).toLocaleTimeString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowStepsModal(false)
+                  setSelectedLog(null)
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

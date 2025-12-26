@@ -143,6 +143,40 @@ export async function executeAutomation(
   }
 }
 
+// Helper to add a step to the automation log
+async function addStepToLog(
+  logId: string,
+  step: {
+    nodeId: string
+    nodeType: string
+    nodeLabel: string
+    actionType?: string
+    status: 'started' | 'completed' | 'failed' | 'skipped'
+    message?: string
+    result?: string
+    startedAt: Date
+    completedAt?: Date
+    error?: string
+  }
+) {
+  try {
+    const log = await prisma.automationLog.findUnique({
+      where: { id: logId },
+      select: { steps: true },
+    })
+    
+    const currentSteps = (log?.steps as Record<string, unknown>[]) || []
+    currentSteps.push(step as Record<string, unknown>)
+    
+    await prisma.automationLog.update({
+      where: { id: logId },
+      data: { steps: currentSteps as unknown as import('@prisma/client').Prisma.InputJsonValue },
+    })
+  } catch (error) {
+    console.error('Failed to add step to log:', error)
+  }
+}
+
 // Execute a single node and continue to connected nodes
 async function executeNode(
   nodeId: string,
@@ -152,22 +186,85 @@ async function executeNode(
   const node = workflowData.nodes.find((n) => n.id === nodeId)
   if (!node) return
 
+  const stepStartedAt = new Date()
   console.log(`Executing node: ${node.data.label} (${node.data.type})`)
 
-  // Execute based on node type
-  if (node.type === 'action') {
-    await executeAction(node, context)
-  } else if (node.type === 'condition') {
-    const result = await evaluateCondition(node, context)
-    // Find the appropriate edge based on condition result
-    const edges = workflowData.edges.filter((e) => e.source === nodeId)
-    const nextEdge = edges.find((e) => 
-      result ? e.sourceHandle === 'yes' : e.sourceHandle === 'no'
-    )
-    if (nextEdge) {
-      await executeNode(nextEdge.target, workflowData, context)
+  // Log step start
+  await addStepToLog(context.logId, {
+    nodeId: node.id,
+    nodeType: node.type,
+    nodeLabel: node.data.label,
+    actionType: node.data.type,
+    status: 'started',
+    message: `Executing ${node.data.label}`,
+    startedAt: stepStartedAt,
+  })
+
+  try {
+    // Execute based on node type
+    if (node.type === 'trigger') {
+      // Log trigger entry
+      await addStepToLog(context.logId, {
+        nodeId: node.id,
+        nodeType: node.type,
+        nodeLabel: node.data.label,
+        actionType: node.data.type,
+        status: 'completed',
+        message: `Record entered automation via ${node.data.label}`,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+      })
+    } else if (node.type === 'action') {
+      await executeAction(node, context)
+      await addStepToLog(context.logId, {
+        nodeId: node.id,
+        nodeType: node.type,
+        nodeLabel: node.data.label,
+        actionType: node.data.type,
+        status: 'completed',
+        message: `Action completed: ${node.data.label}`,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+      })
+    } else if (node.type === 'condition') {
+      const result = await evaluateCondition(node, context)
+      const branchTaken = result ? 'Yes (True)' : 'No (False)'
+      
+      await addStepToLog(context.logId, {
+        nodeId: node.id,
+        nodeType: node.type,
+        nodeLabel: node.data.label,
+        actionType: node.data.type,
+        status: 'completed',
+        message: `Condition evaluated: ${node.data.label}`,
+        result: branchTaken,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+      })
+      
+      // Find the appropriate edge based on condition result
+      const edges = workflowData.edges.filter((e) => e.source === nodeId)
+      const nextEdge = edges.find((e) => 
+        result ? e.sourceHandle === 'yes' : e.sourceHandle === 'no'
+      )
+      if (nextEdge) {
+        await executeNode(nextEdge.target, workflowData, context)
+      }
+      return
     }
-    return
+  } catch (error) {
+    await addStepToLog(context.logId, {
+      nodeId: node.id,
+      nodeType: node.type,
+      nodeLabel: node.data.label,
+      actionType: node.data.type,
+      status: 'failed',
+      message: `Failed: ${node.data.label}`,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      startedAt: stepStartedAt,
+      completedAt: new Date(),
+    })
+    throw error
   }
 
   // Find and execute connected nodes
