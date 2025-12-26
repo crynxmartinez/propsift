@@ -203,6 +203,13 @@ model Record {
   skiptraceDate      DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  
+  // DockInsight 2.2.2: Denormalized counters for analytics
+  phoneCount         Int                 @default(0)
+  emailCount         Int                 @default(0)
+  tagCount           Int                 @default(0)
+  motivationCount    Int                 @default(0)
+  
   customFieldValues  CustomFieldValue[]
   notifications      Notification[]
   assignedTo         User?               @relation(fields: [assignedToId], references: [id])
@@ -216,53 +223,80 @@ model Record {
   recordTags         RecordTag[]
   tasks              Task[]
   boardPositions     RecordBoardPosition[]
+  
+  // DockInsight 2.2.2: Analytics indexes
+  @@index([createdById])
+  @@index([createdById, createdAt])
+  @@index([createdById, temperature])
+  @@index([createdById, statusId])
+  @@index([createdById, assignedToId])
 }
 
 model RecordTag {
-  id        String   @id @default(cuid())
-  recordId  String
-  tagId     String
-  createdAt DateTime @default(now())
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  tag       Tag      @relation(fields: [tagId], references: [id])
+  id          String   @id @default(cuid())
+  recordId    String
+  tagId       String
+  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdAt   DateTime @default(now())
+  record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  tag         Tag      @relation(fields: [tagId], references: [id])
 
   @@unique([recordId, tagId])
+  // DockInsight 2.2.2: Analytics indexes
+  @@index([createdById])
+  @@index([createdById, createdAt])
+  @@index([recordId])
+  @@index([tagId])
 }
 
 model RecordMotivation {
   id           String     @id @default(cuid())
   recordId     String
   motivationId String
+  createdById  String?    // DockInsight 2.2.2: Tenant scope for analytics
   createdAt    DateTime   @default(now())
   motivation   Motivation @relation(fields: [motivationId], references: [id])
   record       Record     @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@unique([recordId, motivationId])
+  // DockInsight 2.2.2: Analytics indexes
+  @@index([createdById])
+  @@index([createdById, createdAt])
+  @@index([recordId])
+  @@index([motivationId])
 }
 
 model RecordPhoneNumber {
-  id        String   @id @default(cuid())
-  recordId  String
-  number    String
-  type      String   @default("MOBILE")
-  statuses  String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  recordId    String
+  number      String
+  type        String   @default("MOBILE")
+  statuses    String[] @default([])
+  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
+  // DockInsight 2.2.2: Analytics indexes
   @@index([recordId])
+  @@index([createdById])
+  @@index([createdById, createdAt])
 }
 
 model RecordEmail {
-  id        String   @id @default(cuid())
-  recordId  String
-  email     String
-  isPrimary Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  record    Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  recordId    String
+  email       String
+  isPrimary   Boolean  @default(false)
+  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
+  // DockInsight 2.2.2: Analytics indexes
   @@index([recordId])
+  @@index([createdById])
+  @@index([createdById, createdAt])
 }
 
 model RecordComment {
@@ -384,6 +418,10 @@ model Task {
   @@index([status])
   @@index([dueDate])
   @@index([createdById])
+  // DockInsight 2.2.2: Analytics indexes
+  @@index([createdById, createdAt])
+  @@index([createdById, status])
+  @@index([createdById, priority])
 }
 
 model TaskTemplate {
