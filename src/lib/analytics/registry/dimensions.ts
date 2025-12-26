@@ -83,6 +83,24 @@ export const DIMENSION_REGISTRY: Record<string, DimensionDefinition> = {
     ]
   },
 
+  state: {
+    key: 'state',
+    label: 'State',
+    field: 'propertyState',
+    entities: ['records'],
+    groupByMode: 'direct',
+    supportedOperators: ['eq', 'neq', 'in', 'not_in', 'is_empty', 'is_not_empty']
+  },
+
+  city: {
+    key: 'city',
+    label: 'City',
+    field: 'propertyCity',
+    entities: ['records'],
+    groupByMode: 'direct',
+    supportedOperators: ['eq', 'neq', 'in', 'not_in', 'is_empty', 'is_not_empty']
+  },
+
   // ==========================================================================
   // JUNCTION DIMENSIONS (junction_required groupBy)
   // v2.2.2 FIX: These MUST use junction entities for Prisma compatibility
