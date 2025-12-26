@@ -15,8 +15,12 @@ import {
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
+import dynamic from 'next/dynamic'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const GridLayout = require('react-grid-layout') as any
+const GridLayout = dynamic(() => import('react-grid-layout').then((mod) => mod.default || mod), {
+  ssr: false,
+}) as any
 
 interface LayoutItem {
   i: string
