@@ -619,7 +619,7 @@ export default function WidgetConfigPanel({
       <div className="w-96 bg-white shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">Configure Widget</h3>
+          <h3 className="font-semibold text-gray-900">Configure Dock</h3>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded"

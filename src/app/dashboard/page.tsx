@@ -151,7 +151,7 @@ export default function AnalyticsPage() {
   }
 
   const deleteDashboard = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this dashboard?')) return
+    if (!confirm('Are you sure you want to delete this dock insight?')) return
 
     try {
       const token = localStorage.getItem('token')
@@ -189,17 +189,17 @@ export default function AnalyticsPage() {
             <LayoutDashboard className="w-8 h-8 text-blue-600" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Create Your First Dashboard
+            Create Your First Dock Insight
           </h2>
           <p className="text-gray-500 mb-6">
-            Build custom analytics dashboards with drag-and-drop widgets to visualize your data.
+            Build custom analytics dock insights with drag-and-drop docks to visualize your data.
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto"
           >
             <Plus className="w-4 h-4" />
-            Create Dashboard
+            Create Dock Insight
           </button>
         </div>
 
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
             >
               <LayoutDashboard className="w-4 h-4 text-gray-600" />
               <span className="font-medium text-gray-900">
-                {selectedDashboard?.name || 'Select Dashboard'}
+                {selectedDashboard?.name || 'Select Dock Insight'}
               </span>
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
                     className="w-full flex items-center gap-2 p-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
                   >
                     <Plus className="w-4 h-4" />
-                    Create New Dashboard
+                    Create New Dock Insight
                   </button>
                 </div>
               </div>
@@ -495,16 +495,16 @@ function DashboardGrid({
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <Plus className="w-6 h-6 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No widgets yet</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-1">No docks yet</h3>
           <p className="text-sm text-gray-500 mb-4">
-            Add widgets to visualize your data
+            Add docks to visualize your data
           </p>
           <button
             onClick={() => setShowAddWidget(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto"
           >
             <Plus className="w-4 h-4" />
-            Add Widget
+            Add Dock
           </button>
         </div>
 
@@ -570,14 +570,14 @@ function DashboardGrid({
                   <button
                     onClick={() => setEditingWidget(widget)}
                     className="p-1 hover:bg-blue-100 rounded text-gray-400 hover:text-blue-600"
-                    title="Edit widget"
+                    title="Edit dock"
                   >
                     <Settings className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteWidget(widget.id)}
                     className="p-1 hover:bg-red-100 rounded text-gray-400 hover:text-red-600"
-                    title="Delete widget"
+                    title="Delete dock"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -818,7 +818,7 @@ function WidgetTypeSelector({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Widget Type</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Dock Type</h3>
         <div className="grid grid-cols-2 gap-3">
           {widgetTypes.map((wt) => (
             <button
@@ -866,11 +866,11 @@ function CreateDashboardModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Create Dashboard</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Create Dock Insight</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dashboard Name
+              Dock Insight Name
             </label>
             <input
               type="text"
@@ -888,7 +888,7 @@ function CreateDashboardModal({
             <textarea
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
-              placeholder="What is this dashboard for?"
+              placeholder="What is this dock insight for?"
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
