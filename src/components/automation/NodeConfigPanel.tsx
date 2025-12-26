@@ -90,6 +90,258 @@ export default function NodeConfigPanel({
     setConfig((prev) => ({ ...prev, [key]: value }))
   }
 
+  // Branch configuration for condition nodes
+  interface BranchCondition {
+    field: string
+    operator: string
+    value: string
+    logic?: 'AND' | 'OR'
+  }
+
+  interface Branch {
+    id: string
+    name: string
+    conditions: BranchCondition[]
+  }
+
+  const branches: Branch[] = (config.branches as Branch[]) || []
+
+  const addBranch = () => {
+    const newBranch: Branch = {
+      id: `branch-${Date.now()}`,
+      name: `Branch ${branches.length + 1}`,
+      conditions: [{ field: '', operator: 'equals', value: '' }]
+    }
+    updateConfig('branches', [...branches, newBranch])
+  }
+
+  const updateBranch = (branchId: string, updates: Partial<Branch>) => {
+    updateConfig('branches', branches.map(b => 
+      b.id === branchId ? { ...b, ...updates } : b
+    ))
+  }
+
+  const deleteBranch = (branchId: string) => {
+    updateConfig('branches', branches.filter(b => b.id !== branchId))
+  }
+
+  const addCondition = (branchId: string) => {
+    updateConfig('branches', branches.map(b => 
+      b.id === branchId 
+        ? { ...b, conditions: [...b.conditions, { field: '', operator: 'equals', value: '', logic: 'AND' as const }] }
+        : b
+    ))
+  }
+
+  const updateCondition = (branchId: string, conditionIndex: number, updates: Partial<BranchCondition>) => {
+    updateConfig('branches', branches.map(b => 
+      b.id === branchId 
+        ? { 
+            ...b, 
+            conditions: b.conditions.map((c, i) => 
+              i === conditionIndex ? { ...c, ...updates } : c
+            )
+          }
+        : b
+    ))
+  }
+
+  const deleteCondition = (branchId: string, conditionIndex: number) => {
+    updateConfig('branches', branches.map(b => 
+      b.id === branchId 
+        ? { ...b, conditions: b.conditions.filter((_, i) => i !== conditionIndex) }
+        : b
+    ))
+  }
+
+  const renderConditionRow = (branchId: string, condition: BranchCondition, index: number, isFirst: boolean) => (
+    <div key={index} className="space-y-2">
+      {!isFirst && (
+        <select
+          value={condition.logic || 'AND'}
+          onChange={(e) => updateCondition(branchId, index, { logic: e.target.value as 'AND' | 'OR' })}
+          className="px-2 py-1 text-xs border border-gray-300 rounded bg-blue-50 text-blue-700"
+        >
+          <option value="AND">AND</option>
+          <option value="OR">OR</option>
+        </select>
+      )}
+      <div className="flex gap-2 items-center">
+        <select
+          value={condition.field}
+          onChange={(e) => updateCondition(branchId, index, { field: e.target.value, value: '' })}
+          className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+        >
+          <option value="">Select field...</option>
+          <option value="status">Status</option>
+          <option value="temperature">Temperature</option>
+          <option value="isComplete">Is Complete</option>
+          <option value="hasTag">Has Tag</option>
+          <option value="hasMotivation">Has Motivation</option>
+          <option value="isAssigned">Is Assigned</option>
+        </select>
+        <select
+          value={condition.operator}
+          onChange={(e) => updateCondition(branchId, index, { operator: e.target.value })}
+          className="px-2 py-1.5 text-sm border border-gray-300 rounded"
+        >
+          <option value="equals">Equals</option>
+          <option value="not_equals">Not Equals</option>
+          <option value="contains">Contains</option>
+          <option value="is_empty">Is Empty</option>
+          <option value="is_not_empty">Is Not Empty</option>
+        </select>
+        {condition.field === 'status' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+        {condition.field === 'temperature' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            <option value="HOT">Hot</option>
+            <option value="WARM">Warm</option>
+            <option value="COLD">Cold</option>
+          </select>
+        )}
+        {condition.field === 'hasTag' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            {tags.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        )}
+        {condition.field === 'hasMotivation' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            {motivations.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        )}
+        {condition.field === 'isAssigned' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            <option value="any">Anyone</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name || u.email}</option>
+            ))}
+          </select>
+        )}
+        {(condition.field === 'isComplete' || !condition.field) && condition.field !== '' && (
+          <select
+            value={condition.value}
+            onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            <option value="">Select...</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        )}
+        <button
+          onClick={() => deleteCondition(branchId, index)}
+          className="p-1 text-gray-400 hover:text-red-500"
+          type="button"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderBranchConfig = () => (
+    <div className="space-y-4">
+      <div className="text-sm text-gray-600 mb-2">
+        Configure branches for this condition. Each branch can have multiple conditions.
+        The first matching branch will be executed. If no branch matches, the &quot;None&quot; branch is used.
+      </div>
+
+      {/* Branches */}
+      <div className="space-y-4">
+        {branches.map((branch, branchIndex) => (
+          <div key={branch.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <input
+                type="text"
+                value={branch.name}
+                onChange={(e) => updateBranch(branch.id, { name: e.target.value })}
+                className="font-medium text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1"
+                placeholder="Branch name"
+              />
+              <button
+                onClick={() => deleteBranch(branch.id)}
+                className="p-1 text-gray-400 hover:text-red-500"
+                type="button"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Conditions */}
+            <div className="space-y-2 mb-3">
+              {branch.conditions.map((condition, condIndex) => 
+                renderConditionRow(branch.id, condition, condIndex, condIndex === 0)
+              )}
+            </div>
+
+            <button
+              onClick={() => addCondition(branch.id)}
+              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              type="button"
+            >
+              + Add Condition
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Branch Button */}
+      <button
+        onClick={addBranch}
+        className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition"
+        type="button"
+      >
+        + Add Branch
+      </button>
+
+      {/* None Branch Info */}
+      <div className="border border-gray-200 rounded-lg p-3 bg-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+          <span className="font-medium text-gray-600">None Branch</span>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Executed when no other branch conditions are met
+        </p>
+      </div>
+    </div>
+  )
+
   const renderTriggerConfig = () => {
     const triggerType = node.data.type
 
@@ -544,154 +796,7 @@ export default function NodeConfigPanel({
         )
 
       case 'if_else':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Condition Field <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={(config.field as string) || ''}
-                onChange={(e) => {
-                  updateConfig('field', e.target.value)
-                  updateConfig('value', '')
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select field...</option>
-                <option value="status">Status</option>
-                <option value="temperature">Temperature</option>
-                <option value="isComplete">Is Complete</option>
-                <option value="hasTag">Has Tag</option>
-                <option value="hasMotivation">Has Motivation</option>
-                <option value="isAssigned">Is Assigned</option>
-              </select>
-            </div>
-            
-            {config.field === 'status' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status Equals
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select status...</option>
-                  {statuses.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {config.field === 'temperature' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Temperature Equals
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select temperature...</option>
-                  <option value="HOT">Hot</option>
-                  <option value="WARM">Warm</option>
-                  <option value="COLD">Cold</option>
-                </select>
-              </div>
-            )}
-
-            {config.field === 'isComplete' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Is Complete
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select...</option>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-            )}
-
-            {config.field === 'hasTag' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Has Tag
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select tag...</option>
-                  {tags.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {config.field === 'hasMotivation' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Has Motivation
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select motivation...</option>
-                  {motivations.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {config.field === 'isAssigned' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assigned To
-                </label>
-                <select
-                  value={(config.value as string) || ''}
-                  onChange={(e) => updateConfig('value', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select...</option>
-                  <option value="any">Anyone (is assigned)</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Operator
-              </label>
-              <select
-                value={(config.operator as string) || 'equals'}
-                onChange={(e) => updateConfig('operator', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="equals">Equals</option>
-                <option value="not_equals">Not Equals</option>
-              </select>
-            </div>
-          </div>
-        )
+        return renderBranchConfig()
 
       case 'mark_complete':
         return (
