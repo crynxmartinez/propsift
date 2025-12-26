@@ -36,7 +36,8 @@ import {
   Thermometer,
   CircleDot,
   ChevronRight,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react'
 
 // Custom node components
@@ -847,18 +848,105 @@ export default function AutomationBuilderPage() {
           </div>
         )}
 
-        {/* History Tab */}
+        {/* History Tab - Enrollment History */}
         {activeTab === 'history' && (
           <div className="flex-1 p-6 overflow-auto">
-            <div className="max-w-2xl mx-auto">
-              <h2 className="text-lg font-semibold mb-6">Version History</h2>
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
-                <p className="text-gray-500">
-                  Version history will be available in a future update
-                </p>
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold">Enrollment History</h2>
+                <p className="text-sm text-gray-500">View a history of all the Records that have entered this Workflow</p>
               </div>
+
+              {logsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                  <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No enrollment history yet</h3>
+                  <p className="text-gray-500">
+                    Records will appear here when they enter this automation
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Record</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrollment Reason</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Enrolled</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {logs.map((log) => {
+                        const startedAt = new Date(log.startedAt)
+
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                                  {log.recordId ? 'R' : '-'}
+                                </div>
+                                <span className="text-sm text-gray-900">
+                                  {log.recordId ? `Record ${log.recordId.slice(0, 8)}...` : 'Unknown'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {log.triggeredBy.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {startedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},<br/>
+                              {startedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                log.status === 'completed' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : log.status === 'failed'
+                                  ? 'bg-red-100 text-red-700'
+                                  : log.status === 'running'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {log.status === 'completed' ? 'Finished' : log.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    // TODO: Implement execution path view
+                                    alert('Execution path visualization coming soon!')
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                                  title="View Execution Path"
+                                >
+                                  <GitBranch className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    // Refresh/re-run option
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition"
+                                  title="Refresh"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
