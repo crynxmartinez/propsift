@@ -198,15 +198,100 @@ async function getNumberData(
   let previousValue: number | undefined
   let total: number | undefined // For percentage calculations
 
-  // Helper to get previous period value
-  const getPreviousValue = async (countFn: () => Promise<number>) => {
-    if (config.comparison === 'previous_period' && dateRange) {
-      const duration = dateRange.end.getTime() - dateRange.start.getTime()
-      const prevStart = new Date(dateRange.start.getTime() - duration)
-      const prevEnd = new Date(dateRange.start.getTime() - 1)
-      return countFn()
+  // ==========================================
+  // METRIC HANDLERS FOR RECORDS
+  // ==========================================
+  const getRecordMetric = async (where: Record<string, unknown>) => {
+    switch (config.metric) {
+      case 'count':
+      default:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return await prisma.record.count({ where: where as any })
+      
+      case 'sum_estimated_value':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumEV = await prisma.record.aggregate({ where: where as any, _sum: { estimatedValue: true } })
+        return Number(sumEV._sum.estimatedValue) || 0
+      
+      case 'avg_estimated_value':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const avgEV = await prisma.record.aggregate({ where: where as any, _avg: { estimatedValue: true } })
+        return Number(avgEV._avg.estimatedValue) || 0
+      
+      case 'sum_sqft':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumSqft = await prisma.record.aggregate({ where: where as any, _sum: { sqft: true } })
+        return sumSqft._sum.sqft || 0
+      
+      case 'avg_sqft':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const avgSqft = await prisma.record.aggregate({ where: where as any, _avg: { sqft: true } })
+        return Math.round(avgSqft._avg.sqft || 0)
+      
+      case 'sum_call_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumCalls = await prisma.record.aggregate({ where: where as any, _sum: { callAttempts: true } })
+        return sumCalls._sum.callAttempts || 0
+      
+      case 'avg_call_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const avgCalls = await prisma.record.aggregate({ where: where as any, _avg: { callAttempts: true } })
+        return Math.round((avgCalls._avg.callAttempts || 0) * 10) / 10
+      
+      case 'sum_sms_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumSms = await prisma.record.aggregate({ where: where as any, _sum: { smsAttempts: true } })
+        return sumSms._sum.smsAttempts || 0
+      
+      case 'avg_sms_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const avgSms = await prisma.record.aggregate({ where: where as any, _avg: { smsAttempts: true } })
+        return Math.round((avgSms._avg.smsAttempts || 0) * 10) / 10
+      
+      case 'sum_direct_mail_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumDM = await prisma.record.aggregate({ where: where as any, _sum: { directMailAttempts: true } })
+        return sumDM._sum.directMailAttempts || 0
+      
+      case 'sum_rvm_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sumRvm = await prisma.record.aggregate({ where: where as any, _sum: { rvmAttempts: true } })
+        return sumRvm._sum.rvmAttempts || 0
+      
+      case 'sum_total_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalAttempts = await prisma.record.aggregate({
+          where: where as any,
+          _sum: { callAttempts: true, smsAttempts: true, directMailAttempts: true, rvmAttempts: true }
+        })
+        return (totalAttempts._sum.callAttempts || 0) + 
+               (totalAttempts._sum.smsAttempts || 0) + 
+               (totalAttempts._sum.directMailAttempts || 0) + 
+               (totalAttempts._sum.rvmAttempts || 0)
+      
+      case 'count_zero_attempts':
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return await prisma.record.count({
+          where: {
+            ...where,
+            callAttempts: 0,
+            smsAttempts: 0,
+            directMailAttempts: 0,
+            rvmAttempts: 0,
+          } as any
+        })
+      
+      case 'count_high_attempts':
+        // Records with 5+ total attempts
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = await prisma.record.findMany({
+          where: where as any,
+          select: { callAttempts: true, smsAttempts: true, directMailAttempts: true, rvmAttempts: true }
+        })
+        return records.filter(r => 
+          (r.callAttempts || 0) + (r.smsAttempts || 0) + (r.directMailAttempts || 0) + (r.rvmAttempts || 0) >= 5
+        ).length
     }
-    return undefined
   }
 
   // ==========================================
@@ -214,15 +299,12 @@ async function getNumberData(
   // ==========================================
   switch (config.dataSource) {
     case 'records':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      value = await prisma.record.count({ where: whereClause as any })
+      value = await getRecordMetric(whereClause)
       if (config.comparison === 'previous_period' && dateRange) {
         const duration = dateRange.end.getTime() - dateRange.start.getTime()
         const prevStart = new Date(dateRange.start.getTime() - duration)
         const prevEnd = new Date(dateRange.start.getTime() - 1)
-        previousValue = await prisma.record.count({
-          where: { createdById: ownerId, createdAt: { gte: prevStart, lte: prevEnd } },
-        })
+        previousValue = await getRecordMetric({ createdById: ownerId, createdAt: { gte: prevStart, lte: prevEnd } })
       }
       break
 
