@@ -323,7 +323,7 @@ export default function AutomationsPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-900">{automation.name}</span>
-            {automation.isDraft && (
+            {automation.isDraft && !automation.isActive && (
               <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">Draft</span>
             )}
           </div>

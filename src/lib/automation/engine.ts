@@ -177,18 +177,51 @@ async function executeNode(
   }
 }
 
+// Helper to create activity log for automation actions
+async function logAutomationActivity(
+  recordId: string,
+  automationId: string,
+  actionType: string,
+  description: string,
+  newValue?: string
+) {
+  try {
+    // Get the automation to find the owner
+    const automation = await prisma.automation.findUnique({
+      where: { id: automationId },
+      select: { createdById: true, name: true },
+    })
+
+    if (automation) {
+      await prisma.recordActivityLog.create({
+        data: {
+          recordId,
+          action: `automation_${actionType}`,
+          field: actionType,
+          newValue: newValue || description,
+          source: `Automation: ${automation.name}`,
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Failed to log automation activity:', error)
+  }
+}
+
 // Execute an action node
 async function executeAction(node: WorkflowNode, context: ExecutionContext) {
   const { type, config } = node.data
-  const { recordId } = context
+  const { recordId, automationId } = context
 
   switch (type) {
     case 'update_status':
       if (config.statusId) {
+        const status = await prisma.status.findUnique({ where: { id: config.statusId as string } })
         await prisma.record.update({
           where: { id: recordId },
           data: { statusId: config.statusId as string },
         })
+        await logAutomationActivity(recordId, automationId, type, `Status changed to "${status?.name || 'Unknown'}"`, status?.name || 'Unknown')
       }
       break
 
@@ -198,11 +231,13 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
           where: { id: recordId },
           data: { temperature: config.temperature as string },
         })
+        await logAutomationActivity(recordId, automationId, type, `Temperature changed to "${config.temperature}"`, config.temperature as string)
       }
       break
 
     case 'add_tag':
       if (config.tagId) {
+        const tag = await prisma.tag.findUnique({ where: { id: config.tagId as string } })
         await prisma.recordTag.upsert({
           where: {
             recordId_tagId: {
@@ -216,26 +251,31 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
           },
           update: {},
         })
+        await logAutomationActivity(recordId, automationId, type, `Tag "${tag?.name || 'Unknown'}" added`, tag?.name || 'Unknown')
       }
       break
 
     case 'remove_tag':
       if (config.tagId) {
+        const tag = await prisma.tag.findUnique({ where: { id: config.tagId as string } })
         await prisma.recordTag.deleteMany({
           where: {
             recordId,
             tagId: config.tagId as string,
           },
         })
+        await logAutomationActivity(recordId, automationId, type, `Tag "${tag?.name || 'Unknown'}" removed`, tag?.name || 'Unknown')
       }
       break
 
     case 'assign_user':
       if (config.userId) {
+        const user = await prisma.user.findUnique({ where: { id: config.userId as string } })
         await prisma.record.update({
           where: { id: recordId },
           data: { assignedToId: config.userId as string },
         })
+        await logAutomationActivity(recordId, automationId, type, `Assigned to "${user?.name || user?.email || 'Unknown'}"`, user?.name || user?.email || 'Unknown')
       }
       break
 
@@ -244,6 +284,7 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
         where: { id: recordId },
         data: { isComplete: true },
       })
+      await logAutomationActivity(recordId, automationId, type, 'Marked as complete')
       break
 
     case 'add_to_board':
