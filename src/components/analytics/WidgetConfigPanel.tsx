@@ -8,6 +8,7 @@ interface WidgetConfig {
   metric: string
   field?: string
   groupBy?: string
+  granularity?: string
   filters?: Array<{ field: string; operator: string; value: string }>
   sortBy?: string
   sortOrder?: string
@@ -580,6 +581,8 @@ export default function WidgetConfigPanel({
   }
 
   const isChartWidget = ['bar_chart', 'horizontal_bar', 'pie_chart', 'donut_chart', 'line_chart', 'area_chart'].includes(widget.type)
+  const isTimeSeriesChart = ['line_chart', 'area_chart'].includes(widget.type)
+  const isGroupedChart = ['bar_chart', 'horizontal_bar', 'pie_chart', 'donut_chart'].includes(widget.type)
 
   // Get the base data source category (e.g., 'records' from 'records_hot')
   const getBaseSource = (source: string): string => {
@@ -726,8 +729,8 @@ export default function WidgetConfigPanel({
                 </select>
               </div>
 
-              {/* Group By (for charts) - Dynamic based on Data Source */}
-              {isChartWidget && (
+              {/* Group By (for bar/pie charts) - Dynamic based on Data Source */}
+              {isGroupedChart && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Group By
@@ -742,6 +745,24 @@ export default function WidgetConfigPanel({
                         {opt.label}
                       </option>
                     ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Granularity (for line/area charts) */}
+              {isTimeSeriesChart && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Granularity
+                  </label>
+                  <select
+                    value={config.granularity || 'daily'}
+                    onChange={(e) => updateConfig('granularity', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
                   </select>
                 </div>
               )}

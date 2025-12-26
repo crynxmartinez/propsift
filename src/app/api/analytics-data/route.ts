@@ -1420,7 +1420,7 @@ async function getGroupedData(
       break
 
     case 'tags':
-      // Get all tags with record count
+      // Get all tags with record count via junction table
       const allTags = await prisma.tag.findMany({
         where: { createdById: ownerId },
         include: { records: true },
@@ -1431,7 +1431,7 @@ async function getGroupedData(
       break
 
     case 'motivations':
-      // Get all motivations with record count
+      // Get all motivations with record count via junction table
       const allMotivations = await prisma.motivation.findMany({
         where: { createdById: ownerId },
         include: { records: true },
