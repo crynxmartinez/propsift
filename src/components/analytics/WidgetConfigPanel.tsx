@@ -52,27 +52,302 @@ interface WidgetConfigPanelProps {
   onClose: () => void
 }
 
+// ==========================================
+// PHASE 1: ALL 12 DATA SOURCES
+// ==========================================
 const DATA_SOURCES = [
-  { value: 'records', label: 'Records' },
-  { value: 'hot_leads', label: 'Hot Leads' },
-  { value: 'contacts', label: 'Contacts' },
-  { value: 'tasks', label: 'Tasks' },
-  { value: 'tasks_pending', label: 'Pending Tasks' },
-  { value: 'tasks_completed', label: 'Completed Tasks' },
-  { value: 'tasks_overdue', label: 'Overdue Tasks' },
+  // Records (Main Entity)
+  { value: 'records', label: 'Records', category: 'Records' },
+  { value: 'records_hot', label: 'Hot Leads', category: 'Records' },
+  { value: 'records_warm', label: 'Warm Leads', category: 'Records' },
+  { value: 'records_cold', label: 'Cold Leads', category: 'Records' },
+  { value: 'records_contacts', label: 'Contacts Only', category: 'Records' },
+  { value: 'records_non_contacts', label: 'Non-Contacts', category: 'Records' },
+  { value: 'records_completed', label: 'Completed Records', category: 'Records' },
+  { value: 'records_unassigned', label: 'Unassigned Records', category: 'Records' },
+  
+  // Tasks
+  { value: 'tasks', label: 'All Tasks', category: 'Tasks' },
+  { value: 'tasks_pending', label: 'Pending Tasks', category: 'Tasks' },
+  { value: 'tasks_in_progress', label: 'In Progress Tasks', category: 'Tasks' },
+  { value: 'tasks_completed', label: 'Completed Tasks', category: 'Tasks' },
+  { value: 'tasks_overdue', label: 'Overdue Tasks', category: 'Tasks' },
+  { value: 'tasks_due_today', label: 'Due Today', category: 'Tasks' },
+  { value: 'tasks_due_this_week', label: 'Due This Week', category: 'Tasks' },
+  { value: 'tasks_unassigned', label: 'Unassigned Tasks', category: 'Tasks' },
+  { value: 'tasks_recurring', label: 'Recurring Tasks', category: 'Tasks' },
+  
+  // Tags
+  { value: 'tags', label: 'All Tags', category: 'Tags' },
+  { value: 'tags_most_used', label: 'Most Used Tags', category: 'Tags' },
+  { value: 'tags_unused', label: 'Unused Tags', category: 'Tags' },
+  { value: 'records_with_tags', label: 'Records with Tags', category: 'Tags' },
+  { value: 'records_without_tags', label: 'Records without Tags', category: 'Tags' },
+  { value: 'records_multiple_tags', label: 'Records with Multiple Tags', category: 'Tags' },
+  
+  // Motivations
+  { value: 'motivations', label: 'All Motivations', category: 'Motivations' },
+  { value: 'motivations_most_used', label: 'Most Used Motivations', category: 'Motivations' },
+  { value: 'motivations_unused', label: 'Unused Motivations', category: 'Motivations' },
+  { value: 'records_with_motivations', label: 'Records with Motivations', category: 'Motivations' },
+  { value: 'records_without_motivations', label: 'Records without Motivations', category: 'Motivations' },
+  
+  // Statuses
+  { value: 'statuses', label: 'All Statuses', category: 'Statuses' },
+  { value: 'statuses_active', label: 'Active Statuses', category: 'Statuses' },
+  { value: 'statuses_inactive', label: 'Inactive Statuses', category: 'Statuses' },
+  
+  // Phone Numbers
+  { value: 'phones', label: 'All Phone Numbers', category: 'Phones' },
+  { value: 'phones_mobile', label: 'Mobile Phones', category: 'Phones' },
+  { value: 'phones_landline', label: 'Landline Phones', category: 'Phones' },
+  { value: 'phones_voip', label: 'VOIP Phones', category: 'Phones' },
+  { value: 'phones_dnc', label: 'DNC Numbers', category: 'Phones' },
+  { value: 'records_with_phones', label: 'Records with Phones', category: 'Phones' },
+  { value: 'records_without_phones', label: 'Records without Phones', category: 'Phones' },
+  { value: 'records_multiple_phones', label: 'Records with Multiple Phones', category: 'Phones' },
+  
+  // Emails
+  { value: 'emails', label: 'All Emails', category: 'Emails' },
+  { value: 'emails_primary', label: 'Primary Emails', category: 'Emails' },
+  { value: 'records_with_emails', label: 'Records with Emails', category: 'Emails' },
+  { value: 'records_without_emails', label: 'Records without Emails', category: 'Emails' },
+  { value: 'records_multiple_emails', label: 'Records with Multiple Emails', category: 'Emails' },
+  
+  // Boards
+  { value: 'boards', label: 'All Boards', category: 'Boards' },
+  { value: 'board_columns', label: 'Board Columns', category: 'Boards' },
+  { value: 'records_on_boards', label: 'Records on Boards', category: 'Boards' },
+  { value: 'records_not_on_boards', label: 'Records Not on Any Board', category: 'Boards' },
+  
+  // Automations
+  { value: 'automations', label: 'All Automations', category: 'Automations' },
+  { value: 'automations_active', label: 'Active Automations', category: 'Automations' },
+  { value: 'automations_inactive', label: 'Inactive Automations', category: 'Automations' },
+  { value: 'automation_runs', label: 'Automation Runs', category: 'Automations' },
+  { value: 'automation_runs_completed', label: 'Completed Runs', category: 'Automations' },
+  { value: 'automation_runs_failed', label: 'Failed Runs', category: 'Automations' },
+  { value: 'automation_runs_running', label: 'Running Now', category: 'Automations' },
+  
+  // Team/Users
+  { value: 'team', label: 'All Team Members', category: 'Team' },
+  { value: 'team_owners', label: 'Owners', category: 'Team' },
+  { value: 'team_admins', label: 'Admins', category: 'Team' },
+  { value: 'team_members', label: 'Members', category: 'Team' },
+  { value: 'team_active', label: 'Active Users', category: 'Team' },
+  { value: 'team_inactive', label: 'Inactive Users', category: 'Team' },
+  
+  // Activity Logs
+  { value: 'activity', label: 'All Activity', category: 'Activity' },
+  { value: 'activity_record', label: 'Record Activity', category: 'Activity' },
+  { value: 'activity_imports', label: 'Import History', category: 'Activity' },
+  
+  // Notifications
+  { value: 'notifications', label: 'All Notifications', category: 'Notifications' },
+  { value: 'notifications_unread', label: 'Unread Notifications', category: 'Notifications' },
+  { value: 'notifications_dismissed', label: 'Dismissed Notifications', category: 'Notifications' },
+  
+  // Custom Fields
+  { value: 'custom_fields', label: 'Custom Field Definitions', category: 'Custom Fields' },
+  { value: 'custom_field_values', label: 'Custom Field Values', category: 'Custom Fields' },
 ]
 
-const METRICS = [
+// ==========================================
+// PHASE 2: METRICS PER DATA SOURCE
+// ==========================================
+const METRICS_BY_SOURCE: Record<string, Array<{ value: string; label: string; field?: string }>> = {
+  // Records metrics
+  records: [
+    { value: 'count', label: 'Total Count' },
+    { value: 'count_by_status', label: 'Count by Status' },
+    { value: 'count_by_temperature', label: 'Count by Temperature' },
+    { value: 'count_by_owner', label: 'Count by Owner' },
+    { value: 'count_by_creator', label: 'Count by Creator' },
+    { value: 'count_by_state', label: 'Count by Property State' },
+    { value: 'count_by_city', label: 'Count by Property City' },
+    { value: 'count_by_structure_type', label: 'Count by Structure Type' },
+    { value: 'count_by_year_built', label: 'Count by Year Built' },
+    { value: 'count_by_bedrooms', label: 'Count by Bedrooms' },
+    { value: 'count_by_bathrooms', label: 'Count by Bathrooms' },
+    { value: 'count_over_time', label: 'Count Over Time' },
+    { value: 'sum_estimated_value', label: 'Total Estimated Value', field: 'estimatedValue' },
+    { value: 'avg_estimated_value', label: 'Average Estimated Value', field: 'estimatedValue' },
+    { value: 'sum_sqft', label: 'Total Sqft', field: 'sqft' },
+    { value: 'avg_sqft', label: 'Average Sqft', field: 'sqft' },
+    { value: 'sum_call_attempts', label: 'Total Call Attempts', field: 'callAttempts' },
+    { value: 'avg_call_attempts', label: 'Avg Call Attempts', field: 'callAttempts' },
+    { value: 'sum_sms_attempts', label: 'Total SMS Attempts', field: 'smsAttempts' },
+    { value: 'avg_sms_attempts', label: 'Avg SMS Attempts', field: 'smsAttempts' },
+    { value: 'sum_direct_mail_attempts', label: 'Total Direct Mail Attempts', field: 'directMailAttempts' },
+    { value: 'sum_rvm_attempts', label: 'Total RVM Attempts', field: 'rvmAttempts' },
+    { value: 'sum_total_attempts', label: 'Total All Attempts' },
+    { value: 'count_zero_attempts', label: 'Records with 0 Attempts' },
+    { value: 'count_high_attempts', label: 'Records with 5+ Attempts' },
+  ],
+  
+  // Tasks metrics
+  tasks: [
+    { value: 'count', label: 'Total Count' },
+    { value: 'count_by_status', label: 'Count by Status' },
+    { value: 'count_by_priority', label: 'Count by Priority' },
+    { value: 'count_by_assignee', label: 'Count by Assignee' },
+    { value: 'count_over_time', label: 'Count Over Time' },
+    { value: 'completion_rate', label: 'Completion Rate (%)' },
+    { value: 'avg_completion_time', label: 'Avg Time to Complete' },
+    { value: 'count_by_record', label: 'Tasks per Record' },
+  ],
+  
+  // Tags metrics
+  tags: [
+    { value: 'count', label: 'Total Tags' },
+    { value: 'records_per_tag', label: 'Records per Tag' },
+  ],
+  
+  // Motivations metrics
+  motivations: [
+    { value: 'count', label: 'Total Motivations' },
+    { value: 'records_per_motivation', label: 'Records per Motivation' },
+  ],
+  
+  // Statuses metrics
+  statuses: [
+    { value: 'count', label: 'Total Statuses' },
+    { value: 'records_per_status', label: 'Records per Status' },
+  ],
+  
+  // Phones metrics
+  phones: [
+    { value: 'count', label: 'Total Phone Numbers' },
+    { value: 'count_by_type', label: 'Count by Type' },
+    { value: 'count_by_status', label: 'Count by Status' },
+  ],
+  
+  // Emails metrics
+  emails: [
+    { value: 'count', label: 'Total Emails' },
+    { value: 'count_primary', label: 'Primary Emails' },
+  ],
+  
+  // Boards metrics
+  boards: [
+    { value: 'count', label: 'Total Boards' },
+    { value: 'records_per_board', label: 'Records per Board' },
+    { value: 'records_per_column', label: 'Records per Column' },
+  ],
+  
+  // Automations metrics
+  automations: [
+    { value: 'count', label: 'Total Automations' },
+    { value: 'count_active', label: 'Active Count' },
+    { value: 'total_runs', label: 'Total Runs' },
+    { value: 'success_rate', label: 'Success Rate (%)' },
+    { value: 'runs_over_time', label: 'Runs Over Time' },
+    { value: 'runs_by_status', label: 'Runs by Status' },
+  ],
+  
+  // Team metrics
+  team: [
+    { value: 'count', label: 'Total Members' },
+    { value: 'count_by_role', label: 'Count by Role' },
+    { value: 'records_per_user', label: 'Records per User' },
+    { value: 'tasks_per_user', label: 'Tasks per User' },
+  ],
+  
+  // Activity metrics
+  activity: [
+    { value: 'count', label: 'Total Activities' },
+    { value: 'count_by_action', label: 'Count by Action Type' },
+    { value: 'count_over_time', label: 'Activity Over Time' },
+    { value: 'count_by_user', label: 'Activity by User' },
+  ],
+  
+  // Notifications metrics
+  notifications: [
+    { value: 'count', label: 'Total Notifications' },
+    { value: 'count_by_type', label: 'Count by Type' },
+    { value: 'unread_count', label: 'Unread Count' },
+  ],
+  
+  // Custom Fields metrics
+  custom_fields: [
+    { value: 'count', label: 'Total Fields Defined' },
+    { value: 'count_by_type', label: 'Count by Field Type' },
+    { value: 'usage_rate', label: 'Field Usage Rate' },
+  ],
+}
+
+// Default metrics for sources not explicitly defined
+const DEFAULT_METRICS = [
   { value: 'count', label: 'Count' },
-  { value: 'sum', label: 'Sum' },
-  { value: 'average', label: 'Average' },
 ]
 
-const GROUP_BY_OPTIONS = [
-  { value: 'status', label: 'Status' },
-  { value: 'temperature', label: 'Temperature' },
-  { value: 'tag', label: 'Tag' },
-  { value: 'assignedTo', label: 'Assigned To' },
+// ==========================================
+// PHASE 4: GROUP BY OPTIONS PER DATA SOURCE
+// ==========================================
+const GROUP_BY_OPTIONS_BY_SOURCE: Record<string, Array<{ value: string; label: string }>> = {
+  records: [
+    { value: 'status', label: 'By Status' },
+    { value: 'temperature', label: 'By Temperature' },
+    { value: 'assignedTo', label: 'By Owner/Assignee' },
+    { value: 'createdBy', label: 'By Creator' },
+    { value: 'propertyState', label: 'By Property State' },
+    { value: 'propertyCity', label: 'By Property City' },
+    { value: 'structureType', label: 'By Structure Type' },
+    { value: 'yearBuilt', label: 'By Year Built' },
+    { value: 'bedrooms', label: 'By Bedrooms' },
+    { value: 'bathrooms', label: 'By Bathrooms' },
+    { value: 'tag', label: 'By Tag' },
+    { value: 'motivation', label: 'By Motivation' },
+    { value: 'day', label: 'By Day' },
+    { value: 'week', label: 'By Week' },
+    { value: 'month', label: 'By Month' },
+    { value: 'quarter', label: 'By Quarter' },
+    { value: 'year', label: 'By Year' },
+  ],
+  tasks: [
+    { value: 'status', label: 'By Status' },
+    { value: 'priority', label: 'By Priority' },
+    { value: 'assignedTo', label: 'By Assignee' },
+    { value: 'record', label: 'By Record' },
+    { value: 'day', label: 'By Day' },
+    { value: 'week', label: 'By Week' },
+    { value: 'month', label: 'By Month' },
+  ],
+  phones: [
+    { value: 'type', label: 'By Type' },
+    { value: 'status', label: 'By Status' },
+  ],
+  automations: [
+    { value: 'status', label: 'By Status' },
+    { value: 'day', label: 'By Day' },
+    { value: 'week', label: 'By Week' },
+    { value: 'month', label: 'By Month' },
+  ],
+  team: [
+    { value: 'role', label: 'By Role' },
+    { value: 'status', label: 'By Status' },
+  ],
+  activity: [
+    { value: 'action', label: 'By Action Type' },
+    { value: 'user', label: 'By User' },
+    { value: 'day', label: 'By Day' },
+    { value: 'week', label: 'By Week' },
+    { value: 'month', label: 'By Month' },
+  ],
+  notifications: [
+    { value: 'type', label: 'By Type' },
+    { value: 'isRead', label: 'By Read Status' },
+  ],
+  custom_fields: [
+    { value: 'fieldType', label: 'By Field Type' },
+    { value: 'displayType', label: 'By Display Type' },
+  ],
+}
+
+const DEFAULT_GROUP_BY_OPTIONS = [
+  { value: 'day', label: 'By Day' },
+  { value: 'week', label: 'By Week' },
+  { value: 'month', label: 'By Month' },
 ]
 
 const TIME_PERIODS = [
@@ -146,6 +421,35 @@ export default function WidgetConfigPanel({
 
   const isChartWidget = ['bar_chart', 'horizontal_bar', 'pie_chart', 'donut_chart', 'line_chart', 'area_chart'].includes(widget.type)
 
+  // Get the base data source category (e.g., 'records' from 'records_hot')
+  const getBaseSource = (source: string): string => {
+    if (source.startsWith('records')) return 'records'
+    if (source.startsWith('tasks')) return 'tasks'
+    if (source.startsWith('tags') || source === 'records_with_tags' || source === 'records_without_tags' || source === 'records_multiple_tags') return 'tags'
+    if (source.startsWith('motivations') || source === 'records_with_motivations' || source === 'records_without_motivations') return 'motivations'
+    if (source.startsWith('statuses')) return 'statuses'
+    if (source.startsWith('phones') || source === 'records_with_phones' || source === 'records_without_phones' || source === 'records_multiple_phones') return 'phones'
+    if (source.startsWith('emails') || source === 'records_with_emails' || source === 'records_without_emails' || source === 'records_multiple_emails') return 'emails'
+    if (source.startsWith('boards') || source === 'board_columns' || source === 'records_on_boards' || source === 'records_not_on_boards') return 'boards'
+    if (source.startsWith('automation')) return 'automations'
+    if (source.startsWith('team')) return 'team'
+    if (source.startsWith('activity')) return 'activity'
+    if (source.startsWith('notification')) return 'notifications'
+    if (source.startsWith('custom_field')) return 'custom_fields'
+    return 'records'
+  }
+
+  const baseSource = getBaseSource(config.dataSource)
+  const availableMetrics = METRICS_BY_SOURCE[baseSource] || DEFAULT_METRICS
+  const availableGroupBy = GROUP_BY_OPTIONS_BY_SOURCE[baseSource] || DEFAULT_GROUP_BY_OPTIONS
+
+  // Group data sources by category for better UX
+  const groupedDataSources = DATA_SOURCES.reduce((acc, ds) => {
+    if (!acc[ds.category]) acc[ds.category] = []
+    acc[ds.category].push(ds)
+    return acc
+  }, {} as Record<string, typeof DATA_SOURCES>)
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
@@ -218,56 +522,62 @@ export default function WidgetConfigPanel({
                 />
               </div>
 
-              {/* Data Source */}
+              {/* Data Source - Grouped by Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Data Source
                 </label>
                 <select
                   value={config.dataSource}
-                  onChange={(e) => updateConfig('dataSource', e.target.value)}
+                  onChange={(e) => {
+                    updateConfig('dataSource', e.target.value)
+                    // Reset metric when data source changes
+                    updateConfig('metric', 'count')
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {DATA_SOURCES.map((ds) => (
-                    <option key={ds.value} value={ds.value}>
-                      {ds.label}
+                  {Object.entries(groupedDataSources).map(([category, sources]) => (
+                    <optgroup key={category} label={category}>
+                      {sources.map((ds) => (
+                        <option key={ds.value} value={ds.value}>
+                          {ds.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {/* Metric - Dynamic based on Data Source */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Metric
+                </label>
+                <select
+                  value={config.metric}
+                  onChange={(e) => updateConfig('metric', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {availableMetrics.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Metric */}
-              {config.dataSource === 'records' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Metric
-                  </label>
-                  <select
-                    value={config.metric}
-                    onChange={(e) => updateConfig('metric', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {METRICS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Group By (for charts) */}
+              {/* Group By (for charts) - Dynamic based on Data Source */}
               {isChartWidget && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Group By
                   </label>
                   <select
-                    value={config.groupBy || 'status'}
+                    value={config.groupBy || availableGroupBy[0]?.value || 'status'}
                     onChange={(e) => updateConfig('groupBy', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    {GROUP_BY_OPTIONS.map((opt) => (
+                    {availableGroupBy.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
