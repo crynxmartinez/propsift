@@ -18,8 +18,14 @@
 | 4 | **Stale dependent widgets** | Added invalidation dependency map (phone add → bump records + phones) |
 | 5 | **Hash collisions** | Query hash includes ALL query-affecting inputs with stable stringify |
 | 6 | **Operator ambiguity** | `between` requires `[min, max]` array format |
-| 7 | **Search injection** | Drilldown search is entity-scoped with `searchFields` registry |
+| 7 | **Search injection** | Drilldown search is entity-scoped with `searchFields` registry (resolver-based) |
 | 8 | **Acceptance criteria** | Added comprehensive Phase 1 checklist |
+| 9 | **Search relation fields** | `searchFields` now supports scalar + relation_some for phones/emails |
+| 10 | **Counter transaction safety** | Service-layer transactions, not middleware (avoids recursion + tx isolation) |
+| 11 | **Timezone in query hash** | Date presets resolve to ISO timestamps before hashing (no midnight cache bugs) |
+| 12 | **Wildcard check robustness** | `dimension.entities.includes('*')` instead of `[0] !== '*'` |
+| 13 | **Label join caching rule** | Explicit: widgets return IDs, labels resolved separately |
+| 14 | **Registry version in cache** | `REGISTRY_VERSION` in cache key prevents stale shapes after deploy |
 
 ---
 
@@ -149,8 +155,8 @@ export interface EntityDefinition {
   sumFields?: SumFieldDef[]
   avgFields?: AvgFieldDef[]
 
-  // v2.2.2: Drilldown search configuration
-  searchFields?: string[]  // e.g., ['name', 'address', 'phone']
+  // v2.2.2: Drilldown search configuration (resolver-based)
+  searchFields?: SearchFieldDef[]  // Supports scalar + relation search
   searchMaxLength?: number // default: 100
   
   drilldownRoute: string
@@ -161,19 +167,28 @@ export interface EntityDefinition {
 }
 ```
 
+### SearchFieldDef Type (v2.2.2 - Resolver-Based)
+
+```typescript
+// v2.2.2: Search fields can be scalar or relation-based
+export type SearchFieldDef =
+  | { kind: 'scalar'; field: string }
+  | { kind: 'relation_some'; relation: string; field: string }
+```
+
 ### Entity Keys (v2.2.2)
 
 | Entity Key | Table | Tenant Scope | Search Fields |
 |------------|-------|--------------|---------------|
-| `records` | Record | direct: `workspaceId` | `['name', 'address', 'phone', 'email']` |
-| `tasks` | Task | direct: `workspaceId` | `['title', 'description']` |
-| `phones` | RecordPhoneNumber | via_join: `record.workspaceId` | `['phoneNumber']` |
-| `emails` | RecordEmail | via_join: `record.workspaceId` | `['email']` |
-| `activity` | ActivityLog | direct: `workspaceId` | `['description']` |
+| `records` | Record | direct: `workspaceId` | `[{kind:'scalar',field:'name'}, {kind:'scalar',field:'address'}, {kind:'relation_some',relation:'phones',field:'phoneNumber'}, {kind:'relation_some',relation:'emails',field:'email'}]` |
+| `tasks` | Task | direct: `workspaceId` | `[{kind:'scalar',field:'title'}, {kind:'scalar',field:'description'}]` |
+| `phones` | RecordPhoneNumber | via_join: `record.workspaceId` | `[{kind:'scalar',field:'phoneNumber'}]` |
+| `emails` | RecordEmail | via_join: `record.workspaceId` | `[{kind:'scalar',field:'email'}]` |
+| `activity` | ActivityLog | direct: `workspaceId` | `[{kind:'scalar',field:'description'}]` |
 | `record_tags` | RecordTag | direct: `workspaceId` | `[]` (no search) |
 | `record_motivations` | RecordMotivation | direct: `workspaceId` | `[]` (no search) |
-| `tags` | Tag | direct: `workspaceId` | `['name']` |
-| `motivations` | Motivation | direct: `workspaceId` | `['name']` |
+| `tags` | Tag | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
+| `motivations` | Motivation | direct: `workspaceId` | `[{kind:'scalar',field:'name'}]` |
 
 ### B) Segment Registry
 
@@ -351,21 +366,31 @@ function hasPerUserScope(ctx: CompileCtx): boolean {
 }
 ```
 
-### Query Hash (v2.2.2 - Complete)
+### Query Hash (v2.2.2 - Complete + Timezone-Resolved)
 
 ```typescript
 // v2.2.2: Hash MUST include ALL query-affecting inputs
+// v2.2.2 Patch: Date presets must be resolved to ISO timestamps BEFORE hashing
+//               to prevent midnight cache bugs (e.g., "today" caching wrong across midnight)
 
-export function computeQueryHash(input: WidgetQueryInput): string {
+const REGISTRY_VERSION = '2.2.2'  // Bump on registry changes to invalidate old cached shapes
+
+export function computeQueryHash(input: WidgetQueryInput, ctx: CompileCtx): string {
+  // v2.2.2: Resolve date range to actual timestamps using tenant timezone
+  const resolvedDateRange = resolveDateRange(input.dateRange, ctx.timezone)
+  
   // Stable stringify with sorted keys
   const hashInput = {
+    registryVersion: REGISTRY_VERSION,  // v2.2.2: Invalidate on deploy
     entityKey: input.entityKey,
     segmentKey: input.segmentKey || null,
     filters: sortFilters(input.filters),
     globalFilters: sortObject(input.globalFilters),
     metric: input.metric,
     dimension: input.dimension || null,
-    dateRange: normalizeDateRange(input.dateRange),
+    // v2.2.2: Use resolved ISO timestamps, not preset string
+    dateStart: resolvedDateRange.start.toISOString(),
+    dateEnd: resolvedDateRange.end.toISOString(),
     dateMode: input.dateMode || null,
     granularity: input.granularity || null,
     sort: input.sort || null,
@@ -513,7 +538,9 @@ function validateDimensionGroupBy(entityKey: string, dimensionKey: string): void
   }
   
   // Check entity compatibility
-  if (dimension.entities[0] !== '*' && !dimension.entities.includes(entityKey)) {
+  // v2.2.2 Patch: Use includes('*') instead of [0] !== '*' for robustness
+  const isWildcard = dimension.entities.includes('*')
+  if (!isWildcard && !dimension.entities.includes(entityKey)) {
     throw new QueryCompileError(
       `Dimension '${dimensionKey}' is not available for entity '${entityKey}'`
     )
@@ -610,10 +637,10 @@ export interface DrilldownResponse {
 }
 ```
 
-### Search Safety (v2.2.2)
+### Search Safety (v2.2.2 - Resolver-Based)
 
 ```typescript
-// v2.2.2: Safe drilldown search compilation
+// v2.2.2: Safe drilldown search compilation with resolver-based fields
 
 const SEARCH_MAX_LENGTH = 100
 const SEARCH_RATE_LIMIT = 10 // requests per second per user
@@ -643,14 +670,32 @@ export function compileDrilldownSearch(
     return {}
   }
 
-  // Build OR across searchable fields
+  // v2.2.2: Build OR across searchable fields using resolver-based SearchFieldDef
   return {
-    OR: searchFields.map(field => ({
-      [field]: {
-        contains: sanitized,
-        mode: 'insensitive'
+    OR: searchFields.map(sf => {
+      if (sf.kind === 'scalar') {
+        // Direct scalar field search
+        return {
+          [sf.field]: {
+            contains: sanitized,
+            mode: 'insensitive'
+          }
+        }
+      } else {
+        // sf.kind === 'relation_some'
+        // Search through relation (e.g., phones.phoneNumber)
+        return {
+          [sf.relation]: {
+            some: {
+              [sf.field]: {
+                contains: sanitized,
+                mode: 'insensitive'
+              }
+            }
+          }
+        }
       }
-    }))
+    })
   }
 }
 
@@ -658,7 +703,7 @@ function sanitizeSearchInput(input: string, maxLength: number): string {
   return input
     .trim()
     .substring(0, maxLength)
-    .replace(/[%_\\]/g, '\\$&')  // Escape SQL wildcards
+    .replace(/[%_\\]/g, '\\$&')  // Escape SQL wildcards (Prisma parameterizes, but defense in depth)
 }
 ```
 
@@ -752,18 +797,21 @@ Same as 2.2.1, plus:
 
 ## 17. Caching Strategy (v2.2.2 - Permission Hash + Dependency Map)
 
-### Cache Key Structure (v2.2.2)
+### Cache Key Structure (v2.2.2 + REGISTRY_VERSION)
 
 ```typescript
+const REGISTRY_VERSION = '2.2.2'  // Bump on registry/schema changes
+
 function buildCacheKey(
   input: WidgetQueryInput,
   ctx: CompileCtx,
   version: number
 ): string {
-  const queryHash = computeQueryHash(input)
+  const queryHash = computeQueryHash(input, ctx)  // v2.2.2: Now takes ctx for timezone
   
   // v2.2.2: Use permissionHash, not raw userId
-  return `w:${ctx.tenantId}:${input.entityKey}:v${version}:p:${ctx.permissionHash}:q:${queryHash}`
+  // v2.2.2: Include REGISTRY_VERSION to invalidate on deploy
+  return `w:${REGISTRY_VERSION}:${ctx.tenantId}:${input.entityKey}:v${version}:p:${ctx.permissionHash}:q:${queryHash}`
 }
 ```
 
@@ -804,6 +852,35 @@ export const INVALIDATION_MAP: Record<string, string[]> = {
   'motivation.update': ['motivations', 'record_motivations'],
   'motivation.delete': ['motivations', 'record_motivations'],
 }
+```
+
+### Label Join Caching Rule (v2.2.2 Patch)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 LABEL JOIN CACHING RULE (v2.2.2)                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  CHOICE: Widgets return IDs only, labels resolved separately.           │
+│                                                                          │
+│  Widget response:                                                        │
+│    { tagId: 'abc123', count: 47 }                                       │
+│                                                                          │
+│  Label lookup (cached separately with longer TTL):                      │
+│    GET /api/analytics/labels?entity=tags&ids=abc123,def456              │
+│    → { abc123: { name: 'Hot Lead', color: '#ef4444' }, ... }            │
+│                                                                          │
+│  Benefits:                                                               │
+│  - tag.update only invalidates label cache, not all widget caches       │
+│  - Label cache can have longer TTL (labels change rarely)               │
+│  - Widget cache stays valid even when labels change                     │
+│                                                                          │
+│  Implementation:                                                         │
+│  - Widget API returns raw IDs in groupBy results                        │
+│  - Client calls label lookup API to resolve display names               │
+│  - Label cache: `labels:{entityKey}:{id}` with 1 hour TTL               │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 
 // Invalidate affected entities
 export async function invalidateOnMutation(
@@ -912,69 +989,178 @@ Denormalized counters (`phoneCount`, `emailCount`, `tagCount`, `motivationCount`
 | Option | Consistency | Complexity | Recommendation |
 |--------|-------------|------------|----------------|
 | **DB Triggers** | Best | High (env-dependent) | Use if DBA available |
-| **Transaction Hook** | Good | Medium | **Recommended** |
+| **Service-Layer Transaction** | Good | Medium | **Recommended** |
+| **Prisma Middleware** | Risky | Low | **NOT recommended** (see below) |
 | **Async Queue** | Eventually consistent | Low | Safety net only |
 
-### Recommended: Transaction Hook (Prisma Middleware)
+### Why NOT Prisma Middleware (v2.2.2 Patch)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 MIDDLEWARE COUNTER TRAP (v2.2.2)                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Problem 1: Transaction isolation                                        │
+│  - Middleware runs AFTER next(params), outside the original transaction │
+│  - If using interactive transactions, counter update is NOT atomic      │
+│                                                                          │
+│  Problem 2: Recursion                                                    │
+│  - record.update() in middleware triggers middleware again               │
+│  - Requires guard flags, easy to mess up                                │
+│                                                                          │
+│  Problem 3: deleteMany doesn't return IDs                               │
+│  - Can't reliably know which records to update                          │
+│  - Must prefetch or reconcile entire workspace (expensive)              │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Recommended: Service-Layer Transactions
 
 ```typescript
-// src/lib/prisma/counterMiddleware.ts
+// src/lib/services/phoneService.ts
 
-import { Prisma } from '@prisma/client'
-
-export const counterMiddleware: Prisma.Middleware = async (params, next) => {
-  const result = await next(params)
-  
-  // Phone counters
-  if (params.model === 'RecordPhoneNumber') {
-    if (params.action === 'create') {
-      await updateRecordCounter(params.args.data.recordId, 'phoneCount', 1)
-    } else if (params.action === 'delete') {
-      await updateRecordCounter(result.recordId, 'phoneCount', -1)
-    } else if (params.action === 'deleteMany') {
-      // Queue async reconciliation for affected records
-      await queueCounterReconciliation(params.args.where)
-    }
-  }
-  
-  // Email counters
-  if (params.model === 'RecordEmail') {
-    if (params.action === 'create') {
-      await updateRecordCounter(params.args.data.recordId, 'emailCount', 1)
-    } else if (params.action === 'delete') {
-      await updateRecordCounter(result.recordId, 'emailCount', -1)
-    }
-  }
-  
-  // Tag counters
-  if (params.model === 'RecordTag') {
-    if (params.action === 'create') {
-      await updateRecordCounter(params.args.data.recordId, 'tagCount', 1)
-    } else if (params.action === 'delete') {
-      await updateRecordCounter(result.recordId, 'tagCount', -1)
-    }
-  }
-  
-  // Motivation counters
-  if (params.model === 'RecordMotivation') {
-    if (params.action === 'create') {
-      await updateRecordCounter(params.args.data.recordId, 'motivationCount', 1)
-    } else if (params.action === 'delete') {
-      await updateRecordCounter(result.recordId, 'motivationCount', -1)
-    }
-  }
-  
-  return result
+export async function addPhoneToRecord(
+  recordId: string,
+  phoneData: CreatePhoneInput
+): Promise<RecordPhoneNumber> {
+  // v2.2.2: Use $transaction to ensure atomicity
+  return prisma.$transaction(async (tx) => {
+    // 1. Create the phone
+    const phone = await tx.recordPhoneNumber.create({
+      data: {
+        ...phoneData,
+        recordId
+      }
+    })
+    
+    // 2. Increment counter in SAME transaction
+    await tx.record.update({
+      where: { id: recordId },
+      data: { phoneCount: { increment: 1 } }
+    })
+    
+    return phone
+  })
 }
 
-async function updateRecordCounter(
-  recordId: string,
-  field: 'phoneCount' | 'emailCount' | 'tagCount' | 'motivationCount',
-  delta: number
+export async function removePhoneFromRecord(
+  phoneId: string
 ): Promise<void> {
-  await prisma.record.update({
-    where: { id: recordId },
-    data: { [field]: { increment: delta } }
+  return prisma.$transaction(async (tx) => {
+    // 1. Get the phone to find recordId
+    const phone = await tx.recordPhoneNumber.findUniqueOrThrow({
+      where: { id: phoneId },
+      select: { recordId: true }
+    })
+    
+    // 2. Delete the phone
+    await tx.recordPhoneNumber.delete({
+      where: { id: phoneId }
+    })
+    
+    // 3. Decrement counter in SAME transaction
+    await tx.record.update({
+      where: { id: phone.recordId },
+      data: { phoneCount: { decrement: 1 } }
+    })
+  })
+}
+
+// For bulk operations: prefetch affected recordIds first
+export async function removePhonesFromRecords(
+  where: Prisma.RecordPhoneNumberWhereInput
+): Promise<{ deletedCount: number; affectedRecordIds: string[] }> {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get distinct recordIds BEFORE delete
+    const phones = await tx.recordPhoneNumber.findMany({
+      where,
+      select: { recordId: true },
+      distinct: ['recordId']
+    })
+    const affectedRecordIds = phones.map(p => p.recordId)
+    
+    // 2. Delete phones
+    const { count } = await tx.recordPhoneNumber.deleteMany({ where })
+    
+    // 3. Queue reconciliation for affected records (can't increment in bulk)
+    // OR reconcile immediately if count is small
+    if (affectedRecordIds.length <= 100) {
+      for (const recordId of affectedRecordIds) {
+        const phoneCount = await tx.recordPhoneNumber.count({ where: { recordId } })
+        await tx.record.update({
+          where: { id: recordId },
+          data: { phoneCount }
+        })
+      }
+    } else {
+      // Queue async reconciliation
+      await queueCounterReconciliation(affectedRecordIds)
+    }
+    
+    return { deletedCount: count, affectedRecordIds }
+  })
+}
+```
+
+### Service Pattern for All Counter Types
+
+```typescript
+// src/lib/services/counterService.ts
+
+type CounterField = 'phoneCount' | 'emailCount' | 'tagCount' | 'motivationCount'
+
+interface CounterServiceConfig {
+  model: string
+  counterField: CounterField
+  recordIdField: string
+}
+
+const COUNTER_CONFIGS: Record<string, CounterServiceConfig> = {
+  RecordPhoneNumber: { model: 'recordPhoneNumber', counterField: 'phoneCount', recordIdField: 'recordId' },
+  RecordEmail: { model: 'recordEmail', counterField: 'emailCount', recordIdField: 'recordId' },
+  RecordTag: { model: 'recordTag', counterField: 'tagCount', recordIdField: 'recordId' },
+  RecordMotivation: { model: 'recordMotivation', counterField: 'motivationCount', recordIdField: 'recordId' },
+}
+
+// Generic create with counter increment
+export async function createWithCounter<T>(
+  modelName: keyof typeof COUNTER_CONFIGS,
+  data: any
+): Promise<T> {
+  const config = COUNTER_CONFIGS[modelName]
+  
+  return prisma.$transaction(async (tx) => {
+    const created = await (tx as any)[config.model].create({ data })
+    
+    await tx.record.update({
+      where: { id: data[config.recordIdField] },
+      data: { [config.counterField]: { increment: 1 } }
+    })
+    
+    return created
+  })
+}
+
+// Generic delete with counter decrement
+export async function deleteWithCounter(
+  modelName: keyof typeof COUNTER_CONFIGS,
+  id: string
+): Promise<void> {
+  const config = COUNTER_CONFIGS[modelName]
+  
+  return prisma.$transaction(async (tx) => {
+    const item = await (tx as any)[config.model].findUniqueOrThrow({
+      where: { id },
+      select: { [config.recordIdField]: true }
+    })
+    
+    await (tx as any)[config.model].delete({ where: { id } })
+    
+    await tx.record.update({
+      where: { id: item[config.recordIdField] },
+      data: { [config.counterField]: { decrement: 1 } }
+    })
   })
 }
 ```
@@ -1079,6 +1265,11 @@ Same as 2.2.1.
 - [ ] Max pageSize enforced server-side (e.g., 100)
 - [ ] `between` operator validates `[min, max]` array format
 - [ ] Nightly counter reconciliation job exists
+- [ ] SearchFields use resolver-based SearchFieldDef (scalar + relation_some)
+- [ ] Query hash includes resolved date timestamps (not preset strings)
+- [ ] REGISTRY_VERSION in cache key
+- [ ] Label lookup API exists (widgets return IDs, labels resolved separately)
+- [ ] Service-layer transactions for counter updates (not middleware)
 
 ### Phase 2-6
 
@@ -1232,6 +1423,11 @@ Same as 2.2.1.
 | **Cache doesn't explode per-user** | Permission hash, not raw userId |
 | **Related widgets stay fresh** | Invalidation dependency map |
 | **Search is safe** | Entity-scoped, sanitized, rate-limited |
+| **Search works on relations** | Resolver-based SearchFieldDef (scalar + relation_some) |
+| **No midnight cache bugs** | Query hash uses resolved ISO timestamps |
+| **Deploy invalidates cache** | REGISTRY_VERSION in cache key |
+| **Labels don't bloat invalidation** | Widgets return IDs, labels resolved separately |
+| **Counter updates are atomic** | Service-layer transactions, not middleware |
 
 ---
 
@@ -1249,6 +1445,12 @@ type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_i
 type VisualizationType = 'kpi' | 'bar' | 'pie' | 'line' | 'area' | 'table' | 'action'
 type TenantScopeMode = 'direct' | 'via_join'
 type GroupByMode = 'direct' | 'junction_required'
+type SearchFieldKind = 'scalar' | 'relation_some'
+
+// Search Field Definition (v2.2.2)
+type SearchFieldDef =
+  | { kind: 'scalar'; field: string }
+  | { kind: 'relation_some'; relation: string; field: string }
 
 // Compile Context (v2.2.2)
 interface CompileCtx {
