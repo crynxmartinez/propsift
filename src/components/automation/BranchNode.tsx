@@ -8,6 +8,7 @@ interface BranchCondition {
   field: string
   operator: string
   value: string
+  valueName?: string
   logic?: 'AND' | 'OR'
 }
 
@@ -54,7 +55,8 @@ function getConditionSummary(conditions: BranchCondition[]): string {
   const parts = conditions.map((c, i) => {
     const field = fieldLabels[c.field] || c.field || 'Field'
     const operator = operatorLabels[c.operator] || c.operator
-    const value = c.value || '...'
+    // Use valueName if available, otherwise fall back to value
+    const value = c.valueName || c.value || '...'
     const logic = i > 0 ? ` ${c.logic || 'AND'} ` : ''
     
     if (c.operator === 'is_empty' || c.operator === 'is_not_empty') {

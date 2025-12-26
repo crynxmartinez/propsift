@@ -95,6 +95,7 @@ export default function NodeConfigPanel({
     field: string
     operator: string
     value: string
+    valueName?: string
     logic?: 'AND' | 'OR'
   }
 
@@ -212,7 +213,13 @@ export default function NodeConfigPanel({
           {condition.field === 'status' && (
             <select
               value={condition.value}
-              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              onChange={(e) => {
+                const selectedStatus = statuses.find(s => s.id === e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: selectedStatus?.name || e.target.value
+                })
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select status...</option>
@@ -236,7 +243,13 @@ export default function NodeConfigPanel({
           {condition.field === 'hasTag' && (
             <select
               value={condition.value}
-              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              onChange={(e) => {
+                const selectedTag = tags.find(t => t.id === e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: selectedTag?.name || e.target.value
+                })
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select tag...</option>
@@ -248,7 +261,13 @@ export default function NodeConfigPanel({
           {condition.field === 'hasMotivation' && (
             <select
               value={condition.value}
-              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              onChange={(e) => {
+                const selectedMotivation = motivations.find(m => m.id === e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: selectedMotivation?.name || e.target.value
+                })
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select motivation...</option>
@@ -260,7 +279,14 @@ export default function NodeConfigPanel({
           {condition.field === 'isAssigned' && (
             <select
               value={condition.value}
-              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              onChange={(e) => {
+                const selectedUser = users.find(u => u.id === e.target.value)
+                const displayName = e.target.value === 'any' ? 'Anyone' : (selectedUser?.name || selectedUser?.email || e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: displayName
+                })
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select user...</option>

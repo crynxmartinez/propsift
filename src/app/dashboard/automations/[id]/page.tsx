@@ -1023,7 +1023,7 @@ export default function AutomationBuilderPage() {
                       
                       const newBranchNodes: Node[] = allBranches.map((branch, index) => {
                         const color = branch.id === 'none' ? noneColor : branchColors[index % branchColors.length]
-                        const xOffset = (index - (allBranches.length - 1) / 2) * 220
+                        const xOffset = (index - (allBranches.length - 1) / 2) * 280
                         
                         return {
                           id: `branch-${nodeId}-${branch.id}`,
