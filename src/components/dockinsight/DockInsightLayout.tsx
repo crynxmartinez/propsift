@@ -10,6 +10,8 @@
 import { useState } from 'react'
 import { BarChart3, FileText, CheckSquare, Activity, ChevronDown } from 'lucide-react'
 import { GlobalFiltersBar } from './GlobalFiltersBar'
+import { KPICard } from './KPICard'
+import { useKPIs } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -166,6 +168,8 @@ interface TabProps {
 }
 
 function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: TabProps) {
+  const { data: kpis, loading: kpisLoading } = useKPIs({ filters, isExecutiveView })
+
   return (
     <div className="space-y-6">
       {/* Global Filters */}
@@ -176,14 +180,32 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         userId={userId}
       />
       
-      {/* KPI Cards - Phase 3 */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {['Total Records', 'Hot Records', 'Call Ready Leads', 'Tasks Due'].map((title) => (
-          <div key={title} className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">{title}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">--</p>
-          </div>
-        ))}
+        <KPICard
+          title="Total Records"
+          value={kpis?.totalRecords.current ?? null}
+          previousValue={kpis?.totalRecords.previous}
+          loading={kpisLoading}
+        />
+        <KPICard
+          title="Hot Records"
+          value={kpis?.hotRecords.current ?? null}
+          previousValue={kpis?.hotRecords.previous}
+          loading={kpisLoading}
+        />
+        <KPICard
+          title="Call Ready Leads"
+          value={kpis?.callReady.current ?? null}
+          previousValue={kpis?.callReady.previous}
+          loading={kpisLoading}
+        />
+        <KPICard
+          title="Tasks Due"
+          value={kpis?.tasksDue.current ?? null}
+          previousValue={kpis?.tasksDue.previous}
+          loading={kpisLoading}
+        />
       </div>
       
       {/* Charts Row - Phase 4 */}
