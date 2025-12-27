@@ -16,8 +16,8 @@ import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
 import { TaskStatusChart, TaskTypesChart, WorkflowCompletion, TaskActionCard, TaskSidebar, TaskTable } from './tasks'
-import { ActivityOverTimeChart } from './activity'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart } from './hooks'
+import { ActivityOverTimeChart, ActivitySourceChart, TopAgentsTable, ActivityActionCard } from './activity'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart, useActivityKPIs, useActivityAgents } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -517,6 +517,8 @@ function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
 
 function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
   const { data: activityData, loading } = useActivity({ filters, isExecutiveView })
+  const { data: kpisData, loading: kpisLoading } = useActivityKPIs({ filters, isExecutiveView })
+  const { data: agentsData, loading: agentsLoading } = useActivityAgents({ filters, isExecutiveView })
   
   // Activity chart state
   const [chartRange, setChartRange] = useState<'today' | 'last_7_days' | 'last_30_days' | 'custom'>('last_7_days')
@@ -567,34 +569,58 @@ function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps)
       {/* Activity KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Records Created Today"
-          value={activityData?.kpis.recordsCreatedToday ?? null}
-          loading={loading}
+          title="Total Activities"
+          value={kpisData?.totalActivities.current ?? null}
+          previousValue={kpisData?.totalActivities.previous}
+          loading={kpisLoading}
         />
         <KPICard
-          title="Records This Week"
-          value={activityData?.kpis.recordsCreatedThisWeek ?? null}
-          loading={loading}
+          title="Record Updates"
+          value={kpisData?.recordUpdates.current ?? null}
+          previousValue={kpisData?.recordUpdates.previous}
+          loading={kpisLoading}
         />
         <KPICard
-          title="Tasks Completed Today"
-          value={activityData?.kpis.tasksCompletedToday ?? null}
-          loading={loading}
+          title="Records Created"
+          value={kpisData?.recordsCreated.current ?? null}
+          previousValue={kpisData?.recordsCreated.previous}
+          loading={kpisLoading}
         />
         <KPICard
-          title="Tasks This Week"
-          value={activityData?.kpis.tasksCompletedThisWeek ?? null}
-          loading={loading}
+          title="Tasks Completed"
+          value={kpisData?.tasksCompleted.current ?? null}
+          previousValue={kpisData?.tasksCompleted.previous}
+          loading={kpisLoading}
+          valueColor="text-green-600"
         />
       </div>
 
-      {/* Activity Over Time Chart with Date Dropdown */}
-      <ActivityOverTimeChart
-        onDateRangeChange={handleDateRangeChange}
-        data={chartData?.data || null}
-        loading={chartLoading}
-        isHourly={chartData?.isHourly || false}
-      />
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Activities by Source Pie Chart */}
+        <ActivitySourceChart
+          data={kpisData?.sourceBreakdown || null}
+          loading={kpisLoading}
+        />
+        
+        {/* Activity Over Time Chart with Date Dropdown */}
+        <div className="lg:col-span-2">
+          <ActivityOverTimeChart
+            onDateRangeChange={handleDateRangeChange}
+            data={chartData?.data || null}
+            loading={chartLoading}
+            isHourly={chartData?.isHourly || false}
+          />
+        </div>
+      </div>
+
+      {/* Top Agents (Executive View Only) */}
+      {isExecutiveView && (
+        <TopAgentsTable
+          data={agentsData}
+          loading={agentsLoading}
+        />
+      )}
 
       {/* Activity Feed */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">

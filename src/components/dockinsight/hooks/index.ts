@@ -17,3 +17,5 @@ export { useTasksList } from './useTasksList'
 
 // Activity Tab Hooks
 export { useActivityChart } from './useActivityChart'
+export { useActivityKPIs } from './useActivityKPIs'
+export { useActivityAgents } from './useActivityAgents'
