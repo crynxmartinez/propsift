@@ -167,6 +167,12 @@ function compileFilterPredicate(filter: FilterPredicate, ctx: CompileCtx): Prism
           [field]: { some: { id } } 
         })) 
       }
+    case 'has_some':
+      // Relation has at least one item
+      return { [field]: { some: {} } }
+    case 'has_none':
+      // Relation has no items
+      return { [field]: { none: {} } }
     default:
       throw new Error(`Unknown filter operator: ${operator}`)
   }

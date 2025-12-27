@@ -96,7 +96,7 @@ export const SEGMENT_REGISTRY: Record<string, SegmentDefinition> = {
     entityKey: 'records',
     category: 'activity',
     predicate: [
-      { field: 'phoneCount', operator: 'gt', value: 0 }
+      { field: 'phoneNumbers', operator: 'has_some', value: true }
     ]
   },
 
@@ -106,7 +106,7 @@ export const SEGMENT_REGISTRY: Record<string, SegmentDefinition> = {
     entityKey: 'records',
     category: 'activity',
     predicate: [
-      { field: 'emailCount', operator: 'gt', value: 0 }
+      { field: 'emails', operator: 'has_some', value: true }
     ]
   },
 
