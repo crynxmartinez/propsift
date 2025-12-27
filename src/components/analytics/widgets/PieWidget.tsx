@@ -30,8 +30,8 @@ export function PieWidget({
   error,
   onClick
 }: PieWidgetProps) {
-  const chartData = data?.data?.map((item, index) => ({
-    name: item.value || 'Unknown',
+  const chartData = data?.data?.map((item: any, index: number) => ({
+    name: item.label || item.value || 'Unknown',
     value: item.count,
     color: COLORS[index % COLORS.length]
   })) || []

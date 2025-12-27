@@ -24,7 +24,10 @@ export function TableWidget({
   error,
   onClick
 }: TableWidgetProps) {
-  const tableData = data?.data || []
+  const tableData = data?.data?.map((item: any, index: number) => ({
+    name: item.label || item.value || 'Unknown',
+    count: item.count
+  })) || []
 
   return (
     <div 
@@ -70,7 +73,7 @@ export function TableWidget({
                   className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="py-2 px-2 text-gray-900">
-                    {row.value || 'Unknown'}
+                    {row.name}
                   </td>
                   <td className="py-2 px-2 text-right text-gray-600">
                     {row.count.toLocaleString()}

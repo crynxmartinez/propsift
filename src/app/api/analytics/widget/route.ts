@@ -30,6 +30,43 @@ import type {
 } from '@/lib/analytics/registry/types'
 
 /**
+ * Resolve labels for dimension values by querying the related table
+ */
+async function resolveLabels(
+  targetTable: string,
+  labelField: string,
+  ids: string[]
+): Promise<Record<string, string>> {
+  const labels: Record<string, string> = {}
+  
+  try {
+    // Map table names to Prisma delegates
+    const tableMap: Record<string, any> = {
+      status: prisma.status,
+      user: prisma.user,
+      tag: prisma.tag,
+      motivation: prisma.motivation
+    }
+    
+    const delegate = tableMap[targetTable]
+    if (!delegate) return labels
+    
+    const records = await delegate.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, [labelField]: true }
+    })
+    
+    for (const record of records) {
+      labels[record.id] = record[labelField] || record.id
+    }
+  } catch (error) {
+    console.error('Failed to resolve labels:', error)
+  }
+  
+  return labels
+}
+
+/**
  * Build CompileCtx from authenticated user
  */
 async function buildCompileCtx(
@@ -128,10 +165,37 @@ export async function POST(request: NextRequest) {
           const dimension = getDimension(input.dimension)
           if (dimension) {
             const grouped = await executeGroupedCount(compiled, dimension.field)
+            
+            // Resolve labels for dimensions with relationConfig
+            let resolvedData = grouped
+            if (dimension.relationConfig) {
+              const ids = grouped.map(g => g.value).filter((v): v is string => v !== null)
+              if (ids.length > 0) {
+                const labels = await resolveLabels(
+                  dimension.relationConfig.targetTable,
+                  dimension.relationConfig.labelField,
+                  ids
+                )
+                resolvedData = grouped.map(g => ({
+                  ...g,
+                  label: g.value ? labels[g.value] || g.value : null
+                }))
+              }
+            } else if (dimension.enumValues) {
+              // Resolve enum labels
+              const enumMap = Object.fromEntries(
+                dimension.enumValues.map(e => [e.value, e.label])
+              )
+              resolvedData = grouped.map(g => ({
+                ...g,
+                label: g.value ? enumMap[g.value] || g.value : null
+              }))
+            }
+            
             return {
               type: 'grouped' as const,
               dimension: input.dimension,
-              data: grouped,
+              data: resolvedData,
               total: grouped.reduce((sum, g) => sum + g.count, 0)
             }
           }
