@@ -83,23 +83,23 @@ export async function GET(request: NextRequest) {
           assignedToId: null
         }
       }),
-      // No Phone Number (phoneCount = 0 or no phone numbers)
+      // No Phone Number (records with NO phone numbers in phoneNumbers relation)
       prisma.record.count({
         where: {
           ...baseWhere,
           ...(isExecutiveView ? {} : { assignedToId: authUser.id }),
           ...(assigneeIds && assigneeIds.length > 0 && isExecutiveView ? { assignedToId: { in: assigneeIds } } : {}),
-          phoneCount: 0
+          phoneNumbers: { none: {} }
         }
       }),
-      // Call Ready (complete records WITH phone number - actually callable)
+      // Call Ready (complete records WITH at least one phone number - actually callable)
       prisma.record.count({
         where: {
           ...baseWhere,
           ...(isExecutiveView ? {} : { assignedToId: authUser.id }),
           ...(assigneeIds && assigneeIds.length > 0 && isExecutiveView ? { assignedToId: { in: assigneeIds } } : {}),
           isComplete: true,
-          phoneCount: { gt: 0 }
+          phoneNumbers: { some: {} }
         }
       }),
       // Stale Leads (no update in 30 days)

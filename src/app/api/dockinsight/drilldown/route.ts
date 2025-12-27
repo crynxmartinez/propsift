@@ -55,12 +55,12 @@ export async function GET(request: NextRequest) {
         baseWhere.assignedToId = null
         break
       case 'no_phone':
-        baseWhere.phoneCount = 0
+        baseWhere.phoneNumbers = { none: {} }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'call_ready':
         baseWhere.isComplete = true
-        baseWhere.phoneCount = { gt: 0 }
+        baseWhere.phoneNumbers = { some: {} }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'stale_leads':
