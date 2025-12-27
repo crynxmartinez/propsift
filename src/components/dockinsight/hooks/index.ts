@@ -6,8 +6,6 @@ export { useKPIs } from './useKPIs'
 export { useCharts } from './useCharts'
 export { useTables } from './useTables'
 export { useActionCards } from './useActionCards'
-export { useTasks } from './useTasks'
-export { useActivity } from './useActivity'
 
 // Tasks Tab Hooks
 export { useTasksKPIs } from './useTasksKPIs'

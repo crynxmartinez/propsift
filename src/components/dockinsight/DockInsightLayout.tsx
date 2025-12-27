@@ -16,8 +16,8 @@ import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
 import { TaskStatusChart, TaskTypesChart, WorkflowCompletion, TaskActionCard, TaskSidebar, TaskTable } from './tasks'
-import { ActivityOverTimeChart, ActivitySourceChart, TopAgentsTable, ActivityActionCard, ActivitySidebar, RecentActivitiesTable } from './activity'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart, useActivityKPIs, useActivityAgents, useActivityList } from './hooks'
+import { ActivityOverTimeChart, ActivitySourceChart, TopAgentsTable, ActivitySidebar, RecentActivitiesTable } from './activity'
+import { useKPIs, useCharts, useTables, useActionCards, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart, useActivityKPIs, useActivityAgents, useActivityList } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
