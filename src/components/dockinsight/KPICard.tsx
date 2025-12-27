@@ -14,6 +14,7 @@ interface KPICardProps {
   previousValue?: number | null
   loading?: boolean
   format?: 'number' | 'currency' | 'percent'
+  valueColor?: string
   onClick?: () => void
 }
 
@@ -23,6 +24,7 @@ export function KPICard({
   previousValue,
   loading = false,
   format = 'number',
+  valueColor = 'text-gray-900',
   onClick
 }: KPICardProps) {
   // Calculate percent change
@@ -49,7 +51,7 @@ export function KPICard({
           {loading ? (
             <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
           ) : (
-            <p className="text-3xl font-bold text-gray-900">
+            <p className={`text-3xl font-bold ${valueColor}`}>
               {formattedValue}
             </p>
           )}

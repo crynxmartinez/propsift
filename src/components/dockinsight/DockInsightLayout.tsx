@@ -15,7 +15,8 @@ import { ActionCard } from './ActionCard'
 import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity } from './hooks'
+import { TaskStatusChart, TaskTypesChart, WorkflowCompletion, TaskActionCard, TaskSidebar, TaskTable } from './tasks'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -334,172 +335,180 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
 }
 
 function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
-  const { data: tasksData, loading } = useTasks({ filters, isExecutiveView })
+  // Task state
+  const [activeCategory, setActiveCategory] = useState('open_overdue')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    const today = new Date()
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
-    
-    if (date.toDateString() === today.toDateString()) return 'Today'
-    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  // Fetch task data using new hooks
+  const { data: kpis, loading: kpisLoading } = useTasksKPIs({ filters, isExecutiveView })
+  const { data: charts, loading: chartsLoading } = useTasksCharts({ filters, isExecutiveView })
+  const { data: actionCards, loading: actionCardsLoading, refetch: refetchActionCards } = useTasksActionCards({ filters, isExecutiveView })
+  const { data: tasksList, loading: tasksListLoading, markAsDone, refetch: refetchTasksList } = useTasksList({
+    filters,
+    isExecutiveView,
+    filterType: activeCategory,
+    search,
+    page,
+    pageSize
+  })
+
+  // Reset page when category or search changes
+  useEffect(() => {
+    setPage(1)
+  }, [activeCategory, search])
+
+  // Handle mark as done
+  const handleMarkAsDone = async (taskIds: string[]) => {
+    const success = await markAsDone(taskIds)
+    if (success) {
+      refetchActionCards()
+    }
   }
 
-  const priorityColors: Record<string, string> = {
-    HIGH: 'bg-red-100 text-red-700',
-    MEDIUM: 'bg-yellow-100 text-yellow-700',
-    LOW: 'bg-green-100 text-green-700'
+  // Build sidebar categories
+  const sidebarCategories = [
+    { key: 'open_overdue', label: 'Open + Overdue', count: actionCards?.openPlusOverdue.count || 0, color: '#3b82f6' },
+    { key: 'overdue', label: 'Overdue', count: actionCards?.overdue.count || 0, color: '#ef4444' },
+    { key: 'due_tomorrow', label: 'Due Tomorrow', count: actionCards?.dueTomorrow.count || 0, color: '#f97316' },
+    { key: 'due_next_7_days', label: 'Due Next 7 Days', count: actionCards?.dueNext7Days.count || 0, color: '#eab308' },
+    { key: 'completed', label: 'Completed', count: actionCards?.completed.count || 0, color: '#22c55e' }
+  ]
+
+  // Get filter title for table
+  const filterTitles: Record<string, string> = {
+    'open_overdue': 'Open Tasks',
+    'overdue': 'Overdue Tasks',
+    'due_tomorrow': 'Due Tomorrow',
+    'due_next_7_days': 'Due Next 7 Days',
+    'completed': 'Completed Tasks'
   }
 
   return (
     <div className="space-y-6">
+      {/* Global Filters */}
+      <GlobalFiltersBar
+        filters={filters}
+        onChange={setFilters}
+        isExecutiveView={isExecutiveView}
+        userId={userId}
+      />
+
       {/* Task KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Tasks Due Today"
-          value={tasksData?.kpis.tasksDueToday ?? null}
-          loading={loading}
+          title="Total Tasks"
+          value={kpis?.totalTasks.current ?? null}
+          previousValue={kpis?.totalTasks.previous}
+          loading={kpisLoading}
         />
         <KPICard
           title="Overdue Tasks"
-          value={tasksData?.kpis.overdueTasks ?? null}
-          loading={loading}
+          value={kpis?.overdueTasks.current ?? null}
+          previousValue={kpis?.overdueTasks.previous}
+          loading={kpisLoading}
+          valueColor="text-red-600"
         />
         <KPICard
-          title="Completed This Week"
-          value={tasksData?.kpis.completedThisWeek ?? null}
-          loading={loading}
+          title="Due Today"
+          value={kpis?.dueToday.current ?? null}
+          previousValue={kpis?.dueToday.previous}
+          loading={kpisLoading}
+        />
+        <KPICard
+          title="Completed Tasks"
+          value={kpis?.completedTasks.current ?? null}
+          previousValue={kpis?.completedTasks.previous}
+          loading={kpisLoading}
+          valueColor="text-green-600"
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Tasks by Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-72">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Tasks by Status</h3>
-          {loading ? (
-            <div className="h-52 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : tasksData?.tasksByStatus && tasksData.tasksByStatus.length > 0 ? (
-            <div className="space-y-3">
-              {tasksData.tasksByStatus.map((status) => (
-                <div key={status.label} className="flex items-center gap-3">
-                  <div className="w-24 text-sm text-gray-600 truncate">{status.label}</div>
-                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all"
-                      style={{ 
-                        width: `${Math.min(100, (status.value / Math.max(...tasksData.tasksByStatus.map(s => s.value))) * 100)}%`,
-                        backgroundColor: status.color 
-                      }}
-                    />
-                  </div>
-                  <div className="w-12 text-right text-sm font-medium text-gray-900">{status.value}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-52 flex items-center justify-center text-gray-500 text-sm">
-              No task data
-            </div>
-          )}
-        </div>
-
-        {/* Tasks by Assignee (Executive View Only) */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-72">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Tasks by Assignee</h3>
-          {loading ? (
-            <div className="h-52 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : isExecutiveView && tasksData?.tasksByAssignee && tasksData.tasksByAssignee.length > 0 ? (
-            <div className="overflow-auto h-52">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-2 font-medium text-gray-600">Assignee</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-600">Open Tasks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasksData.tasksByAssignee.map((assignee) => (
-                    <tr key={assignee.id} className="border-b border-gray-100">
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-medium">
-                            {assignee.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-gray-700">{assignee.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-2 text-right font-semibold text-gray-900">
-                        {assignee.taskCount}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="h-52 flex items-center justify-center text-gray-500 text-sm">
-              {isExecutiveView ? 'No assignee data' : 'Available in Executive View'}
-            </div>
-          )}
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <TaskStatusChart 
+          data={charts?.tasksByStatus || null} 
+          loading={chartsLoading} 
+        />
+        <TaskTypesChart 
+          data={charts?.taskTypes || null} 
+          loading={chartsLoading} 
+        />
+        <WorkflowCompletion 
+          data={charts?.workflowCompletion || null} 
+          loading={chartsLoading} 
+        />
       </div>
 
-      {/* Upcoming Tasks Table */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Upcoming Tasks</h3>
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : tasksData?.upcomingTasks && tasksData.upcomingTasks.length > 0 ? (
-          <div className="overflow-auto max-h-96">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">Task</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">Record</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">Due</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">Priority</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">Assignee</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tasksData.upcomingTasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-gray-50">
-                    <td className="py-2 px-3 font-medium text-gray-900 max-w-[200px] truncate">
-                      {task.title}
-                    </td>
-                    <td className="py-2 px-3 text-blue-600 max-w-[150px] truncate">
-                      {task.recordName || '-'}
-                    </td>
-                    <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
-                      {formatDate(task.dueDate)}
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[task.priority] || 'bg-gray-100 text-gray-700'}`}>
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-gray-600">
-                      {task.assigneeName || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">
-            No upcoming tasks
-          </div>
-        )}
+      {/* Action Cards Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <TaskActionCard
+          title="Open + Overdue"
+          count={actionCards?.openPlusOverdue.count ?? null}
+          color="blue"
+          loading={actionCardsLoading}
+          active={activeCategory === 'open_overdue'}
+          onClick={() => setActiveCategory('open_overdue')}
+        />
+        <TaskActionCard
+          title="Overdue"
+          count={actionCards?.overdue.count ?? null}
+          color="red"
+          loading={actionCardsLoading}
+          active={activeCategory === 'overdue'}
+          onClick={() => setActiveCategory('overdue')}
+        />
+        <TaskActionCard
+          title="Due Tomorrow"
+          count={actionCards?.dueTomorrow.count ?? null}
+          color="orange"
+          loading={actionCardsLoading}
+          active={activeCategory === 'due_tomorrow'}
+          onClick={() => setActiveCategory('due_tomorrow')}
+        />
+        <TaskActionCard
+          title="Due Next 7 Days"
+          count={actionCards?.dueNext7Days.count ?? null}
+          color="yellow"
+          loading={actionCardsLoading}
+          active={activeCategory === 'due_next_7_days'}
+          onClick={() => setActiveCategory('due_next_7_days')}
+        />
+        <TaskActionCard
+          title="Completed"
+          count={actionCards?.completed.count ?? null}
+          color="green"
+          loading={actionCardsLoading}
+          active={activeCategory === 'completed'}
+          onClick={() => setActiveCategory('completed')}
+        />
+      </div>
+
+      {/* Task List Section */}
+      <div className="flex gap-4">
+        {/* Sidebar */}
+        <TaskSidebar
+          categories={sidebarCategories}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          loading={actionCardsLoading}
+        />
+
+        {/* Task Table */}
+        <TaskTable
+          tasks={tasksList?.tasks || null}
+          total={tasksList?.total || 0}
+          page={tasksList?.page || 1}
+          pageSize={tasksList?.pageSize || pageSize}
+          totalPages={tasksList?.totalPages || 1}
+          loading={tasksListLoading}
+          search={search}
+          onSearchChange={setSearch}
+          onPageChange={setPage}
+          onMarkAsDone={handleMarkAsDone}
+          filterTitle={filterTitles[activeCategory] || 'Tasks'}
+        />
       </div>
     </div>
   )
