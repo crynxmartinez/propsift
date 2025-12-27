@@ -82,6 +82,8 @@ export type FilterOperator =
   | 'between'        // v2.2.2: Requires [min, max] array value
   | 'contains_any'   // For multi-select: has any of the values
   | 'contains_all'   // For multi-select: has all of the values
+  | 'has_some'       // Relation has at least one item
+  | 'has_none'       // Relation has no items
 
 export interface FilterPredicate {
   field: string
