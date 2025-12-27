@@ -1,65 +1,85 @@
 /**
  * DockInsight 2.2.2 Dashboard Grid
  * 
- * Renders widgets in a responsive grid layout.
+ * Renders widgets in a responsive grid layout with edit/delete actions.
  */
 
 'use client'
 
-import { useState } from 'react'
+import { Edit2, Trash2 } from 'lucide-react'
 import { WidgetRenderer } from './WidgetRenderer'
-import type { WidgetConfig, DashboardConfig } from './types'
+import type { WidgetConfig } from './types'
 import type { GlobalFilters } from '@/lib/analytics/registry/types'
 
 interface DashboardGridProps {
-  dashboard: DashboardConfig
+  widgets: WidgetConfig[]
   globalFilters: GlobalFilters
-  token: string
-  onDrilldown?: (widget: WidgetConfig) => void
+  onWidgetClick?: (widget: WidgetConfig) => void
+  onWidgetEdit?: (widget: WidgetConfig) => void
+  onWidgetDelete?: (widgetId: string) => void
 }
 
 export function DashboardGrid({
-  dashboard,
+  widgets,
   globalFilters,
-  token,
-  onDrilldown
+  onWidgetClick,
+  onWidgetEdit,
+  onWidgetDelete
 }: DashboardGridProps) {
   // Sort widgets by position for consistent rendering
-  const sortedWidgets = [...dashboard.widgets].sort((a, b) => {
+  const sortedWidgets = [...widgets].sort((a, b) => {
     if (a.y !== b.y) return a.y - b.y
     return a.x - b.x
   })
 
   return (
-    <div className="p-4">
-      <div className="grid grid-cols-12 gap-4 auto-rows-min">
-        {sortedWidgets.map(widget => (
-          <div
-            key={widget.id}
-            className="min-h-[200px]"
-            style={{
-              gridColumn: `span ${widget.w}`,
-              gridRow: `span ${widget.h}`
-            }}
-          >
-            <WidgetRenderer
-              config={widget}
-              globalFilters={globalFilters}
-              token={token}
-              onDrilldown={onDrilldown}
-            />
-          </div>
-        ))}
-      </div>
-
-      {sortedWidgets.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          <div className="text-center">
-            <p className="text-lg font-medium">No widgets yet</p>
-            <p className="text-sm mt-1">Add widgets to your dashboard to get started</p>
-          </div>
+    <div className="grid grid-cols-12 gap-4 auto-rows-min">
+      {sortedWidgets.map(widget => (
+        <div
+          key={widget.id}
+          className="relative group min-h-[200px]"
+          style={{
+            gridColumn: `span ${widget.w}`,
+            gridRow: `span ${widget.h}`
+          }}
+        >
+          {/* Widget actions overlay */}
+          {(onWidgetEdit || onWidgetDelete) && (
+            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+              {onWidgetEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onWidgetEdit(widget)
+                  }}
+                  className="p-1.5 bg-white rounded shadow hover:bg-gray-50"
+                  title="Edit widget"
+                >
+                  <Edit2 className="w-4 h-4 text-gray-600" />
+                </button>
+              )}
+              {onWidgetDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onWidgetDelete(widget.id)
+                  }}
+                  className="p-1.5 bg-white rounded shadow hover:bg-gray-50"
+                  title="Delete widget"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
+              )}
+            </div>
+          )}
+          
+          <WidgetRenderer
+            config={widget}
+            globalFilters={globalFilters}
+            onClick={onWidgetClick ? () => onWidgetClick(widget) : undefined}
+          />
         </div>
-      )}
+      ))}
     </div>
   )
 }

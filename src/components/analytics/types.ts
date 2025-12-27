@@ -48,6 +48,7 @@ export interface DashboardConfig {
   id: string
   name: string
   description?: string
+  isDefault?: boolean
   widgets: WidgetConfig[]
   globalFilters: GlobalFilters
   createdAt?: string

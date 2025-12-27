@@ -13,16 +13,21 @@ import type { GlobalFilters } from '@/lib/analytics/registry/types'
 interface UseWidgetDataOptions {
   widget: WidgetConfig
   globalFilters: GlobalFilters
-  token: string
   enabled?: boolean
 }
 
 export function useWidgetData({
   widget,
   globalFilters,
-  token,
   enabled = true
 }: UseWidgetDataOptions): WidgetState & { refetch: () => void } {
+  // Get token from localStorage
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token')
+    }
+    return null
+  }
   const [state, setState] = useState<WidgetState>({
     loading: false,
     error: null,
@@ -33,6 +38,12 @@ export function useWidgetData({
     if (!enabled) return
 
     setState(prev => ({ ...prev, loading: true, error: null }))
+
+    const token = getToken()
+    if (!token) {
+      setState({ loading: false, error: 'Not authenticated', data: null })
+      return
+    }
 
     try {
       const response = await fetch('/api/analytics/widget', {
@@ -83,7 +94,7 @@ export function useWidgetData({
         data: null
       })
     }
-  }, [widget, globalFilters, token, enabled])
+  }, [widget, globalFilters, enabled])
 
   useEffect(() => {
     fetchData()

@@ -14,34 +14,25 @@ import type { GlobalFilters } from '@/lib/analytics/registry/types'
 interface WidgetRendererProps {
   config: WidgetConfig
   globalFilters: GlobalFilters
-  token: string
-  onDrilldown?: (widget: WidgetConfig) => void
+  onClick?: () => void
 }
 
 export function WidgetRenderer({
   config,
   globalFilters,
-  token,
-  onDrilldown
+  onClick
 }: WidgetRendererProps) {
   const { loading, error, data } = useWidgetData({
     widget: config,
-    globalFilters,
-    token
+    globalFilters
   })
-
-  const handleClick = () => {
-    if (onDrilldown) {
-      onDrilldown(config)
-    }
-  }
 
   const commonProps = {
     config,
     data,
     loading,
     error,
-    onClick: handleClick
+    onClick
   }
 
   switch (config.type) {

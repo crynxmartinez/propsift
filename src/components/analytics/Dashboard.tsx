@@ -14,14 +14,12 @@ import type { DashboardConfig, WidgetConfig } from './types'
 import type { GlobalFilters } from '@/lib/analytics/registry/types'
 
 interface DashboardProps {
-  initialDashboard: DashboardConfig
-  token: string
+  config: DashboardConfig
 }
 
-export function Dashboard({ initialDashboard, token }: DashboardProps) {
-  const [dashboard] = useState<DashboardConfig>(initialDashboard)
+export function Dashboard({ config }: DashboardProps) {
   const [globalFilters, setGlobalFilters] = useState<GlobalFilters>(
-    initialDashboard.globalFilters || {}
+    config.globalFilters || {}
   )
   const [drilldownWidget, setDrilldownWidget] = useState<WidgetConfig | null>(null)
 
@@ -37,9 +35,9 @@ export function Dashboard({ initialDashboard, token }: DashboardProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-900">{dashboard.name}</h1>
-        {dashboard.description && (
-          <p className="text-sm text-gray-500 mt-1">{dashboard.description}</p>
+        <h1 className="text-xl font-semibold text-gray-900">{config.name}</h1>
+        {config.description && (
+          <p className="text-sm text-gray-500 mt-1">{config.description}</p>
         )}
       </div>
 
@@ -51,10 +49,9 @@ export function Dashboard({ initialDashboard, token }: DashboardProps) {
 
       {/* Widget Grid */}
       <DashboardGrid
-        dashboard={{ ...dashboard, globalFilters }}
+        widgets={config.widgets}
         globalFilters={globalFilters}
-        token={token}
-        onDrilldown={handleDrilldown}
+        onWidgetClick={handleDrilldown}
       />
 
       {/* Drilldown Modal */}
@@ -62,7 +59,6 @@ export function Dashboard({ initialDashboard, token }: DashboardProps) {
         <DrilldownModal
           widget={drilldownWidget}
           globalFilters={globalFilters}
-          token={token}
           onClose={closeDrilldown}
         />
       )}

@@ -6,10 +6,12 @@
 
 // Main components
 export { Dashboard } from './Dashboard'
+export { DashboardBuilder } from './DashboardBuilder'
 export { DashboardGrid } from './DashboardGrid'
 export { GlobalFiltersBar } from './GlobalFiltersBar'
 export { DrilldownModal } from './DrilldownModal'
 export { WidgetRenderer } from './WidgetRenderer'
+export { WidgetConfigPanel } from './WidgetConfigPanel'
 
 // Widgets
 export { MetricWidget, ChartWidget, PieWidget, TableWidget } from './widgets'

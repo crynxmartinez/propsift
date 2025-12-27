@@ -15,14 +15,12 @@ import type { GlobalFilters } from '@/lib/analytics/registry/types'
 interface DrilldownModalProps {
   widget: WidgetConfig
   globalFilters: GlobalFilters
-  token: string
   onClose: () => void
 }
 
 export function DrilldownModal({
   widget,
   globalFilters,
-  token,
   onClose
 }: DrilldownModalProps) {
   const [search, setSearch] = useState('')
@@ -31,8 +29,7 @@ export function DrilldownModal({
 
   const { loading, error, data, fetchDrilldown } = useDrilldown({
     widget,
-    globalFilters,
-    token
+    globalFilters
   })
 
   useEffect(() => {

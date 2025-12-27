@@ -13,7 +13,6 @@ import type { GlobalFilters } from '@/lib/analytics/registry/types'
 interface UseDrilldownOptions {
   widget: WidgetConfig
   globalFilters: GlobalFilters
-  token: string
 }
 
 interface DrilldownState {
@@ -24,8 +23,7 @@ interface DrilldownState {
 
 export function useDrilldown({
   widget,
-  globalFilters,
-  token
+  globalFilters
 }: UseDrilldownOptions) {
   const [state, setState] = useState<DrilldownState>({
     loading: false,
@@ -33,11 +31,24 @@ export function useDrilldown({
     data: null
   })
 
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token')
+    }
+    return null
+  }
+
   const fetchDrilldown = useCallback(async (
     page: number = 1,
     pageSize: number = 20,
     search?: string
   ) => {
+    const token = getToken()
+    if (!token) {
+      setState({ loading: false, error: 'Not authenticated', data: null })
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -91,7 +102,7 @@ export function useDrilldown({
       })
       return null
     }
-  }, [widget, globalFilters, token])
+  }, [widget, globalFilters])
 
   return {
     ...state,
