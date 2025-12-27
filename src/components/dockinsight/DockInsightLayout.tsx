@@ -15,7 +15,7 @@ import { ActionCard } from './ActionCard'
 import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks } from './hooks'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -508,11 +508,150 @@ function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
 }
 
 function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
+  const { data: activityData, loading } = useActivity({ filters, isExecutiveView })
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString()
+  }
+
+  const activityTypeIcons: Record<string, { icon: string; color: string }> = {
+    record_created: { icon: '📄', color: 'bg-blue-100 text-blue-700' },
+    task_created: { icon: '📋', color: 'bg-purple-100 text-purple-700' },
+    task_completed: { icon: '✅', color: 'bg-green-100 text-green-700' }
+  }
+
   return (
-    <div className="flex items-center justify-center h-64 text-gray-500">
-      <div className="text-center">
-        <Activity className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-        <p>Activity Tab (Phase 9)</p>
+    <div className="space-y-6">
+      {/* Activity KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Records Created Today"
+          value={activityData?.kpis.recordsCreatedToday ?? null}
+          loading={loading}
+        />
+        <KPICard
+          title="Records This Week"
+          value={activityData?.kpis.recordsCreatedThisWeek ?? null}
+          loading={loading}
+        />
+        <KPICard
+          title="Tasks Completed Today"
+          value={activityData?.kpis.tasksCompletedToday ?? null}
+          loading={loading}
+        />
+        <KPICard
+          title="Tasks This Week"
+          value={activityData?.kpis.tasksCompletedThisWeek ?? null}
+          loading={loading}
+        />
+      </div>
+
+      {/* Activity Chart */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-4">Activity (Last 7 Days)</h3>
+        {loading ? (
+          <div className="h-48 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : activityData?.activityByDay && activityData.activityByDay.length > 0 ? (
+          <div className="h-48">
+            <div className="flex items-end justify-between h-40 gap-2">
+              {activityData.activityByDay.map((day, index) => {
+                const maxValue = Math.max(
+                  ...activityData.activityByDay.map(d => d.records + d.tasks),
+                  1
+                )
+                const totalHeight = ((day.records + day.tasks) / maxValue) * 100
+                const recordHeight = (day.records / (day.records + day.tasks || 1)) * totalHeight
+                const taskHeight = (day.tasks / (day.records + day.tasks || 1)) * totalHeight
+
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div className="w-full flex flex-col justify-end h-32">
+                      {(day.records > 0 || day.tasks > 0) ? (
+                        <>
+                          <div 
+                            className="w-full bg-green-500 rounded-t"
+                            style={{ height: `${taskHeight}%` }}
+                            title={`Tasks: ${day.tasks}`}
+                          />
+                          <div 
+                            className="w-full bg-blue-500 rounded-b"
+                            style={{ height: `${recordHeight}%` }}
+                            title={`Records: ${day.records}`}
+                          />
+                        </>
+                      ) : (
+                        <div className="w-full bg-gray-200 rounded h-1" />
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-2">{day.date}</span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex items-center justify-center gap-6 mt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded" />
+                <span className="text-xs text-gray-600">Records</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded" />
+                <span className="text-xs text-gray-600">Tasks</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">
+            No activity data
+          </div>
+        )}
+      </div>
+
+      {/* Activity Feed */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-4">Activity Feed</h3>
+        {loading ? (
+          <div className="h-64 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : activityData?.activityFeed && activityData.activityFeed.length > 0 ? (
+          <div className="space-y-3 max-h-96 overflow-auto">
+            {activityData.activityFeed.map((item) => {
+              const typeInfo = activityTypeIcons[item.type] || { icon: '📌', color: 'bg-gray-100 text-gray-700' }
+              return (
+                <div key={item.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${typeInfo.color}`}>
+                    {typeInfo.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 text-sm">{item.title}</span>
+                      <span className="text-xs text-gray-400">{formatTime(item.timestamp)}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 truncate">{item.description}</p>
+                    <p className="text-xs text-gray-400">by {item.userName}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
+            No recent activity
+          </div>
+        )}
       </div>
     </div>
   )
