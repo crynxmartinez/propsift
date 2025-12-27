@@ -12,7 +12,8 @@ import { BarChart3, FileText, CheckSquare, Activity, ChevronDown } from 'lucide-
 import { GlobalFiltersBar } from './GlobalFiltersBar'
 import { KPICard } from './KPICard'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
-import { useKPIs, useCharts } from './hooks'
+import { RecentActivityTable, TopAssigneesTable } from './tables'
+import { useKPIs, useCharts, useTables } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -171,6 +172,7 @@ interface TabProps {
 function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: TabProps) {
   const { data: kpis, loading: kpisLoading } = useKPIs({ filters, isExecutiveView })
   const { data: charts, loading: chartsLoading } = useCharts({ filters, isExecutiveView })
+  const { data: tables, loading: tablesLoading } = useTables({ filters, isExecutiveView })
 
   return (
     <div className="space-y-6">
@@ -222,14 +224,16 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         />
       </div>
       
-      {/* Tables Row - Phase 5 */}
+      {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-64">
-          <p className="text-sm text-gray-500">Recent Activity (Phase 5)</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-64">
-          <p className="text-sm text-gray-500">Top Assignees (Phase 5)</p>
-        </div>
+        <RecentActivityTable 
+          data={tables?.recentActivity ?? null} 
+          loading={tablesLoading}
+        />
+        <TopAssigneesTable 
+          data={tables?.topAssignees ?? null} 
+          loading={tablesLoading}
+        />
       </div>
       
       {/* Motivations Chart with Temperature Overlay */}
