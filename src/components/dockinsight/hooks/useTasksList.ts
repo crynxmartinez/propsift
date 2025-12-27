@@ -68,6 +68,8 @@ export function useTasksList({
       params.set('pageSize', String(pageSize))
       
       if (filters.assigneeIds?.length) params.set('assigneeIds', filters.assigneeIds.join(','))
+      if (filters.priority?.length) params.set('priority', filters.priority.join(','))
+      if (filters.taskStatus?.length) params.set('taskStatus', filters.taskStatus.join(','))
       if (search) params.set('search', search)
 
       const response = await fetch(`/api/dockinsight/tasks-list?${params}`, {

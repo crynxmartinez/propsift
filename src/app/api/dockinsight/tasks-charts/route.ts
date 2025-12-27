@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const isExecutiveView = searchParams.get('executive') === 'true'
     const assigneeIds = searchParams.get('assigneeIds')?.split(',').filter(Boolean) || undefined
-    const priority = searchParams.get('priority') || undefined
+    const priority = searchParams.get('priority')?.split(',').filter(Boolean) || undefined
+    const taskStatus = searchParams.get('taskStatus')?.split(',').filter(Boolean) || undefined
 
     // Build base where clause
     const baseWhere: any = {
@@ -49,8 +50,11 @@ export async function GET(request: NextRequest) {
       baseWhere.assignedToId = { in: assigneeIds }
     }
 
-    if (priority) {
-      baseWhere.priority = priority
+    if (priority && priority.length > 0) {
+      baseWhere.priority = { in: priority }
+    }
+    if (taskStatus && taskStatus.length > 0) {
+      baseWhere.status = { in: taskStatus }
     }
 
     // Calculate date boundaries

@@ -13,6 +13,9 @@ export interface GlobalFilters {
   tagIds?: string[]
   motivationIds?: string[]
   callReady?: boolean
+  // Task-specific filters
+  priority?: ('HIGH' | 'MEDIUM' | 'LOW')[]
+  taskStatus?: ('PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')[]
 }
 
 export interface DateRangeFilter {

@@ -107,9 +107,8 @@ export async function GET(request: NextRequest) {
     const preset = searchParams.get('preset') || 'last_30_days'
     const isExecutiveView = searchParams.get('executive') === 'true'
     const assigneeIds = searchParams.get('assigneeIds')?.split(',').filter(Boolean) || undefined
-    const priority = searchParams.get('priority') || undefined
-    const status = searchParams.get('status') || undefined
-    const taskType = searchParams.get('taskType') || undefined
+    const priority = searchParams.get('priority')?.split(',').filter(Boolean) || undefined
+    const taskStatus = searchParams.get('taskStatus')?.split(',').filter(Boolean) || undefined
 
     // Calculate date ranges
     const { current, previous } = getDateRanges(preset)
@@ -126,11 +125,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply additional filters
-    if (priority) {
-      baseWhere.priority = priority
+    if (priority && priority.length > 0) {
+      baseWhere.priority = { in: priority }
     }
-    if (status) {
-      baseWhere.status = status
+    if (taskStatus && taskStatus.length > 0) {
+      baseWhere.status = { in: taskStatus }
     }
 
     // Calculate date boundaries

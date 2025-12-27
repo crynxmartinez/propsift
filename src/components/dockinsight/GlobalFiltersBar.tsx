@@ -41,6 +41,19 @@ const TEMPERATURE_OPTIONS = [
   { value: 'cold', label: 'Cold', color: '#3b82f6' },
 ]
 
+const PRIORITY_OPTIONS = [
+  { value: 'HIGH', label: 'High', color: '#ef4444' },
+  { value: 'MEDIUM', label: 'Medium', color: '#f59e0b' },
+  { value: 'LOW', label: 'Low', color: '#22c55e' },
+]
+
+const TASK_STATUS_OPTIONS = [
+  { value: 'PENDING', label: 'Pending', color: '#f59e0b' },
+  { value: 'IN_PROGRESS', label: 'In Progress', color: '#3b82f6' },
+  { value: 'COMPLETED', label: 'Completed', color: '#22c55e' },
+  { value: 'CANCELLED', label: 'Cancelled', color: '#6b7280' },
+]
+
 export function GlobalFiltersBar({ 
   filters, 
   onChange, 
@@ -96,7 +109,9 @@ export function GlobalFiltersBar({
     filters.temperature?.length,
     filters.tagIds?.length,
     filters.motivationIds?.length,
-    filters.callReady !== undefined
+    filters.callReady !== undefined,
+    filters.priority?.length,
+    filters.taskStatus?.length
   ].filter(Boolean).length
 
   return (
@@ -156,6 +171,22 @@ export function GlobalFiltersBar({
           options={motivations}
           onChange={(values) => values.length ? updateFilter('motivationIds', values) : clearFilter('motivationIds')}
           loading={loading}
+        />
+
+        {/* Priority (Task filter) */}
+        <MultiFilterDropdown
+          label="Priority"
+          values={filters.priority || []}
+          options={PRIORITY_OPTIONS.map(p => ({ id: p.value, name: p.label, color: p.color }))}
+          onChange={(values) => values.length ? updateFilter('priority', values as ('HIGH' | 'MEDIUM' | 'LOW')[]) : clearFilter('priority')}
+        />
+
+        {/* Status (Task filter) */}
+        <MultiFilterDropdown
+          label="Status"
+          values={filters.taskStatus || []}
+          options={TASK_STATUS_OPTIONS.map(s => ({ id: s.value, name: s.label, color: s.color }))}
+          onChange={(values) => values.length ? updateFilter('taskStatus', values as ('PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')[]) : clearFilter('taskStatus')}
         />
 
         {/* Call Ready */}

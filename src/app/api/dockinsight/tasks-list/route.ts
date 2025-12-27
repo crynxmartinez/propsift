@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const isExecutiveView = searchParams.get('executive') === 'true'
     const assigneeIds = searchParams.get('assigneeIds')?.split(',').filter(Boolean) || undefined
-    const priority = searchParams.get('priority') || undefined
-    const status = searchParams.get('status') || undefined
+    const priority = searchParams.get('priority')?.split(',').filter(Boolean) || undefined
+    const taskStatus = searchParams.get('taskStatus')?.split(',').filter(Boolean) || undefined
     const filterType = searchParams.get('filterType') || 'open_overdue'
     const search = searchParams.get('search') || undefined
     const page = parseInt(searchParams.get('page') || '1')
@@ -51,12 +51,12 @@ export async function GET(request: NextRequest) {
       baseWhere.assignedToId = { in: assigneeIds }
     }
 
-    if (priority) {
-      baseWhere.priority = priority
+    if (priority && priority.length > 0) {
+      baseWhere.priority = { in: priority }
     }
 
-    if (status) {
-      baseWhere.status = status
+    if (taskStatus && taskStatus.length > 0) {
+      baseWhere.status = { in: taskStatus }
     }
 
     // Calculate date boundaries
