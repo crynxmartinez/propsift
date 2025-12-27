@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import { BarChart3, FileText, CheckSquare, Activity, ChevronDown } from 'lucide-react'
+import { GlobalFiltersBar } from './GlobalFiltersBar'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -167,10 +168,13 @@ interface TabProps {
 function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: TabProps) {
   return (
     <div className="space-y-6">
-      {/* Global Filters - Phase 2 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <p className="text-sm text-gray-500">Global Filters (Phase 2)</p>
-      </div>
+      {/* Global Filters */}
+      <GlobalFiltersBar
+        filters={filters}
+        onChange={setFilters}
+        isExecutiveView={isExecutiveView}
+        userId={userId}
+      />
       
       {/* KPI Cards - Phase 3 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
