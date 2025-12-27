@@ -252,14 +252,18 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         />
       </div>
       
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Charts Row - Temperature, Tags, Motivations */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <TemperatureChart 
           data={charts?.temperature ?? null} 
           loading={chartsLoading}
         />
         <TopTagsChart 
           data={charts?.tags ?? null} 
+          loading={chartsLoading}
+        />
+        <MotivationsChart 
+          data={charts?.motivations ?? null} 
           loading={chartsLoading}
         />
       </div>
@@ -275,12 +279,6 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
           loading={tablesLoading}
         />
       </div>
-      
-      {/* Motivations Chart with Temperature Overlay */}
-      <MotivationsChart 
-        data={charts?.motivations ?? null} 
-        loading={chartsLoading}
-      />
       
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

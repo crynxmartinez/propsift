@@ -35,60 +35,43 @@ interface MotivationsChartProps {
 
 export function MotivationsChart({ data, loading, onClick }: MotivationsChartProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 h-80">
-      <h3 className="text-sm font-medium text-gray-700 mb-4">Top 10 Motivations with Temperature</h3>
+    <div className="bg-white rounded-lg border border-gray-200 p-4 h-72">
+      <h3 className="text-sm font-medium text-gray-700 mb-2">Top Motivations</h3>
       
       {loading ? (
-        <div className="h-64 flex items-center justify-center">
+        <div className="h-52 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
         </div>
       ) : data && data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={200}>
           <ComposedChart 
-            data={data} 
-            margin={{ top: 10, right: 30, left: 10, bottom: 60 }}
+            data={data.slice(0, 5)} 
+            margin={{ top: 5, right: 5, left: 0, bottom: 50 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis 
               dataKey="label" 
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={{ stroke: '#e5e7eb' }}
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={50}
               interval={0}
             />
             <YAxis 
               yAxisId="left"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 10 }}
               tickLine={false}
               axisLine={{ stroke: '#e5e7eb' }}
-            />
-            <YAxis 
-              yAxisId="right"
-              orientation="right"
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: '#e5e7eb' }}
+              width={30}
             />
             <Tooltip 
-              contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+              contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
               formatter={(value, name) => [
                 Number(value).toLocaleString(), 
-                name === 'total' ? 'Total' : name === 'hot' ? 'Hot Leads' : String(name)
+                name === 'total' ? 'Total' : name === 'hot' ? 'Hot' : String(name)
               ]}
-            />
-            <Legend 
-              verticalAlign="top" 
-              height={36}
-              formatter={(value) => {
-                const labels: Record<string, string> = {
-                  total: 'Total Records',
-                  hot: 'Hot Leads'
-                }
-                return labels[value] || value
-              }}
             />
             <Bar 
               yAxisId="left"
@@ -99,18 +82,18 @@ export function MotivationsChart({ data, loading, onClick }: MotivationsChartPro
               onClick={(data: any) => onClick?.(data.label)}
             />
             <Line 
-              yAxisId="right"
+              yAxisId="left"
               type="monotone" 
               dataKey="hot" 
               stroke="#ef4444" 
               strokeWidth={2}
-              dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6 }}
+              dot={{ fill: '#ef4444', strokeWidth: 2, r: 3 }}
+              activeDot={{ r: 5 }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       ) : (
-        <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-52 flex items-center justify-center text-gray-500 text-sm">
           No data available
         </div>
       )}

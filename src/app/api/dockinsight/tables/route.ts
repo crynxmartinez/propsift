@@ -102,7 +102,9 @@ async function getRecentActivity(
       id: true,
       ownerFullName: true,
       updatedAt: true,
+      createdAt: true,
       assignedToId: true,
+      temperature: true,
       assignedTo: {
         select: {
           id: true,
@@ -114,13 +116,25 @@ async function getRecentActivity(
     take: 10
   })
 
-  return records.map(r => ({
-    id: r.id,
-    recordName: r.ownerFullName || 'Unknown',
-    assigneeId: r.assignedToId,
-    assigneeName: r.assignedTo?.name || null,
-    lastActivityAt: r.updatedAt.toISOString()
-  }))
+  return records.map(r => {
+    // Determine activity type based on timestamps
+    const createdTime = r.createdAt.getTime()
+    const updatedTime = r.updatedAt.getTime()
+    const timeDiff = Math.abs(updatedTime - createdTime)
+    
+    // If created and updated are within 1 second, it's a new record
+    let activityType = timeDiff < 1000 ? 'Created' : 'Updated'
+    
+    return {
+      id: r.id,
+      recordName: r.ownerFullName || 'Unknown',
+      assigneeId: r.assignedToId,
+      assigneeName: r.assignedTo?.name || null,
+      lastActivityAt: r.updatedAt.toISOString(),
+      activityType,
+      temperature: r.temperature
+    }
+  })
 }
 
 async function getTopAssignees(ownerId: string, baseWhere: any, isExecutiveView: boolean) {

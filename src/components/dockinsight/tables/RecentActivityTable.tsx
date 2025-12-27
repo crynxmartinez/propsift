@@ -14,6 +14,8 @@ interface ActivityItem {
   assigneeId: string | null
   assigneeName: string | null
   lastActivityAt: string
+  activityType?: string
+  temperature?: string | null
 }
 
 interface RecentActivityTableProps {
@@ -52,8 +54,9 @@ export function RecentActivityTable({ data, loading, onRecordClick }: RecentActi
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-2 px-2 font-medium text-gray-600">Record</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600">Activity</th>
                 <th className="text-left py-2 px-2 font-medium text-gray-600">Assignee</th>
-                <th className="text-right py-2 px-2 font-medium text-gray-600">Last Activity</th>
+                <th className="text-right py-2 px-2 font-medium text-gray-600">Time</th>
               </tr>
             </thead>
             <tbody>
@@ -63,22 +66,26 @@ export function RecentActivityTable({ data, loading, onRecordClick }: RecentActi
                   className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                   onClick={() => onRecordClick?.(item.id)}
                 >
-                  <td className="py-2 px-2 text-blue-600 hover:underline truncate max-w-[150px]">
+                  <td className="py-2 px-2 text-blue-600 hover:underline truncate max-w-[120px]">
                     {item.recordName}
                   </td>
                   <td className="py-2 px-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      item.activityType === 'Created' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {item.activityType || 'Updated'}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2">
                     {item.assigneeName ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="w-3 h-3 text-gray-500" />
-                        </div>
-                        <span className="text-gray-700 truncate max-w-[100px]">{item.assigneeName}</span>
-                      </div>
+                      <span className="text-gray-700 truncate max-w-[80px]">{item.assigneeName}</span>
                     ) : (
                       <span className="text-gray-400">Unassigned</span>
                     )}
                   </td>
-                  <td className="py-2 px-2 text-right text-gray-500 whitespace-nowrap">
+                  <td className="py-2 px-2 text-right text-gray-500 whitespace-nowrap text-xs">
                     {formatTime(item.lastActivityAt)}
                   </td>
                 </tr>

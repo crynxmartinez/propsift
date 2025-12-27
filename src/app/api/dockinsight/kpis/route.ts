@@ -82,17 +82,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch KPIs in parallel
+    // Note: Total Records uses date filter, but Hot Records and Call Ready show ALL matching records
     const [
       totalRecordsCurrent,
       totalRecordsPrevious,
-      hotRecordsCurrent,
-      hotRecordsPrevious,
-      callReadyCurrent,
-      callReadyPrevious,
+      hotRecordsTotal,
+      callReadyTotal,
       tasksDueCurrent,
       tasksDuePrevious
     ] = await Promise.all([
-      // Total Records - current period
+      // Total Records - current period (records created in this period)
       prisma.record.count({
         where: {
           ...baseWhere,
@@ -106,36 +105,18 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: previous.start, lte: previous.end }
         }
       }),
-      // Hot Records - current period
+      // Hot Records - ALL hot records (no date filter)
       prisma.record.count({
         where: {
           ...baseWhere,
-          temperature: 'hot',
-          createdAt: { gte: current.start, lte: current.end }
+          temperature: 'hot'
         }
       }),
-      // Hot Records - previous period
+      // Call Ready (complete) - ALL complete records (no date filter)
       prisma.record.count({
         where: {
           ...baseWhere,
-          temperature: 'hot',
-          createdAt: { gte: previous.start, lte: previous.end }
-        }
-      }),
-      // Call Ready (complete) - current period
-      prisma.record.count({
-        where: {
-          ...baseWhere,
-          isComplete: true,
-          createdAt: { gte: current.start, lte: current.end }
-        }
-      }),
-      // Call Ready - previous period
-      prisma.record.count({
-        where: {
-          ...baseWhere,
-          isComplete: true,
-          createdAt: { gte: previous.start, lte: previous.end }
+          isComplete: true
         }
       }),
       // Tasks Due - current period (tasks due within the period, not completed)
@@ -166,12 +147,12 @@ export async function GET(request: NextRequest) {
         previous: totalRecordsPrevious
       },
       hotRecords: {
-        current: hotRecordsCurrent,
-        previous: hotRecordsPrevious
+        current: hotRecordsTotal,
+        previous: null
       },
       callReady: {
-        current: callReadyCurrent,
-        previous: callReadyPrevious
+        current: callReadyTotal,
+        previous: null
       },
       tasksDue: {
         current: tasksDueCurrent,
