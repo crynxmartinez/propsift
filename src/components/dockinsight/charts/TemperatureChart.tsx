@@ -30,7 +30,7 @@ export function TemperatureChart({ data, loading, onClick }: TemperatureChartPro
         <div className="h-52 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
         </div>
-      ) : data && data.length > 0 ? (
+      ) : data && data.length > 0 && data.some(d => d.value > 0) ? (
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
             <XAxis 

@@ -72,6 +72,12 @@ export async function GET(request: NextRequest) {
       baseWhere.isComplete = false
     }
 
+    // Debug: Log the query and check total records
+    const totalRecords = await prisma.record.count({ where: baseWhere })
+    console.log('Charts API - baseWhere:', JSON.stringify(baseWhere))
+    console.log('Charts API - isExecutiveView:', isExecutiveView)
+    console.log('Charts API - totalRecords matching query:', totalRecords)
+    
     // Fetch chart data in parallel
     const [temperatureData, tagsData, motivationsData] = await Promise.all([
       // Records by Temperature
@@ -81,6 +87,10 @@ export async function GET(request: NextRequest) {
       // Top Motivations with temperature breakdown
       getTopMotivations(authUser.ownerId, baseWhere)
     ])
+
+    console.log('Charts API - temperatureData:', JSON.stringify(temperatureData))
+    console.log('Charts API - tagsData length:', tagsData.length)
+    console.log('Charts API - motivationsData length:', motivationsData.length)
 
     return NextResponse.json({
       temperature: temperatureData,
