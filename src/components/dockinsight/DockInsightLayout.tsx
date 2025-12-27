@@ -15,7 +15,7 @@ import { ActionCard } from './ActionCard'
 import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
-import { useKPIs, useCharts, useTables, useActionCards } from './hooks'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -336,11 +336,172 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
 }
 
 function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
+  const { data: tasksData, loading } = useTasks({ filters, isExecutiveView })
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    const today = new Date()
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    
+    if (date.toDateString() === today.toDateString()) return 'Today'
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const priorityColors: Record<string, string> = {
+    HIGH: 'bg-red-100 text-red-700',
+    MEDIUM: 'bg-yellow-100 text-yellow-700',
+    LOW: 'bg-green-100 text-green-700'
+  }
+
   return (
-    <div className="flex items-center justify-center h-64 text-gray-500">
-      <div className="text-center">
-        <CheckSquare className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-        <p>Tasks Tab (Phase 8)</p>
+    <div className="space-y-6">
+      {/* Task KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KPICard
+          title="Tasks Due Today"
+          value={tasksData?.kpis.tasksDueToday ?? null}
+          loading={loading}
+        />
+        <KPICard
+          title="Overdue Tasks"
+          value={tasksData?.kpis.overdueTasks ?? null}
+          loading={loading}
+        />
+        <KPICard
+          title="Completed This Week"
+          value={tasksData?.kpis.completedThisWeek ?? null}
+          loading={loading}
+        />
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tasks by Status */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 h-72">
+          <h3 className="text-sm font-medium text-gray-700 mb-4">Tasks by Status</h3>
+          {loading ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : tasksData?.tasksByStatus && tasksData.tasksByStatus.length > 0 ? (
+            <div className="space-y-3">
+              {tasksData.tasksByStatus.map((status) => (
+                <div key={status.label} className="flex items-center gap-3">
+                  <div className="w-24 text-sm text-gray-600 truncate">{status.label}</div>
+                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all"
+                      style={{ 
+                        width: `${Math.min(100, (status.value / Math.max(...tasksData.tasksByStatus.map(s => s.value))) * 100)}%`,
+                        backgroundColor: status.color 
+                      }}
+                    />
+                  </div>
+                  <div className="w-12 text-right text-sm font-medium text-gray-900">{status.value}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-52 flex items-center justify-center text-gray-500 text-sm">
+              No task data
+            </div>
+          )}
+        </div>
+
+        {/* Tasks by Assignee (Executive View Only) */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 h-72">
+          <h3 className="text-sm font-medium text-gray-700 mb-4">Tasks by Assignee</h3>
+          {loading ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : isExecutiveView && tasksData?.tasksByAssignee && tasksData.tasksByAssignee.length > 0 ? (
+            <div className="overflow-auto h-52">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-2 font-medium text-gray-600">Assignee</th>
+                    <th className="text-right py-2 px-2 font-medium text-gray-600">Open Tasks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasksData.tasksByAssignee.map((assignee) => (
+                    <tr key={assignee.id} className="border-b border-gray-100">
+                      <td className="py-2 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-medium">
+                            {assignee.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-gray-700">{assignee.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 px-2 text-right font-semibold text-gray-900">
+                        {assignee.taskCount}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-52 flex items-center justify-center text-gray-500 text-sm">
+              {isExecutiveView ? 'No assignee data' : 'Available in Executive View'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Upcoming Tasks Table */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-4">Upcoming Tasks</h3>
+        {loading ? (
+          <div className="h-48 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : tasksData?.upcomingTasks && tasksData.upcomingTasks.length > 0 ? (
+          <div className="overflow-auto max-h-96">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">Task</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">Record</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">Due</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">Priority</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">Assignee</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {tasksData.upcomingTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-gray-50">
+                    <td className="py-2 px-3 font-medium text-gray-900 max-w-[200px] truncate">
+                      {task.title}
+                    </td>
+                    <td className="py-2 px-3 text-blue-600 max-w-[150px] truncate">
+                      {task.recordName || '-'}
+                    </td>
+                    <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
+                      {formatDate(task.dueDate)}
+                    </td>
+                    <td className="py-2 px-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[task.priority] || 'bg-gray-100 text-gray-700'}`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-gray-600">
+                      {task.assigneeName || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">
+            No upcoming tasks
+          </div>
+        )}
       </div>
     </div>
   )
