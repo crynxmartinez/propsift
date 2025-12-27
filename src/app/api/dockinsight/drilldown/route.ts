@@ -37,8 +37,12 @@ export async function GET(request: NextRequest) {
     const isExecutiveView = searchParams.get('executive') === 'true'
     
     // Build where clause based on filter type
+    // Build base where clause - include legacy records with null createdById
     const baseWhere: any = {
-      createdById: authUser.ownerId
+      OR: [
+        { createdById: authUser.ownerId },
+        { createdById: null }
+      ]
     }
 
     // Calculate stale date (30 days ago)

@@ -47,9 +47,12 @@ export async function GET(request: NextRequest) {
     // Calculate date ranges
     const { current, previous } = getDateRanges(preset)
     
-    // Build base where clause
+    // Build base where clause - include legacy records with null createdById
     const baseWhere: any = {
-      createdById: authUser.ownerId
+      OR: [
+        { createdById: authUser.ownerId },
+        { createdById: null }
+      ]
     }
     
     // Apply filters

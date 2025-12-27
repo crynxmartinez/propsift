@@ -38,9 +38,12 @@ export async function GET(request: NextRequest) {
     const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || undefined
     const callReady = searchParams.get('callReady')
     
-    // Build base where clause
+    // Build base where clause - include legacy records with null createdById
     const baseWhere: any = {
-      createdById: authUser.ownerId
+      OR: [
+        { createdById: authUser.ownerId },
+        { createdById: null }
+      ]
     }
     
     // Apply filters (except assignee for some cards)
