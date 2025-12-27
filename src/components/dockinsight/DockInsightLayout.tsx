@@ -8,12 +8,13 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, FileText, CheckSquare, Activity, ChevronDown } from 'lucide-react'
+import { BarChart3, FileText, CheckSquare, Activity, ChevronDown, Flame, PhoneOff, Phone, Clock } from 'lucide-react'
 import { GlobalFiltersBar } from './GlobalFiltersBar'
 import { KPICard } from './KPICard'
+import { ActionCard } from './ActionCard'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
-import { useKPIs, useCharts, useTables } from './hooks'
+import { useKPIs, useCharts, useTables, useActionCards } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -173,6 +174,7 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
   const { data: kpis, loading: kpisLoading } = useKPIs({ filters, isExecutiveView })
   const { data: charts, loading: chartsLoading } = useCharts({ filters, isExecutiveView })
   const { data: tables, loading: tablesLoading } = useTables({ filters, isExecutiveView })
+  const { data: actionCards, loading: actionCardsLoading } = useActionCards({ filters, isExecutiveView })
 
   return (
     <div className="space-y-6">
@@ -242,19 +244,40 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         loading={chartsLoading}
       />
       
-      {/* Action Cards - Phase 6 */}
+      {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { title: 'Hot + Unassigned', color: 'bg-blue-500' },
-          { title: 'No Phone Number', color: 'bg-orange-500' },
-          { title: 'Call Ready Today', color: 'bg-green-500' },
-          { title: 'Stale Leads', color: 'bg-red-500' },
-        ].map((card) => (
-          <div key={card.title} className={`${card.color} rounded-lg p-4 text-white`}>
-            <p className="text-sm opacity-90">{card.title}</p>
-            <p className="text-2xl font-bold mt-1">--</p>
-          </div>
-        ))}
+        <ActionCard
+          title="Hot + Unassigned"
+          count={actionCards?.hotUnassigned.count ?? null}
+          description="Needs assignment"
+          icon={<Flame className="w-4 h-4" />}
+          color="blue"
+          loading={actionCardsLoading}
+        />
+        <ActionCard
+          title="No Phone Number"
+          count={actionCards?.noPhone.count ?? null}
+          description="Missing contact info"
+          icon={<PhoneOff className="w-4 h-4" />}
+          color="orange"
+          loading={actionCardsLoading}
+        />
+        <ActionCard
+          title="Call Ready"
+          count={actionCards?.callReady.count ?? null}
+          description="Complete records"
+          icon={<Phone className="w-4 h-4" />}
+          color="green"
+          loading={actionCardsLoading}
+        />
+        <ActionCard
+          title="Stale Leads"
+          count={actionCards?.staleLeads.count ?? null}
+          description="No activity 30+ days"
+          icon={<Clock className="w-4 h-4" />}
+          color="red"
+          loading={actionCardsLoading}
+        />
       </div>
     </div>
   )
