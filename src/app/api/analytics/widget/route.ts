@@ -146,15 +146,20 @@ export async function POST(request: NextRequest) {
       }
     )
     
-    return NextResponse.json({
+    // Flatten the result structure for the UI
+    const response = {
       success: true,
-      ...result,
+      ...result.data,  // Spread the actual data (type, value, dimension, data, total)
+      cached: result.cached,
+      cachedAt: result.cachedAt,
       meta: {
         hash: compiled.hash,
         deps: compiled.deps,
         entityKey: compiled.entityKey
       }
-    })
+    }
+    
+    return NextResponse.json(response)
     
   } catch (error) {
     console.error('Widget API error:', error)
