@@ -16,8 +16,8 @@ import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
 import { TaskStatusChart, TaskTypesChart, WorkflowCompletion, TaskActionCard, TaskSidebar, TaskTable } from './tasks'
-import { ActivityOverTimeChart, ActivitySourceChart, TopAgentsTable, ActivityActionCard } from './activity'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart, useActivityKPIs, useActivityAgents } from './hooks'
+import { ActivityOverTimeChart, ActivitySourceChart, TopAgentsTable, ActivityActionCard, ActivitySidebar, RecentActivitiesTable } from './activity'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart, useActivityKPIs, useActivityAgents, useActivityList } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -516,7 +516,6 @@ function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
 }
 
 function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
-  const { data: activityData, loading } = useActivity({ filters, isExecutiveView })
   const { data: kpisData, loading: kpisLoading } = useActivityKPIs({ filters, isExecutiveView })
   const { data: agentsData, loading: agentsLoading } = useActivityAgents({ filters, isExecutiveView })
   
@@ -525,12 +524,26 @@ function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps)
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
   
+  // Activity list state
+  const [activeSource, setActiveSource] = useState<string | null>(null)
+  const [activitySearch, setActivitySearch] = useState('')
+  const [activityPage, setActivityPage] = useState(1)
+  
   const { data: chartData, loading: chartLoading } = useActivityChart({
     filters,
     isExecutiveView,
     range: chartRange,
     customStartDate,
     customEndDate
+  })
+
+  const { data: listData, loading: listLoading } = useActivityList({
+    filters,
+    isExecutiveView,
+    sourceGroup: activeSource,
+    search: activitySearch,
+    page: activityPage,
+    pageSize: 10
   })
 
   const handleDateRangeChange = (
@@ -543,25 +556,24 @@ function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps)
     setCustomEndDate(customEnd)
   }
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString()
+  const handleSourceChange = (source: string | null) => {
+    setActiveSource(source)
+    setActivityPage(1)
   }
 
-  const activityTypeIcons: Record<string, { icon: string; color: string }> = {
-    record_created: { icon: '📄', color: 'bg-blue-100 text-blue-700' },
-    task_created: { icon: '📋', color: 'bg-purple-100 text-purple-700' },
-    task_completed: { icon: '✅', color: 'bg-green-100 text-green-700' }
+  const handleSearchChange = (search: string) => {
+    setActivitySearch(search)
+    setActivityPage(1)
+  }
+
+  // Filter titles for sidebar
+  const filterTitles: Record<string, string> = {
+    'CRM': 'CRM Activities',
+    'Comments': 'Comments',
+    'Bulk Actions': 'Bulk Actions',
+    'Bulk Import': 'Bulk Imports',
+    'Board': 'Board Activities',
+    'Automation': 'Automation Activities'
   }
 
   return (
@@ -622,39 +634,29 @@ function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps)
         />
       )}
 
-      {/* Activity Feed */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Activity Feed</h3>
-        {loading ? (
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : activityData?.activityFeed && activityData.activityFeed.length > 0 ? (
-          <div className="space-y-3 max-h-96 overflow-auto">
-            {activityData.activityFeed.map((item) => {
-              const typeInfo = activityTypeIcons[item.type] || { icon: '📌', color: 'bg-gray-100 text-gray-700' }
-              return (
-                <div key={item.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${typeInfo.color}`}>
-                    {typeInfo.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 text-sm">{item.title}</span>
-                      <span className="text-xs text-gray-400">{formatTime(item.timestamp)}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate">{item.description}</p>
-                    <p className="text-xs text-gray-400">by {item.userName}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-            No recent activity
-          </div>
-        )}
+      {/* Activity List with Sidebar */}
+      <div className="flex gap-4">
+        {/* Sidebar */}
+        <ActivitySidebar
+          data={kpisData?.sourceBreakdown || null}
+          activeSource={activeSource}
+          onSourceChange={handleSourceChange}
+          loading={kpisLoading}
+        />
+
+        {/* Activities Table */}
+        <RecentActivitiesTable
+          activities={listData?.activities || null}
+          total={listData?.total || 0}
+          page={listData?.page || 1}
+          pageSize={listData?.pageSize || 10}
+          totalPages={listData?.totalPages || 1}
+          loading={listLoading}
+          search={activitySearch}
+          onSearchChange={handleSearchChange}
+          onPageChange={setActivityPage}
+          filterTitle={activeSource ? filterTitles[activeSource] || activeSource : 'All Activities'}
+        />
       </div>
     </div>
   )
