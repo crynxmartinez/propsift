@@ -54,6 +54,15 @@ const TASK_STATUS_OPTIONS = [
   { value: 'CANCELLED', label: 'Cancelled', color: '#6b7280' },
 ]
 
+const ACTIVITY_SOURCE_OPTIONS = [
+  { value: 'CRM', label: 'CRM', color: '#3b82f6' },
+  { value: 'Comments', label: 'Comments', color: '#8b5cf6' },
+  { value: 'Bulk Actions', label: 'Bulk Actions', color: '#f59e0b' },
+  { value: 'Bulk Import', label: 'Bulk Import', color: '#10b981' },
+  { value: 'Board', label: 'Board', color: '#ec4899' },
+  { value: 'Automation', label: 'Automation', color: '#6366f1' },
+]
+
 export function GlobalFiltersBar({ 
   filters, 
   onChange, 
@@ -111,7 +120,8 @@ export function GlobalFiltersBar({
     filters.motivationIds?.length,
     filters.callReady !== undefined,
     filters.priority?.length,
-    filters.taskStatus?.length
+    filters.taskStatus?.length,
+    filters.activitySource?.length
   ].filter(Boolean).length
 
   return (
@@ -187,6 +197,14 @@ export function GlobalFiltersBar({
           values={filters.taskStatus || []}
           options={TASK_STATUS_OPTIONS.map(s => ({ id: s.value, name: s.label, color: s.color }))}
           onChange={(values) => values.length ? updateFilter('taskStatus', values as ('PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')[]) : clearFilter('taskStatus')}
+        />
+
+        {/* Activity Source (Activity filter) */}
+        <MultiFilterDropdown
+          label="Source"
+          values={filters.activitySource || []}
+          options={ACTIVITY_SOURCE_OPTIONS.map(s => ({ id: s.value, name: s.label, color: s.color }))}
+          onChange={(values) => values.length ? updateFilter('activitySource', values as ('CRM' | 'Comments' | 'Bulk Actions' | 'Bulk Import' | 'Board' | 'Automation')[]) : clearFilter('activitySource')}
         />
 
         {/* Call Ready */}

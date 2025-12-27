@@ -16,6 +16,8 @@ export interface GlobalFilters {
   // Task-specific filters
   priority?: ('HIGH' | 'MEDIUM' | 'LOW')[]
   taskStatus?: ('PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')[]
+  // Activity-specific filters
+  activitySource?: ('CRM' | 'Comments' | 'Bulk Actions' | 'Bulk Import' | 'Board' | 'Automation')[]
 }
 
 export interface DateRangeFilter {
