@@ -52,8 +52,12 @@ export async function GET(request: NextRequest) {
       ownerId: authUser.ownerId
     })
     
-  } catch (error) {
-    console.error('User API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('User API error:', error?.message || error)
+    console.error('User API stack:', error?.stack)
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
