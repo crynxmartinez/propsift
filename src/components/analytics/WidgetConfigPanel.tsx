@@ -111,8 +111,12 @@ export function WidgetConfigPanel({ widget, onSave, onClose }: WidgetConfigPanel
   }
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div className="flex-1 bg-black/50" onClick={onClose} />
+      
+      {/* Slide-in panel from right */}
+      <div className="w-full max-w-lg bg-white shadow-xl flex flex-col h-full animate-slide-in">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">
@@ -123,8 +127,8 @@ export function WidgetConfigPanel({ widget, onSave, onClose }: WidgetConfigPanel
           </button>
         </div>
         
-        {/* Content */}
-        <div className="p-4 space-y-6">
+        {/* Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
