@@ -92,13 +92,14 @@ export async function GET(request: NextRequest) {
           phoneCount: 0
         }
       }),
-      // Call Ready Today (complete records)
+      // Call Ready (complete records WITH phone number - actually callable)
       prisma.record.count({
         where: {
           ...baseWhere,
           ...(isExecutiveView ? {} : { assignedToId: authUser.id }),
           ...(assigneeIds && assigneeIds.length > 0 && isExecutiveView ? { assignedToId: { in: assigneeIds } } : {}),
-          isComplete: true
+          isComplete: true,
+          phoneCount: { gt: 0 }
         }
       }),
       // Stale Leads (no update in 30 days)

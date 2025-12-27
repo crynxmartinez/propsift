@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         break
       case 'call_ready':
         baseWhere.isComplete = true
+        baseWhere.phoneCount = { gt: 0 }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'stale_leads':

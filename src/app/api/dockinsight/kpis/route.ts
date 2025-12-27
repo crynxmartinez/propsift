@@ -115,11 +115,12 @@ export async function GET(request: NextRequest) {
           temperature: { in: ['hot', 'Hot', 'HOT'] }
         }
       }),
-      // Call Ready (complete) - ALL complete records (no date filter)
+      // Call Ready - complete records WITH phone number (actually callable)
       prisma.record.count({
         where: {
           ...baseWhere,
-          isComplete: true
+          isComplete: true,
+          phoneCount: { gt: 0 }
         }
       }),
       // Tasks Due - current period (tasks due within the period, not completed)
