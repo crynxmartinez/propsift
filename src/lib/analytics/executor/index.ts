@@ -2,6 +2,7 @@
  * DockInsight 2.2.2 Query Executor
  * 
  * Executes compiled queries against Prisma and returns results.
+ * v2.2.2: Fixed groupBy syntax for Prisma 5.x compatibility
  */
 
 import { prisma } from '../../prisma'
