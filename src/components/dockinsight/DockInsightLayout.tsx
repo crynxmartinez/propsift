@@ -11,7 +11,8 @@ import { useState } from 'react'
 import { BarChart3, FileText, CheckSquare, Activity, ChevronDown } from 'lucide-react'
 import { GlobalFiltersBar } from './GlobalFiltersBar'
 import { KPICard } from './KPICard'
-import { useKPIs } from './hooks'
+import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
+import { useKPIs, useCharts } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -169,6 +170,7 @@ interface TabProps {
 
 function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: TabProps) {
   const { data: kpis, loading: kpisLoading } = useKPIs({ filters, isExecutiveView })
+  const { data: charts, loading: chartsLoading } = useCharts({ filters, isExecutiveView })
 
   return (
     <div className="space-y-6">
@@ -208,14 +210,16 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         />
       </div>
       
-      {/* Charts Row - Phase 4 */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-64">
-          <p className="text-sm text-gray-500">Records by Temperature (Phase 4)</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-64">
-          <p className="text-sm text-gray-500">Top Tags (Phase 4)</p>
-        </div>
+        <TemperatureChart 
+          data={charts?.temperature ?? null} 
+          loading={chartsLoading}
+        />
+        <TopTagsChart 
+          data={charts?.tags ?? null} 
+          loading={chartsLoading}
+        />
       </div>
       
       {/* Tables Row - Phase 5 */}
@@ -228,10 +232,11 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
         </div>
       </div>
       
-      {/* Motivations Chart - Phase 4 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 h-80">
-        <p className="text-sm text-gray-500">Top 10 Motivations with Temperature Overlay (Phase 4)</p>
-      </div>
+      {/* Motivations Chart with Temperature Overlay */}
+      <MotivationsChart 
+        data={charts?.motivations ?? null} 
+        loading={chartsLoading}
+      />
       
       {/* Action Cards - Phase 6 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

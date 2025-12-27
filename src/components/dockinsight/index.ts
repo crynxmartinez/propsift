@@ -5,5 +5,6 @@
 export { DockInsightLayout } from './DockInsightLayout'
 export { GlobalFiltersBar } from './GlobalFiltersBar'
 export { KPICard } from './KPICard'
+export { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 export * from './hooks'
 export * from './types'

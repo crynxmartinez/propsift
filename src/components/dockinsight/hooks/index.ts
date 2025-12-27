@@ -3,3 +3,4 @@
  */
 
 export { useKPIs } from './useKPIs'
+export { useCharts } from './useCharts'
