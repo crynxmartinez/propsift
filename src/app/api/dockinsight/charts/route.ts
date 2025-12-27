@@ -117,22 +117,28 @@ async function getTemperatureData(baseWhere: any) {
   const temperatureMap: Record<string, number> = {
     hot: 0,
     warm: 0,
-    cold: 0
+    cold: 0,
+    none: 0
   }
 
   results.forEach(r => {
     if (r.temperature) {
       const temp = r.temperature.toLowerCase()
-      if (temperatureMap.hasOwnProperty(temp)) {
+      if (temp === 'hot' || temp === 'warm' || temp === 'cold') {
         temperatureMap[temp] = r._count.id
+      } else {
+        temperatureMap.none += r._count.id
       }
+    } else {
+      temperatureMap.none += r._count.id
     }
   })
 
   return [
     { label: 'Hot', value: temperatureMap.hot, color: '#ef4444' },
     { label: 'Warm', value: temperatureMap.warm, color: '#f97316' },
-    { label: 'Cold', value: temperatureMap.cold, color: '#3b82f6' }
+    { label: 'Cold', value: temperatureMap.cold, color: '#3b82f6' },
+    { label: 'No Temperature', value: temperatureMap.none, color: '#9ca3af' }
   ]
 }
 
@@ -197,7 +203,7 @@ async function getTopMotivations(ownerId: string, baseWhere: any) {
         by: ['temperature'],
         where: {
           ...baseWhere,
-          motivations: {
+          recordMotivations: {
             some: { motivationId: mc.motivationId }
           }
         },
