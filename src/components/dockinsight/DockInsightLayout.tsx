@@ -7,11 +7,12 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BarChart3, FileText, CheckSquare, Activity, ChevronDown, Flame, PhoneOff, Phone, Clock } from 'lucide-react'
 import { GlobalFiltersBar } from './GlobalFiltersBar'
 import { KPICard } from './KPICard'
 import { ActionCard } from './ActionCard'
+import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
 import { useKPIs, useCharts, useTables, useActionCards } from './hooks'
@@ -170,11 +171,48 @@ interface TabProps {
   viewMode?: ViewMode
 }
 
+interface Assignee {
+  id: string
+  name: string
+}
+
 function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: TabProps) {
   const { data: kpis, loading: kpisLoading } = useKPIs({ filters, isExecutiveView })
   const { data: charts, loading: chartsLoading } = useCharts({ filters, isExecutiveView })
   const { data: tables, loading: tablesLoading } = useTables({ filters, isExecutiveView })
   const { data: actionCards, loading: actionCardsLoading } = useActionCards({ filters, isExecutiveView })
+  
+  // Drilldown state
+  const [drilldownOpen, setDrilldownOpen] = useState(false)
+  const [drilldownTitle, setDrilldownTitle] = useState('')
+  const [drilldownFilterType, setDrilldownFilterType] = useState('')
+  const [assignees, setAssignees] = useState<Assignee[]>([])
+
+  // Fetch assignees for drilldown
+  useEffect(() => {
+    const fetchAssignees = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      try {
+        const response = await fetch('/api/dockinsight/filters', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAssignees(data.assignees || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch assignees:', error)
+      }
+    }
+    fetchAssignees()
+  }, [])
+
+  const openDrilldown = (title: string, filterType: string) => {
+    setDrilldownTitle(title)
+    setDrilldownFilterType(filterType)
+    setDrilldownOpen(true)
+  }
 
   return (
     <div className="space-y-6">
@@ -253,6 +291,7 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
           icon={<Flame className="w-4 h-4" />}
           color="blue"
           loading={actionCardsLoading}
+          onClick={() => openDrilldown('Hot + Unassigned', 'hot_unassigned')}
         />
         <ActionCard
           title="No Phone Number"
@@ -261,6 +300,7 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
           icon={<PhoneOff className="w-4 h-4" />}
           color="orange"
           loading={actionCardsLoading}
+          onClick={() => openDrilldown('No Phone Number', 'no_phone')}
         />
         <ActionCard
           title="Call Ready"
@@ -269,6 +309,7 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
           icon={<Phone className="w-4 h-4" />}
           color="green"
           loading={actionCardsLoading}
+          onClick={() => openDrilldown('Call Ready', 'call_ready')}
         />
         <ActionCard
           title="Stale Leads"
@@ -277,8 +318,19 @@ function RecordsTab({ filters, setFilters, isExecutiveView, userId, viewMode }: 
           icon={<Clock className="w-4 h-4" />}
           color="red"
           loading={actionCardsLoading}
+          onClick={() => openDrilldown('Stale Leads', 'stale_leads')}
         />
       </div>
+
+      {/* Drilldown Modal */}
+      <DrilldownModal
+        isOpen={drilldownOpen}
+        onClose={() => setDrilldownOpen(false)}
+        title={drilldownTitle}
+        filterType={drilldownFilterType}
+        isExecutiveView={isExecutiveView}
+        assignees={assignees}
+      />
     </div>
   )
 }
