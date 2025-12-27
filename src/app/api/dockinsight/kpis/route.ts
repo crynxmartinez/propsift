@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (tagIds && tagIds.length > 0) {
-      baseWhere.tags = {
+      baseWhere.recordTags = {
         some: {
           tagId: { in: tagIds }
         }
