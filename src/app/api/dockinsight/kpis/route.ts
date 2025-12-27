@@ -105,11 +105,11 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: previous.start, lte: previous.end }
         }
       }),
-      // Hot Records - ALL hot records (no date filter)
+      // Hot Records - ALL hot records (no date filter, case-insensitive)
       prisma.record.count({
         where: {
           ...baseWhere,
-          temperature: 'hot'
+          temperature: { in: ['hot', 'Hot', 'HOT'] }
         }
       }),
       // Call Ready (complete) - ALL complete records (no date filter)

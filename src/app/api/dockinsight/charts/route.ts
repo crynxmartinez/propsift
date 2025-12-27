@@ -108,8 +108,11 @@ async function getTemperatureData(baseWhere: any) {
   }
 
   results.forEach(r => {
-    if (r.temperature && temperatureMap.hasOwnProperty(r.temperature)) {
-      temperatureMap[r.temperature] = r._count.id
+    if (r.temperature) {
+      const temp = r.temperature.toLowerCase()
+      if (temperatureMap.hasOwnProperty(temp)) {
+        temperatureMap[temp] = r._count.id
+      }
     }
   })
 

@@ -72,11 +72,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch action card counts in parallel
     const [hotUnassigned, noPhone, callReadyToday, staleLeads] = await Promise.all([
-      // Hot + Unassigned
+      // Hot + Unassigned (case-insensitive)
       prisma.record.count({
         where: {
           ...baseWhere,
-          temperature: 'hot',
+          temperature: { in: ['hot', 'Hot', 'HOT'] },
           assignedToId: null
         }
       }),

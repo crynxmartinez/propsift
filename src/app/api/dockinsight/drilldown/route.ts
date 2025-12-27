@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     switch (filterType) {
       case 'hot_unassigned':
-        baseWhere.temperature = 'hot'
+        baseWhere.temperature = { in: ['hot', 'Hot', 'HOT'] }
         baseWhere.assignedToId = null
         break
       case 'no_phone':
@@ -63,15 +63,15 @@ export async function GET(request: NextRequest) {
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'temperature_hot':
-        baseWhere.temperature = 'hot'
+        baseWhere.temperature = { in: ['hot', 'Hot', 'HOT'] }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'temperature_warm':
-        baseWhere.temperature = 'warm'
+        baseWhere.temperature = { in: ['warm', 'Warm', 'WARM'] }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       case 'temperature_cold':
-        baseWhere.temperature = 'cold'
+        baseWhere.temperature = { in: ['cold', 'Cold', 'COLD'] }
         if (!isExecutiveView) baseWhere.assignedToId = authUser.id
         break
       default:
