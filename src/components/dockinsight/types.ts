@@ -11,6 +11,7 @@ export interface GlobalFilters {
   assigneeIds?: string[]
   temperature?: ('hot' | 'warm' | 'cold')[]
   tagIds?: string[]
+  motivationIds?: string[]
   callReady?: boolean
 }
 

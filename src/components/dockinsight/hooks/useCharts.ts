@@ -54,6 +54,7 @@ export function useCharts({ filters, isExecutiveView }: UseChartsOptions) {
       if (filters.assigneeIds?.length) params.set('assigneeIds', filters.assigneeIds.join(','))
       if (filters.temperature?.length) params.set('temperature', filters.temperature.join(','))
       if (filters.tagIds?.length) params.set('tagIds', filters.tagIds.join(','))
+      if (filters.motivationIds?.length) params.set('motivationIds', filters.motivationIds.join(','))
       if (filters.callReady !== undefined) params.set('callReady', String(filters.callReady))
 
       const response = await fetch(`/api/dockinsight/charts?${params}`, {

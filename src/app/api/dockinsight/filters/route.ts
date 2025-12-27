@@ -67,16 +67,18 @@ export async function GET(request: NextRequest) {
       name: u.name
     }))
 
-    // Get tags
+    // Get tags (most recently used first, then alphabetically)
     const tagsResult = await prisma.tag.findMany({
       where: {
         createdById: authUser.ownerId
       },
       select: {
         id: true,
-        name: true
+        name: true,
+        updatedAt: true
       },
-      orderBy: { name: 'asc' }
+      orderBy: { updatedAt: 'desc' },
+      take: 100
     })
     
     const tags = tagsResult.map(t => ({
@@ -84,10 +86,30 @@ export async function GET(request: NextRequest) {
       name: t.name
     }))
 
+    // Get motivations (most recently used first)
+    const motivationsResult = await prisma.motivation.findMany({
+      where: {
+        createdById: authUser.ownerId
+      },
+      select: {
+        id: true,
+        name: true,
+        updatedAt: true
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100
+    })
+    
+    const motivations = motivationsResult.map(m => ({
+      id: m.id,
+      name: m.name
+    }))
+
     return NextResponse.json({
       markets,
       assignees,
-      tags
+      tags,
+      motivations
     })
     
   } catch (error) {

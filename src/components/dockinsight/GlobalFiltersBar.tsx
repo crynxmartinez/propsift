@@ -7,8 +7,8 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Calendar, ChevronDown, X, Filter } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Calendar, ChevronDown, X, Filter, Search } from 'lucide-react'
 import type { GlobalFilters, DatePreset } from './types'
 
 interface GlobalFiltersBarProps {
@@ -50,6 +50,7 @@ export function GlobalFiltersBar({
   const [markets, setMarkets] = useState<FilterOption[]>([])
   const [assignees, setAssignees] = useState<FilterOption[]>([])
   const [tags, setTags] = useState<FilterOption[]>([])
+  const [motivations, setMotivations] = useState<FilterOption[]>([])
   const [loading, setLoading] = useState(true)
 
   // Fetch filter options
@@ -67,6 +68,7 @@ export function GlobalFiltersBar({
           setMarkets(data.markets || [])
           setAssignees(data.assignees || [])
           setTags(data.tags || [])
+          setMotivations(data.motivations || [])
         }
       } catch (error) {
         console.error('Failed to fetch filter options:', error)
@@ -93,6 +95,7 @@ export function GlobalFiltersBar({
     filters.assigneeIds?.length,
     filters.temperature?.length,
     filters.tagIds?.length,
+    filters.motivationIds?.length,
     filters.callReady !== undefined
   ].filter(Boolean).length
 
@@ -138,11 +141,20 @@ export function GlobalFiltersBar({
         />
 
         {/* Tags */}
-        <MultiFilterDropdown
+        <SearchableMultiDropdown
           label="Tags"
           values={filters.tagIds || []}
           options={tags}
           onChange={(values) => values.length ? updateFilter('tagIds', values) : clearFilter('tagIds')}
+          loading={loading}
+        />
+
+        {/* Motivations */}
+        <SearchableMultiDropdown
+          label="Motivations"
+          values={filters.motivationIds || []}
+          options={motivations}
+          onChange={(values) => values.length ? updateFilter('motivationIds', values) : clearFilter('motivationIds')}
           loading={loading}
         />
 
@@ -348,6 +360,112 @@ function MultiFilterDropdown({
                 </button>
               ))
             )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Searchable Multi Select Dropdown (for Tags and Motivations)
+function SearchableMultiDropdown({
+  label,
+  values,
+  options,
+  onChange,
+  loading
+}: {
+  label: string
+  values: string[]
+  options: FilterOption[]
+  onChange: (values: string[]) => void
+  loading?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options
+    const searchLower = search.toLowerCase()
+    return options.filter(o => o.name.toLowerCase().includes(searchLower))
+  }, [options, search])
+
+  const toggleValue = (id: string) => {
+    if (values.includes(id)) {
+      onChange(values.filter(v => v !== id))
+    } else {
+      onChange([...values, id])
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md ${
+          values.length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+        }`}
+      >
+        <span>{values.length > 0 ? `${label} (${values.length})` : label}</span>
+        <ChevronDown className="w-4 h-4" />
+      </button>
+      
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setSearch('') }} />
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[220px]">
+            {/* Search Input */}
+            <div className="p-2 border-b border-gray-100">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${label.toLowerCase()}...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+            </div>
+            
+            {/* Options List */}
+            <div className="max-h-48 overflow-y-auto py-1">
+              {values.length > 0 && !search && (
+                <button
+                  onClick={() => onChange([])}
+                  className="w-full text-left px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 border-b border-gray-100"
+                >
+                  Clear selection
+                </button>
+              )}
+              {loading ? (
+                <div className="px-3 py-2 text-sm text-gray-400">Loading...</div>
+              ) : filteredOptions.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">No results found</div>
+              ) : (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => toggleValue(option.id)}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                      values.includes(option.id) 
+                        ? 'bg-blue-600 border-blue-600' 
+                        : 'border-gray-300'
+                    }`}>
+                      {values.includes(option.id) && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-gray-700 truncate">{option.name}</span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </>
       )}

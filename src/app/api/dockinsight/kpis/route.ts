@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     const assigneeIds = searchParams.get('assigneeIds')?.split(',').filter(Boolean) || undefined
     const temperature = searchParams.get('temperature')?.split(',').filter(Boolean) || undefined
     const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || undefined
+    const motivationIds = searchParams.get('motivationIds')?.split(',').filter(Boolean) || undefined
     const callReady = searchParams.get('callReady')
     
     // Calculate date ranges
@@ -74,6 +75,14 @@ export async function GET(request: NextRequest) {
       baseWhere.recordTags = {
         some: {
           tagId: { in: tagIds }
+        }
+      }
+    }
+    
+    if (motivationIds && motivationIds.length > 0) {
+      baseWhere.recordMotivations = {
+        some: {
+          motivationId: { in: motivationIds }
         }
       }
     }
