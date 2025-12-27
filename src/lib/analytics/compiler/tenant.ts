@@ -27,8 +27,9 @@ export function compileTenantScope(
     if (!tenantScope.field) {
       throw new Error(`Entity ${entity.key} has direct tenant scope but no field defined`)
     }
-    // Include legacy records with null createdById (for records entity)
-    if (entity.key === 'records' || entity.key === 'tasks') {
+    // Include legacy records with null createdById (only for records entity)
+    // Tasks have required createdById so no null check needed
+    if (entity.key === 'records') {
       return {
         OR: [
           { [tenantScope.field]: ctx.tenantId },
