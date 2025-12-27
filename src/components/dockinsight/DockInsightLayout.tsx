@@ -16,7 +16,8 @@ import { DrilldownModal } from './DrilldownModal'
 import { TemperatureChart, TopTagsChart, MotivationsChart } from './charts'
 import { RecentActivityTable, TopAssigneesTable } from './tables'
 import { TaskStatusChart, TaskTypesChart, WorkflowCompletion, TaskActionCard, TaskSidebar, TaskTable } from './tasks'
-import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList } from './hooks'
+import { ActivityOverTimeChart } from './activity'
+import { useKPIs, useCharts, useTables, useActionCards, useTasks, useActivity, useTasksKPIs, useTasksCharts, useTasksActionCards, useTasksList, useActivityChart } from './hooks'
 import type { TabType, ViewMode, GlobalFilters } from './types'
 
 interface DockInsightLayoutProps {
@@ -516,6 +517,29 @@ function TasksTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
 
 function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps) {
   const { data: activityData, loading } = useActivity({ filters, isExecutiveView })
+  
+  // Activity chart state
+  const [chartRange, setChartRange] = useState<'today' | 'last_7_days' | 'last_30_days' | 'custom'>('last_7_days')
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
+  
+  const { data: chartData, loading: chartLoading } = useActivityChart({
+    filters,
+    isExecutiveView,
+    range: chartRange,
+    customStartDate,
+    customEndDate
+  })
+
+  const handleDateRangeChange = (
+    range: 'today' | 'last_7_days' | 'last_30_days' | 'custom',
+    customStart?: Date,
+    customEnd?: Date
+  ) => {
+    setChartRange(range)
+    setCustomStartDate(customStart)
+    setCustomEndDate(customEnd)
+  }
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -564,67 +588,13 @@ function ActivityTab({ filters, setFilters, isExecutiveView, userId }: TabProps)
         />
       </div>
 
-      {/* Activity Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Activity (Last 7 Days)</h3>
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : activityData?.activityByDay && activityData.activityByDay.length > 0 ? (
-          <div className="h-48">
-            <div className="flex items-end justify-between h-40 gap-2">
-              {activityData.activityByDay.map((day, index) => {
-                const maxValue = Math.max(
-                  ...activityData.activityByDay.map(d => d.records + d.tasks),
-                  1
-                )
-                const totalHeight = ((day.records + day.tasks) / maxValue) * 100
-                const recordHeight = (day.records / (day.records + day.tasks || 1)) * totalHeight
-                const taskHeight = (day.tasks / (day.records + day.tasks || 1)) * totalHeight
-
-                return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex flex-col justify-end h-32">
-                      {(day.records > 0 || day.tasks > 0) ? (
-                        <>
-                          <div 
-                            className="w-full bg-green-500 rounded-t"
-                            style={{ height: `${taskHeight}%` }}
-                            title={`Tasks: ${day.tasks}`}
-                          />
-                          <div 
-                            className="w-full bg-blue-500 rounded-b"
-                            style={{ height: `${recordHeight}%` }}
-                            title={`Records: ${day.records}`}
-                          />
-                        </>
-                      ) : (
-                        <div className="w-full bg-gray-200 rounded h-1" />
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-500 mt-2">{day.date}</span>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="flex items-center justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded" />
-                <span className="text-xs text-gray-600">Records</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded" />
-                <span className="text-xs text-gray-600">Tasks</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">
-            No activity data
-          </div>
-        )}
-      </div>
+      {/* Activity Over Time Chart with Date Dropdown */}
+      <ActivityOverTimeChart
+        onDateRangeChange={handleDateRangeChange}
+        data={chartData?.data || null}
+        loading={chartLoading}
+        isHourly={chartData?.isHourly || false}
+      />
 
       {/* Activity Feed */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">

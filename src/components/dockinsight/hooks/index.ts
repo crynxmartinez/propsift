@@ -14,3 +14,6 @@ export { useTasksKPIs } from './useTasksKPIs'
 export { useTasksCharts } from './useTasksCharts'
 export { useTasksActionCards } from './useTasksActionCards'
 export { useTasksList } from './useTasksList'
+
+// Activity Tab Hooks
+export { useActivityChart } from './useActivityChart'
