@@ -59,7 +59,6 @@ model User {
   createdBoards        Board[]               @relation("BoardCreator")
   createdAutomationFolders AutomationFolder[] @relation("AutomationFolderCreator")
   createdAutomations   Automation[]          @relation("AutomationCreator")
-  createdDashboards    AnalyticsDashboard[]  @relation("DashboardCreator")
 }
 
 model Property {
@@ -632,67 +631,3 @@ model AutomationLog {
   @@index([createdAt])
 }
 
-// =============================================================================
-// DockInsight 2.2.2: Analytics Dashboard Models
-// =============================================================================
-
-model AnalyticsDashboard {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  isDefault   Boolean  @default(false)
-  
-  // Layout settings
-  columns     Int      @default(12)
-  
-  // Global filters (stored as JSON)
-  globalFilters Json?
-  
-  // Ownership
-  createdById String
-  createdBy   User     @relation("DashboardCreator", fields: [createdById], references: [id])
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Widgets
-  widgets     AnalyticsWidget[]
-  
-  @@index([createdById])
-  @@index([createdById, isDefault])
-}
-
-model AnalyticsWidget {
-  id          String   @id @default(cuid())
-  dashboardId String
-  dashboard   AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  
-  // Display
-  title       String
-  type        String   // metric, chart, pie, table, line
-  
-  // Query configuration
-  entityKey   String
-  segmentKey  String?
-  metric      Json     // { key, field?, filter? }
-  dimension   String?
-  filters     Json?    // FilterPredicate[]
-  dateRange   Json?    // DateRange override
-  dateMode    String?
-  granularity String?
-  sort        Json?    // { field, dir }
-  limit       Int?
-  
-  // Grid position
-  x           Int      @default(0)
-  y           Int      @default(0)
-  w           Int      @default(6)
-  h           Int      @default(2)
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@index([dashboardId])
-}

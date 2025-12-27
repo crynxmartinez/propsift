@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { DashboardBuilder } from '@/components/analytics'
+import { BarChart3 } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -30,8 +30,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Analytics Dashboard</h1>
-        <DashboardBuilder />
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+          <BarChart3 className="w-16 h-16 mb-4 text-gray-300" />
+          <h1 className="text-xl font-semibold">Dashboard</h1>
+          <p className="text-sm mt-2">Coming soon</p>
+        </div>
       </div>
     </div>
   )
