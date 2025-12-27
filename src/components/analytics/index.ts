@@ -14,7 +14,7 @@ export { WidgetRenderer } from './WidgetRenderer'
 export { WidgetConfigPanel } from './WidgetConfigPanel'
 
 // Widgets
-export { MetricWidget, ChartWidget, PieWidget, TableWidget } from './widgets'
+export { MetricWidget, ChartWidget, PieWidget, TableWidget, LineWidget } from './widgets'
 
 // Hooks
 export { useWidgetData, useDrilldown } from './hooks'

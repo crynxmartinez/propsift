@@ -6,7 +6,7 @@
 
 'use client'
 
-import { MetricWidget, ChartWidget, PieWidget, TableWidget } from './widgets'
+import { MetricWidget, ChartWidget, PieWidget, TableWidget, LineWidget } from './widgets'
 import { useWidgetData } from './hooks'
 import type { WidgetConfig } from './types'
 import type { GlobalFilters } from '@/lib/analytics/registry/types'
@@ -44,6 +44,8 @@ export function WidgetRenderer({
       return <PieWidget {...commonProps} />
     case 'table':
       return <TableWidget {...commonProps} />
+    case 'line':
+      return <LineWidget {...commonProps} />
     default:
       return <MetricWidget {...commonProps} />
   }

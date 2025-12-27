@@ -15,7 +15,7 @@ import type {
  */
 export interface WidgetConfig {
   id: string
-  type: 'metric' | 'chart' | 'table' | 'pie'
+  type: 'metric' | 'chart' | 'table' | 'pie' | 'line'
   title: string
   entityKey: string
   segmentKey?: string

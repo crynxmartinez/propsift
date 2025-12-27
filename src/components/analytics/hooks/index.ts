@@ -4,3 +4,4 @@
 
 export { useWidgetData } from './useWidgetData'
 export { useDrilldown } from './useDrilldown'
+export { useLabels } from './useLabels'
