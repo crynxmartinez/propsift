@@ -7,12 +7,13 @@ export interface AuthUser {
   role: UserRole
   accountOwnerId: string | null
   ownerId: string
+  isPlatformAdmin: boolean
 }
 
 export async function getAuthUser(userId: string): Promise<AuthUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, accountOwnerId: true, status: true }
+    select: { id: true, role: true, accountOwnerId: true, status: true, isPlatformAdmin: true }
   })
 
   if (!user || user.status !== 'active') {
@@ -23,8 +24,17 @@ export async function getAuthUser(userId: string): Promise<AuthUser | null> {
     id: user.id,
     role: user.role as UserRole,
     accountOwnerId: user.accountOwnerId,
-    ownerId: user.accountOwnerId || user.id
+    ownerId: user.accountOwnerId || user.id,
+    isPlatformAdmin: user.isPlatformAdmin
   }
+}
+
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isPlatformAdmin: true, status: true }
+  })
+  return user?.status === 'active' && user?.isPlatformAdmin === true
 }
 
 export function canManageData(role: UserRole): boolean {

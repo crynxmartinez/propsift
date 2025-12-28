@@ -6,17 +6,23 @@ const prisma = new PrismaClient()
 async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 12)
 
+  // Create/update platform admin account
   const user = await prisma.user.upsert({
     where: { email: 'admin@propsift.com' },
-    update: {},
+    update: {
+      isPlatformAdmin: true,
+      role: 'owner',
+    },
     create: {
       email: 'admin@propsift.com',
       password: hashedPassword,
-      name: 'Admin',
+      name: 'PropSift Admin',
+      isPlatformAdmin: true,
+      role: 'owner',
     },
   })
 
-  console.log('Created admin user:', user.email)
+  console.log('Created/updated platform admin:', user.email, '(isPlatformAdmin:', user.isPlatformAdmin, ')')
 }
 
 main()

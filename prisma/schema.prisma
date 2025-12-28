@@ -18,6 +18,7 @@ model User {
   // Role & Status
   role                 String                @default("owner")   // owner, super_admin, admin, member
   status               String                @default("active")  // active, inactive
+  isPlatformAdmin      Boolean               @default(false)     // Platform-level admin (PropSift staff only)
   
   // Account ownership (for team members)
   accountOwnerId       String?
