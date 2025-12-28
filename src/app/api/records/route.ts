@@ -227,6 +227,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const filter = searchParams.get('filter') || 'all'; // all, complete, incomplete
     const filtersParam = searchParams.get('filters');
+    const search = searchParams.get('search') || '';
 
     // Validate limit
     const validLimits = [10, 20, 50, 100];
@@ -255,6 +256,26 @@ export async function GET(request: NextRequest) {
       whereClause = { ...whereClause, isComplete: true };
     } else if (filter === 'incomplete') {
       whereClause = { ...whereClause, isComplete: false };
+    }
+
+    // Apply search filter - use AND to combine with existing OR clause
+    if (search && search.length >= 2) {
+      const searchCondition = {
+        OR: [
+          { ownerFullName: { contains: search, mode: 'insensitive' } },
+          { propertyStreet: { contains: search, mode: 'insensitive' } },
+          { propertyCity: { contains: search, mode: 'insensitive' } },
+          { mailingStreet: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ]
+      };
+      whereClause = {
+        AND: [
+          whereClause,
+          searchCondition
+        ]
+      };
     }
 
     // Parse and apply advanced filters

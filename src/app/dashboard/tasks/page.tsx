@@ -879,16 +879,53 @@ function CreateTaskModal({
 
   const isEditing = task?.id ? true : false
 
-  // Search records
+  // Fetch latest records on mount (for dropdown)
+  useEffect(() => {
+    const fetchLatestRecords = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      try {
+        const response = await fetch('/api/records?limit=10', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setRecords(data.records || [])
+        }
+      } catch (error) {
+        console.error('Error fetching records:', error)
+      }
+    }
+    fetchLatestRecords()
+  }, [])
+
+  // Search records when typing
   useEffect(() => {
     const searchRecords = async () => {
-      if (recordSearch.length < 2) {
-        setRecords([])
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      // If search is empty, fetch latest records
+      if (!recordSearch || recordSearch.length < 2) {
+        try {
+          const response = await fetch('/api/records?limit=10', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setRecords(data.records || [])
+          }
+        } catch (error) {
+          console.error('Error fetching records:', error)
+        }
         return
       }
       
       try {
-        const response = await fetch(`/api/records?search=${encodeURIComponent(recordSearch)}&limit=10`)
+        const response = await fetch(`/api/records?search=${encodeURIComponent(recordSearch)}&limit=10`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
         if (response.ok) {
           const data = await response.json()
           setRecords(data.records || [])
@@ -927,7 +964,7 @@ function CreateTaskModal({
         assignmentType,
         assignedToId: assignmentType === 'MANUAL' ? (assignedToId || null) : null,
         roundRobinUsers: assignmentType === 'ROUND_ROBIN' ? roundRobinUsers : [],
-        recordId: recordId || null,
+        recordId: saveAsTemplate ? null : (recordId || null), // Don't link property when saving as template
         createdById: 'system', // TODO: Get from auth
         saveAsTemplate,
         templateName: saveAsTemplate ? templateName : null,
@@ -1016,7 +1053,7 @@ function CreateTaskModal({
           </div>
 
           {/* Priority & Link to Property */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${saveAsTemplate ? 'grid-cols-1' : 'grid-cols-2'}`}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Priority
@@ -1033,62 +1070,65 @@ function CreateTaskModal({
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Link to Property
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={selectedRecord ? (selectedRecord.propertyStreet || selectedRecord.ownerFullName) : recordSearch}
-                  onChange={(e) => {
-                    setRecordSearch(e.target.value)
-                    setSelectedRecord(null)
-                    setRecordId('')
-                    setShowRecordDropdown(true)
-                  }}
-                  onFocus={() => setShowRecordDropdown(true)}
-                  placeholder="Search property..."
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {selectedRecord && (
-                  <button
-                    type="button"
-                    onClick={() => {
+            {/* Hide Link to Property when saving as template */}
+            {!saveAsTemplate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Link to Property
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={selectedRecord ? (selectedRecord.propertyStreet || selectedRecord.ownerFullName) : recordSearch}
+                    onChange={(e) => {
+                      setRecordSearch(e.target.value)
                       setSelectedRecord(null)
                       setRecordId('')
-                      setRecordSearch('')
+                      setShowRecordDropdown(true)
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
-                  >
-                    <X className="w-4 h-4 text-gray-400" />
-                  </button>
-                )}
-                {showRecordDropdown && records.length > 0 && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowRecordDropdown(false)} />
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                      {records.map(record => (
-                        <button
-                          key={record.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedRecord(record)
-                            setRecordId(record.id)
-                            setRecordSearch('')
-                            setShowRecordDropdown(false)
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
-                        >
-                          <div className="font-medium">{record.propertyStreet || 'No address'}</div>
-                          <div className="text-gray-500">{record.ownerFullName}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                    onFocus={() => setShowRecordDropdown(true)}
+                    placeholder="Search property..."
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {selectedRecord && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRecord(null)
+                        setRecordId('')
+                        setRecordSearch('')
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                    >
+                      <X className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+                  {showRecordDropdown && records.length > 0 && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowRecordDropdown(false)} />
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                        {records.map(record => (
+                          <button
+                            key={record.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedRecord(record)
+                              setRecordId(record.id)
+                              setRecordSearch('')
+                              setShowRecordDropdown(false)
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
+                          >
+                            <div className="font-medium">{record.propertyStreet || 'No address'}</div>
+                            <div className="text-gray-500">{record.ownerFullName}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Scheduling Section */}
