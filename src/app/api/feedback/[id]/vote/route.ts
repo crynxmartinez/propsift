@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { verifyToken } from '@/lib/auth'
 
 function getUserIdFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
@@ -11,12 +9,8 @@ function getUserIdFromRequest(request: NextRequest): string | null {
   }
 
   const token = authHeader.split(' ')[1]
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
-    return decoded.userId
-  } catch {
-    return null
-  }
+  const decoded = verifyToken(token)
+  return decoded?.userId || null
 }
 
 // POST /api/feedback/[id]/vote - Toggle vote on a post
