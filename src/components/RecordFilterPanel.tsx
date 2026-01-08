@@ -16,6 +16,31 @@ import {
   Copy,
   Loader2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 // Types
 export interface FilterBlock {
@@ -673,37 +698,38 @@ export default function RecordFilterPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Filter Records</h2>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <h2 className="text-lg font-semibold">Filter Records</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('filter')}
-            className={`flex-1 py-3 text-sm font-medium transition ${
+            className={cn(
+              "flex-1 py-3 rounded-none border-b-2",
               activeTab === 'filter'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+                ? 'border-primary text-primary bg-primary/5'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
           >
             Filter
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('templates')}
-            className={`flex-1 py-3 text-sm font-medium transition ${
+            className={cn(
+              "flex-1 py-3 rounded-none border-b-2",
               activeTab === 'templates'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+                ? 'border-primary text-primary bg-primary/5'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
           >
             Templates {templateCount > 0 && `(${templateCount})`}
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -713,29 +739,31 @@ export default function RecordFilterPanel({
             <div className="p-4">
               {/* Toolbar */}
               <div className="flex items-center gap-2 mb-4">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowSaveTemplate(true)}
                   disabled={filters.length === 0}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 mr-1.5" />
                   Save as Template
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={clearFilters}
                   disabled={filters.length === 0}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-4 h-4 mr-1.5" />
                   Clear
-                </button>
+                </Button>
               </div>
 
               {/* Add Filter Block Button */}
               <div className="relative mb-4">
                 <button
                   onClick={() => setShowFieldSelector(!showFieldSelector)}
-                  className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition"
+                  className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed rounded-lg text-muted-foreground hover:border-primary hover:text-primary transition"
                 >
                   <span className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
@@ -746,17 +774,16 @@ export default function RecordFilterPanel({
 
                 {/* Field Selector Dropdown */}
                 {showFieldSelector && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-popover border rounded-lg shadow-lg z-10 max-h-80 overflow-hidden">
                     {/* Search */}
-                    <div className="p-2 border-b sticky top-0 bg-white">
+                    <div className="p-2 border-b sticky top-0 bg-popover">
                       <div className="relative">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
+                        <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                        <Input
                           placeholder="Search for filter blocks..."
                           value={fieldSearch}
                           onChange={(e) => setFieldSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="pl-9"
                           autoFocus
                         />
                       </div>
@@ -768,7 +795,7 @@ export default function RecordFilterPanel({
                         <div key={category.name}>
                           <button
                             onClick={() => toggleCategory(category.name)}
-                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-muted text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/80"
                           >
                             {category.name}
                             {expandedCategories.has(category.name) ? (
@@ -783,7 +810,7 @@ export default function RecordFilterPanel({
                                 <button
                                   key={field.key}
                                   onClick={() => addFilterBlock(field)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                                 >
                                   {field.label}
                                 </button>
@@ -800,11 +827,11 @@ export default function RecordFilterPanel({
               {/* Filter Blocks */}
               {filters.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Search className="w-8 h-8 text-gray-400" />
+                  <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                    <Search className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-gray-900 font-medium mb-2">Build your own filter presets</h3>
-                  <p className="text-sm text-gray-500 mb-4">
+                  <h3 className="font-medium mb-2">Build your own filter presets</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
                     You can build your very own filter set by adding filter blocks and applying conditions to it.
                   </p>
                 </div>
