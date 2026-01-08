@@ -388,7 +388,7 @@ export default function SettingsPage() {
       {activeTab === 'profile' && profile && (
         <div className="space-y-6 max-w-3xl">
           {/* Account Info */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account Info</h2>
               {editingSection !== 'account' ? (
@@ -406,32 +406,32 @@ export default function SettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">First Name</label>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">First Name</label>
                 {editingSection === 'account' ? (
-                  <input type="text" value={formData.firstName || ''} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <input type="text" value={formData.firstName || ''} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                 ) : (
-                  <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.firstName || '-'}</p>
+                  <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.firstName || '-'}</p>
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Last Name</label>
                 {editingSection === 'account' ? (
-                  <input type="text" value={formData.lastName || ''} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <input type="text" value={formData.lastName || ''} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                 ) : (
-                  <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.lastName || '-'}</p>
+                  <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.lastName || '-'}</p>
                 )}
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Email</label>
-              <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.email}</p>
+              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Email</label>
+              <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.email}</p>
             </div>
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Phone Number</label>
               {editingSection === 'account' ? (
-                <input type="tel" value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="(999) 999-9999" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="tel" value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="(999) 999-9999" className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
               ) : (
-                <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.phone || '-'}</p>
+                <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.phone || '-'}</p>
               )}
             </div>
             <button onClick={() => setShowPasswordModal(true)} className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition text-sm font-medium">
@@ -440,7 +440,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Timezone */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account Timezone</h2>
               {editingSection !== 'timezone' ? (
@@ -457,20 +457,20 @@ export default function SettingsPage() {
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Account Timezone</label>
+              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Account Timezone</label>
               {editingSection === 'timezone' ? (
-                <select value={formData.timezone || 'America/Chicago'} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <select value={formData.timezone || 'America/Chicago'} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground">
                   {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
               ) : (
-                <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.timezone || 'America/Chicago'}</p>
+                <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.timezone || 'America/Chicago'}</p>
               )}
             </div>
           </div>
 
           {/* Company Info */}
           {canEditCompany && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-card rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Company Info</h2>
                 {editingSection !== 'company' ? (
@@ -488,74 +488,74 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Company Name</label>
+                  <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Company Name</label>
                   {editingSection === 'company' ? (
-                    <input type="text" value={formData.companyName || ''} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="text" value={formData.companyName || ''} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                   ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.companyName || '-'}</p>
+                    <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.companyName || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Email</label>
+                  <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Email</label>
                   {editingSection === 'company' ? (
-                    <input type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData({ ...formData, companyEmail: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData({ ...formData, companyEmail: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                   ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.companyEmail || '-'}</p>
+                    <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.companyEmail || '-'}</p>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Billing Address</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Billing Address</label>
                     {editingSection === 'company' ? (
-                      <input type="text" value={formData.billingAddress || ''} onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <input type="text" value={formData.billingAddress || ''} onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.billingAddress || '-'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.billingAddress || '-'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Phone Number</label>
                     {editingSection === 'company' ? (
-                      <input type="tel" value={formData.companyPhone || ''} onChange={(e) => setFormData({ ...formData, companyPhone: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <input type="tel" value={formData.companyPhone || ''} onChange={(e) => setFormData({ ...formData, companyPhone: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.companyPhone || '-'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.companyPhone || '-'}</p>
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">City</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">City</label>
                     {editingSection === 'company' ? (
-                      <input type="text" value={formData.billingCity || ''} onChange={(e) => setFormData({ ...formData, billingCity: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <input type="text" value={formData.billingCity || ''} onChange={(e) => setFormData({ ...formData, billingCity: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.billingCity || '-'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.billingCity || '-'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Country</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Country</label>
                     {editingSection === 'company' ? (
-                      <select value={formData.billingCountry || 'United States'} onChange={(e) => setFormData({ ...formData, billingCountry: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                      <select value={formData.billingCountry || 'United States'} onChange={(e) => setFormData({ ...formData, billingCountry: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground">
                         <option value="United States">United States</option>
                         <option value="Canada">Canada</option>
                         <option value="United Kingdom">United Kingdom</option>
                       </select>
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.billingCountry || 'United States'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.billingCountry || 'United States'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">State</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">State</label>
                     {editingSection === 'company' ? (
-                      <input type="text" value={formData.billingState || ''} onChange={(e) => setFormData({ ...formData, billingState: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <input type="text" value={formData.billingState || ''} onChange={(e) => setFormData({ ...formData, billingState: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.billingState || '-'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.billingState || '-'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Zip Code</label>
+                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Zip Code</label>
                     {editingSection === 'company' ? (
-                      <input type="text" value={formData.billingZip || ''} onChange={(e) => setFormData({ ...formData, billingZip: e.target.value })} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <input type="text" value={formData.billingZip || ''} onChange={(e) => setFormData({ ...formData, billingZip: e.target.value })} className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground" />
                     ) : (
-                      <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-700">{profile.billingZip || '-'}</p>
+                      <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.billingZip || '-'}</p>
                     )}
                   </div>
                 </div>

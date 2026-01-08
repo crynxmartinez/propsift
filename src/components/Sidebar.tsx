@@ -54,7 +54,7 @@ export default function Sidebar() {
 
   return (
     <TooltipProvider>
-      <aside className="w-64 bg-card text-card-foreground h-screen sticky top-0 flex flex-col shrink-0 border-r">
+      <aside className="w-64 bg-card text-card-foreground h-screen sticky top-0 flex flex-col shrink-0 border-r z-50">
         <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">

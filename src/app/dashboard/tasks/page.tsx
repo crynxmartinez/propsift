@@ -939,9 +939,13 @@ function CreateTaskModal({
       const url = isEditing && task ? `/api/tasks/${task.id}` : '/api/tasks'
       const method = isEditing ? 'PUT' : 'POST'
 
+      const token = localStorage.getItem('token')
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       })
 
@@ -978,12 +982,12 @@ function CreateTaskModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
+      <div className="bg-background rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background">
           <h2 className="text-xl font-semibold">
             {isEditing ? 'Edit Task' : 'Create Task'}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -991,22 +995,22 @@ function CreateTaskModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Title <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter task title"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -1014,20 +1018,20 @@ function CreateTaskModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter task description"
               rows={3}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
             />
           </div>
 
           {/* Priority & Link to Property */}
           <div className={`grid gap-4 ${saveAsTemplate ? 'grid-cols-1' : 'grid-cols-2'}`}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
               >
                 <option value="LOW">🟢 Low</option>
                 <option value="MEDIUM">🟡 Medium</option>
@@ -1039,7 +1043,7 @@ function CreateTaskModal({
             {/* Hide Link to Property when saving as template */}
             {!saveAsTemplate && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Link to Property
                 </label>
                 <div className="relative">
@@ -1054,7 +1058,7 @@ function CreateTaskModal({
                     }}
                     onFocus={() => setShowRecordDropdown(true)}
                     placeholder="Search property..."
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                   {selectedRecord && (
                     <button
