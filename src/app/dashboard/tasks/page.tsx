@@ -23,7 +23,30 @@ import {
   AlertCircle,
   X
 } from 'lucide-react'
-import { useToast } from '@/components/Toast'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 
 interface TaskRecord {
   id: string
@@ -103,7 +126,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TasksPage() {
   const router = useRouter()
-  const { showToast } = useToast()
   
   // State
   const [tasks, setTasks] = useState<Task[]>([])
@@ -182,11 +204,11 @@ export default function TasksPage() {
       })
     } catch (error) {
       console.error('Error fetching tasks:', error)
-      showToast('Failed to fetch tasks', 'error')
+      toast.error('Failed to fetch tasks')
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, assigneeFilter, searchQuery, showToast])
+  }, [statusFilter, assigneeFilter, searchQuery])
 
   // Fetch templates
   const fetchTemplates = async () => {
@@ -339,11 +361,11 @@ export default function TasksPage() {
       
       if (!response.ok) throw new Error('Failed to update task')
       
-      showToast(`Task marked as ${newStatus.toLowerCase().replace('_', ' ')}`, 'success')
+      toast.success(`Task marked as ${newStatus.toLowerCase().replace('_', ' ')}`)
       fetchTasks()
     } catch (error) {
       console.error('Error updating task:', error)
-      showToast('Failed to update task', 'error')
+      toast.error('Failed to update task')
     }
   }
 
@@ -360,11 +382,11 @@ export default function TasksPage() {
       
       if (!response.ok) throw new Error('Failed to delete task')
       
-      showToast('Task deleted', 'success')
+      toast.success('Task deleted')
       fetchTasks()
     } catch (error) {
       console.error('Error deleting task:', error)
-      showToast('Failed to delete task', 'error')
+      toast.error('Failed to delete task')
     }
   }
 
@@ -844,7 +866,6 @@ function CreateTaskModal({
   onClose: () => void
   onSave: () => void
 }) {
-  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [records, setRecords] = useState<TaskRecord[]>([])
   const [recordSearch, setRecordSearch] = useState('')
@@ -943,7 +964,7 @@ function CreateTaskModal({
     e.preventDefault()
     
     if (!title.trim()) {
-      showToast('Title is required', 'error')
+      toast.error('Title is required')
       return
     }
 
@@ -984,11 +1005,11 @@ function CreateTaskModal({
         throw new Error(error.error || 'Failed to save task')
       }
 
-      showToast(isEditing ? 'Task updated' : 'Task created', 'success')
+      toast.success(isEditing ? 'Task updated' : 'Task created')
       onSave()
     } catch (error) {
       console.error('Error saving task:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to save task', 'error')
+      toast.error(error instanceof Error ? error.message : 'Failed to save task')
     } finally {
       setLoading(false)
     }
