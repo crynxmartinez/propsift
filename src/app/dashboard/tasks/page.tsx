@@ -438,141 +438,110 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <CheckSquare className="w-8 h-8 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <CheckSquare className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl font-bold">Tasks</h1>
         </div>
         
         {/* Create Task Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowCreateDropdown(!showCreateDropdown)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create Task
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          
-          {showCreateDropdown && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowCreateDropdown(false)} />
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20">
-                <button
-                  onClick={() => {
-                    setShowCreateDropdown(false)
-                    setEditingTask(null)
-                    setShowCreateModal(true)
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Task
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreateDropdown(false)
-                    setShowTemplateModal(true)
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  From Template
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <DropdownMenu open={showCreateDropdown} onOpenChange={setShowCreateDropdown}>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Task
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => {
+              setEditingTask(null)
+              setShowCreateModal(true)
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Task
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowTemplateModal(true)}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              From Template
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Search and Filters */}
       <div className="flex items-center gap-4 mb-6">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pl-10"
           />
         </div>
 
         {/* Filter Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          
-          {showFilterDropdown && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowFilterDropdown(false)} />
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border z-20 p-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
-                  <select
-                    value={assigneeFilter}
-                    onChange={(e) => setAssigneeFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All Users</option>
-                    <option value="UNASSIGNED">Unassigned</option>
-                    {users.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.name || user.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={() => {
-                    setAssigneeFilter('')
-                    setShowFilterDropdown(false)
-                  }}
-                  className="w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <DropdownMenu open={showFilterDropdown} onOpenChange={setShowFilterDropdown}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 p-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Assigned To</label>
+              <select
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Users</option>
+                <option value="UNASSIGNED">Unassigned</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                setAssigneeFilter('')
+                setShowFilterDropdown(false)
+              }}
+            >
+              Clear Filters
+            </Button>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Group By Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowGroupDropdown(!showGroupDropdown)}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
-          >
-            Group by: {groupBy === 'dueDate' ? 'Due Date' : groupBy === 'priority' ? 'Priority' : groupBy === 'assignee' ? 'Assignee' : 'Status'}
-            <ChevronDown className="w-4 h-4" />
-          </button>
+        <DropdownMenu open={showGroupDropdown} onOpenChange={setShowGroupDropdown}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              Group by: {groupBy === 'dueDate' ? 'Due Date' : groupBy === 'priority' ? 'Priority' : groupBy === 'assignee' ? 'Assignee' : 'Status'}
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
           
-          {showGroupDropdown && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowGroupDropdown(false)} />
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border z-20">
-                {(['dueDate', 'priority', 'assignee', 'status'] as GroupBy[]).map(option => (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      setGroupBy(option)
-                      setShowGroupDropdown(false)
-                    }}
-                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${groupBy === option ? 'bg-blue-50 text-blue-600' : ''}`}
-                  >
-                    {option === 'dueDate' ? 'Due Date' : option === 'priority' ? 'Priority' : option === 'assignee' ? 'Assignee' : 'Status'}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+          <DropdownMenuContent align="end">
+            {(['dueDate', 'priority', 'assignee', 'status'] as GroupBy[]).map(option => (
+              <DropdownMenuItem
+                key={option}
+                onClick={() => setGroupBy(option)}
+                className={groupBy === option ? 'bg-accent' : ''}
+              >
+                {option === 'dueDate' ? 'Due Date' : option === 'priority' ? 'Priority' : option === 'assignee' ? 'Assignee' : 'Status'}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Status Tabs */}
