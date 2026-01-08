@@ -2,8 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Mail, Lock, AlertCircle, LogIn, ArrowLeft } from 'lucide-react'
+import { UserPlus, Mail, Lock, AlertCircle, LogIn, ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -53,114 +58,104 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Back to Home - Inside Card */}
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-              <UserPlus className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-500 mt-2">Join PropSift today</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-                <AlertCircle className="w-4 h-4" />
-                {error}
+        <Card className="shadow-xl">
+          <CardHeader className="space-y-1">
+            <Button variant="ghost" size="sm" className="w-fit -ml-2 mb-2" asChild>
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Link>
+            </Button>
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full">
+                <UserPlus className="w-8 h-8 text-primary-foreground" />
               </div>
+            </div>
+            <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+            <CardDescription className="text-center">Join PropSift today</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
-                  required
-                />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Create a password"
-                  required
-                />
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    placeholder="Create a password"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Confirm your password"
-                  required
-                />
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                </div>
               </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <UserPlus className="w-4 h-4 mr-2" />
+                )}
+                {loading ? 'Creating account...' : 'Create Account'}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Button variant="link" className="p-0 h-auto" asChild>
+                  <Link href="/login">
+                    <LogIn className="w-3 h-3 mr-1" />
+                    Sign in
+                  </Link>
+                </Button>
+              </p>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  Create Account
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <a
-                href="/login"
-                className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 inline-flex"
-              >
-                <LogIn className="w-3 h-3" />
-                Sign in
-              </a>
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
