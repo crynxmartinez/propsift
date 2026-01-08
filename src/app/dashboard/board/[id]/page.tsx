@@ -18,6 +18,34 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import {
   DndContext,
   DragOverlay,
@@ -641,7 +669,7 @@ export default function BoardDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -649,13 +677,14 @@ export default function BoardDetailPage() {
   if (!board) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Board not found</p>
-        <button
+        <p className="text-muted-foreground">Board not found</p>
+        <Button
+          variant="link"
           onClick={() => router.push('/dashboard/board')}
-          className="mt-4 text-blue-600 hover:underline"
+          className="mt-4"
         >
           Back to Boards
-        </button>
+        </Button>
       </div>
     )
   }
@@ -663,14 +692,15 @@ export default function BoardDetailPage() {
   return (
     <div className="h-full flex flex-col -m-6">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
+      <div className="px-6 py-4 border-b bg-background">
         <div className="flex items-center gap-4">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => router.push('/dashboard/board')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
             <ArrowLeft className="w-5 h-5" />
-          </button>
+          </Button>
           <div>
             <h1 className="text-xl font-bold text-gray-900">{board.name}</h1>
             {board.description && (
