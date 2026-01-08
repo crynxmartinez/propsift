@@ -3,6 +3,24 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface BulkImportModalProps {
   isOpen: boolean
@@ -583,94 +601,89 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Bulk Import Properties</h2>
-          <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Bulk Import Properties</DialogTitle>
+        </DialogHeader>
 
         {/* Step Indicator */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="py-4 border-b">
           <div className="flex items-center justify-center">
             {/* Step 1 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 1 ? <Check className="w-4 h-4" /> : '1'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 1 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 1 ? 'text-foreground' : 'text-muted-foreground')}>
                 Import Type
               </span>
             </div>
             
             {/* Line 1-2 */}
-            <div className={`w-12 h-0.5 mx-2 ${step > 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-12 h-0.5 mx-2", step > 1 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 2 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 2 ? <Check className="w-4 h-4" /> : '2'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 2 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 2 ? 'text-foreground' : 'text-muted-foreground')}>
                 Motivations
               </span>
             </div>
             
             {/* Line 2-3 */}
-            <div className={`w-12 h-0.5 mx-2 ${step > 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-12 h-0.5 mx-2", step > 2 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 3 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 3 ? <Check className="w-4 h-4" /> : '3'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 3 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 3 ? 'text-foreground' : 'text-muted-foreground')}>
                 Upload
               </span>
             </div>
             
             {/* Line 3-4 */}
-            <div className={`w-12 h-0.5 mx-2 ${step > 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-12 h-0.5 mx-2", step > 3 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 4 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 4 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 4 ? <Check className="w-4 h-4" /> : '4'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 4 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 4 ? 'text-foreground' : 'text-muted-foreground')}>
                 Map Fields
               </span>
             </div>
             
             {/* Line 4-5 */}
-            <div className={`w-12 h-0.5 mx-2 ${step > 4 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-12 h-0.5 mx-2", step > 4 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 5 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 5 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 5 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 5
               </div>
-              <span className={`ml-2 text-sm ${step >= 5 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 5 ? 'text-foreground' : 'text-muted-foreground')}>
                 Review
               </span>
             </div>
@@ -678,14 +691,12 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 overflow-y-auto flex-1">
+        <div className="py-6 overflow-y-auto flex-1">
           {/* Step 1: Import Type */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  What would you like to do?
-                </label>
+                <Label className="mb-3 block">What would you like to do?</Label>
                 <div className="flex gap-4">
                   <button
                     type="button"
@@ -694,14 +705,15 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       importType: 'add',
                       importOption: 'new_motivation'
                     }))}
-                    className={`flex-1 p-4 border-2 rounded-lg text-center transition ${
+                    className={cn(
+                      "flex-1 p-4 border-2 rounded-lg text-center transition",
                       state.importType === 'add'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                    }`}
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-muted-foreground'
+                    )}
                   >
                     <div className="font-medium">Add Data</div>
-                    <div className="text-sm text-gray-500 mt-1">Import new records</div>
+                    <div className="text-sm text-muted-foreground mt-1">Import new records</div>
                   </button>
                   <button
                     type="button"
@@ -710,48 +722,51 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       importType: 'update',
                       importOption: 'property_address'
                     }))}
-                    className={`flex-1 p-4 border-2 rounded-lg text-center transition ${
+                    className={cn(
+                      "flex-1 p-4 border-2 rounded-lg text-center transition",
                       state.importType === 'update'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                    }`}
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-muted-foreground'
+                    )}
                   >
                     <div className="font-medium">Update Data</div>
-                    <div className="text-sm text-gray-500 mt-1">Update existing records</div>
+                    <div className="text-sm text-muted-foreground mt-1">Update existing records</div>
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select an option
-                </label>
-                <select
+                <Label className="mb-2 block">Select an option</Label>
+                <Select
                   value={state.importOption}
-                  onChange={(e) => setState(prev => ({ 
+                  onValueChange={(value) => setState(prev => ({ 
                     ...prev, 
-                    importOption: e.target.value as ImportState['importOption']
+                    importOption: value as ImportState['importOption']
                   }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
-                  {state.importType === 'add' ? (
-                    <>
-                      <option value="new_motivation">Upload new list to a motivation</option>
-                      <option value="existing_motivation">Upload new list to an existing motivation</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="property_address">Update records using Property Address</option>
-                      <option value="mailing_address">Update records using Mailing Address</option>
-                    </>
-                  )}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {state.importType === 'add' ? (
+                      <>
+                        <SelectItem value="new_motivation">Upload new list to a motivation</SelectItem>
+                        <SelectItem value="existing_motivation">Upload new list to an existing motivation</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="property_address">Update records using Property Address</SelectItem>
+                        <SelectItem value="mailing_address">Update records using Mailing Address</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
+                  <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
                     {state.importType === 'add' ? (
                       <>
                         <strong>Add Data:</strong> New records will be created. If a record with the same property address already exists, it will be overwritten with the new data.
@@ -1281,19 +1296,19 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
           {/* Step 5: Review */}
           {step === 5 && (
             <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="font-medium text-gray-900 mb-4">Import Summary</h3>
+              <div className="bg-muted rounded-lg p-6">
+                <h3 className="font-medium mb-4">Import Summary</h3>
                 
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Import Type:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground">Import Type:</span>
+                    <span className="font-medium">
                       {state.importType === 'add' ? 'Add Data' : 'Update Data'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Option:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground">Option:</span>
+                    <span className="font-medium">
                       {state.importOption === 'new_motivation' && 'Upload new list to a motivation'}
                       {state.importOption === 'existing_motivation' && 'Upload new list to an existing motivation'}
                       {state.importOption === 'property_address' && 'Update using Property Address'}
@@ -1301,40 +1316,40 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Motivations:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground">Motivations:</span>
+                    <span className="font-medium">
                       {state.motivationIds.length > 0
                         ? state.motivationIds.map(id => motivations.find(m => m.id === id)?.name).join(', ')
                         : 'None'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Tags:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground">Tags:</span>
+                    <span className="font-medium">
                       {state.tagIds.length > 0
                         ? state.tagIds.map(id => tags.find(t => t.id === id)?.name).join(', ')
                         : 'None'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">File:</span>
-                    <span className="text-gray-900 font-medium">{state.csvFile?.name}</span>
+                    <span className="text-muted-foreground">File:</span>
+                    <span className="font-medium">{state.csvFile?.name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Total Records:</span>
-                    <span className="text-gray-900 font-medium">{state.rowCount}</span>
+                    <span className="text-muted-foreground">Total Records:</span>
+                    <span className="font-medium">{state.rowCount}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="font-medium text-gray-900 mb-4">Field Mapping</h3>
+              <div className="bg-muted rounded-lg p-6">
+                <h3 className="font-medium mb-4">Field Mapping</h3>
                 <div className="space-y-2">
                   {Object.entries(state.fieldMapping).map(([systemField, csvColumn]) => (
                     <div key={systemField} className="flex items-center text-sm">
-                      <span className="text-gray-500 w-40">{csvColumn}</span>
-                      <span className="text-gray-400 mx-2">→</span>
-                      <span className="text-gray-900 font-medium">
+                      <span className="text-muted-foreground w-40">{csvColumn}</span>
+                      <span className="text-muted-foreground mx-2">→</span>
+                      <span className="font-medium">
                         {SYSTEM_FIELDS.find(f => f.key === systemField)?.label}
                       </span>
                     </div>
@@ -1346,44 +1361,33 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-between">
-          <button
-            type="button"
+        <div className="pt-4 border-t flex justify-between">
+          <Button
+            variant="ghost"
             onClick={step === 1 ? handleClose : handleBack}
             disabled={importing}
-            className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50"
           >
             {step === 1 ? 'Cancel' : '← Back'}
-          </button>
+          </Button>
           
           {step < 5 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
+            <Button onClick={handleNext} disabled={!canProceed()}>
               Next Step →
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={handleImport}
-              disabled={importing}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-2"
-            >
+            <Button onClick={handleImport} disabled={importing}>
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Importing...
                 </>
               ) : (
                 `Import ${state.rowCount} Records`
               )}
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
