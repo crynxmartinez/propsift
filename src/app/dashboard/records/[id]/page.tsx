@@ -26,6 +26,20 @@ import {
   Clock,
   Info
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface RecordData {
   id: string
@@ -910,7 +924,7 @@ export default function PropertyDetailsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -918,7 +932,7 @@ export default function PropertyDetailsPage() {
   if (!record) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Record not found</p>
+        <p className="text-muted-foreground">Record not found</p>
       </div>
     )
   }
@@ -930,12 +944,12 @@ export default function PropertyDetailsPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/dashboard/records" className="text-blue-600 hover:text-blue-800">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Link href="/dashboard/records" className="text-primary hover:underline">
           Records
         </Link>
         <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-900">Property Details</span>
+        <span className="text-foreground">Property Details</span>
       </div>
 
       {/* Header */}
@@ -950,7 +964,9 @@ export default function PropertyDetailsPage() {
             </p>
           </div>
           {/* Edit Button - beside address */}
-          <button 
+          <Button 
+            variant="outline"
+            size="icon"
             onClick={() => {
               setEditAddressData({
                 street: record.propertyStreet || '',
@@ -960,10 +976,10 @@ export default function PropertyDetailsPage() {
               })
               setShowEditAddressModal(true)
             }}
-            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-1"
+            className="mt-1"
           >
-            <Pencil className="w-4 h-4 text-gray-600" />
-          </button>
+            <Pencil className="w-4 h-4" />
+          </Button>
         </div>
 
         <div className="flex items-center gap-3">
