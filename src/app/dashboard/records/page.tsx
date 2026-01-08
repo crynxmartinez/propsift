@@ -199,20 +199,7 @@ export default function RecordsPage() {
     fetchBulkOptions()
   }, [])
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-dropdown]')) {
-        setShowAddDropdown(false)
-        setShowSelectDropdown(false)
-        setShowLimitDropdown(false)
-        setShowManageDropdown(false)
-      }
-    }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
-
+  
   // Fetch options for bulk actions
   const fetchBulkOptions = async () => {
     try {
