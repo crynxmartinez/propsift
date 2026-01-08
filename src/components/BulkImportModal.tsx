@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search } from 'lucide-react'
-import { useToast } from '@/components/Toast'
+import { toast } from 'sonner'
 
 interface BulkImportModalProps {
   isOpen: boolean
@@ -133,7 +133,6 @@ interface CustomField {
 }
 
 export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalProps) {
-  const { showToast } = useToast()
   const [step, setStep] = useState(1)
   const [state, setState] = useState<ImportState>(initialState)
   const [loading, setLoading] = useState(false)
@@ -366,7 +365,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Handle file upload
   const handleFileUpload = (file: File) => {
     if (!file.name.endsWith('.csv')) {
-      showToast('Please upload a CSV file', 'error')
+      toast.error('Please upload a CSV file')
       return
     }
     
@@ -509,7 +508,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
       // 2. Close modal immediately and show toast
       onClose()
-      showToast('Upload started! View progress in Activity > Upload', 'success', 5000)
+      toast.success('Upload started! View progress in Activity > Upload')
       
       // 3. Start background import (fire and forget)
       // API handles activity log updates internally
@@ -538,7 +537,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       
     } catch (error) {
       console.error('Import error:', error)
-      showToast('Failed to start import. Please try again.', 'error')
+      toast.error('Failed to start import. Please try again.')
     } finally {
       setImporting(false)
     }
