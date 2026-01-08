@@ -630,157 +630,126 @@ export default function RecordsPage() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-            <p className="text-gray-500 mt-2">Loading records...</p>
-          </div>
-        ) : (
-          <>
-            <table className="w-full table-fixed">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="w-12 px-4 py-3">
-                    <div className="relative" data-dropdown>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowSelectDropdown(!showSelectDropdown)
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        <div className="w-4 h-4 rounded border border-gray-300 bg-white flex items-center justify-center">
-                          {selectedIds.size > 0 && selectedIds.size === records.length && (
-                            <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {selectedIds.size > 0 && selectedIds.size < records.length && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-sm" />
-                          )}
-                        </div>
-                        <ChevronDown className="w-3 h-3 text-gray-400" />
-                      </button>
-                      {showSelectDropdown && (
-                        <div className="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                          <div className="px-3 py-1 text-xs text-gray-500">Choose selection</div>
-                          <button
-                            onClick={handleSelectVisible}
-                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                          >
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-12 text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+              <p className="text-muted-foreground mt-2">Loading records...</p>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <DropdownMenu open={showSelectDropdown} onOpenChange={setShowSelectDropdown}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Checkbox
+                              checked={selectedIds.size > 0 && selectedIds.size === records.length}
+                              className="pointer-events-none"
+                            />
+                            <ChevronDown className="w-3 h-3 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={handleSelectVisible}>
                             Select visible ({records.length})
-                          </button>
-                          <button
-                            onClick={handleSelectAll}
-                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                          >
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleSelectAll}>
                             Select all ({totalCount})
-                          </button>
+                          </DropdownMenuItem>
                           {selectedIds.size > 0 && (
-                            <button
-                              onClick={handleClearSelection}
-                              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                            >
+                            <DropdownMenuItem onClick={handleClearSelection}>
                               Clear selection
-                            </button>
+                            </DropdownMenuItem>
                           )}
-                        </div>
-                      )}
-                    </div>
-                  </th>
-                  <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                  <th className="w-1/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mailing Address</th>
-                  <th className="w-1/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property Address</th>
-                  <th className="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skiptrace</th>
-                  <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Mailing Address</TableHead>
+                    <TableHead>Property Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Skiptrace</TableHead>
+                    <TableHead>Motivation</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                 {records.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center">
-                      <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                      <p className="text-gray-500">No records found</p>
-                      <p className="text-sm text-gray-400">
-                        {filter === 'complete' ? 'No complete records yet' : 
-                         filter === 'incomplete' ? 'No incomplete records' : 
-                         'Add your first property record'}
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  records.map((record) => (
-                    <tr 
-                      key={record.id} 
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/records/${record.id}`)}
-                    >
-                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(record.id)}
-                          onChange={() => toggleSelect(record.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/dashboard/owners/${record.id}`)
-                          }}
-                          className="text-left hover:text-blue-600"
-                        >
-                          <div className="text-sm text-gray-900 font-medium hover:text-blue-600">
-                            {record.ownerFirstName || record.ownerLastName 
-                              ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
-                              : record.ownerFullName}
-                          </div>
-                          {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
-                            <div className="text-xs text-gray-500">
-                              {record.ownerFullName}
-                            </div>
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-4 py-4 text-sm">
-                        <span className="text-left hover:text-blue-600">
-                          {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-sm">
-                        <span className="text-left hover:text-blue-600">
-                          {formatAddress(record.propertyStreet, record.propertyCity, record.propertyState, record.propertyZip)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        {record.status ? (
-                          <span
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                            style={{ backgroundColor: record.status.color }}
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12">
+                        <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-muted-foreground">No records found</p>
+                        <p className="text-sm text-muted-foreground/70">
+                          {filter === 'complete' ? 'No complete records yet' : 
+                           filter === 'incomplete' ? 'No incomplete records' : 
+                           'Add your first property record'}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    records.map((record) => (
+                      <TableRow 
+                        key={record.id} 
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/dashboard/records/${record.id}`)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(record.id)}
+                            onCheckedChange={() => toggleSelect(record.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/dashboard/owners/${record.id}`)
+                            }}
+                            className="text-left hover:text-primary"
                           >
-                            {record.status.name}
+                            <div className="text-sm font-medium">
+                              {record.ownerFirstName || record.ownerLastName 
+                                ? `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim()
+                                : record.ownerFullName}
+                            </div>
+                            {(record.ownerFirstName || record.ownerLastName) && record.ownerFullName !== `${record.ownerFirstName || ''} ${record.ownerLastName || ''}`.trim() && (
+                              <div className="text-xs text-muted-foreground">
+                                {record.ownerFullName}
+                              </div>
+                            )}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatAddress(record.propertyStreet, record.propertyCity, record.propertyState, record.propertyZip)}
+                        </TableCell>
+                        <TableCell>
+                          {record.status ? (
+                            <Badge style={{ backgroundColor: record.status.color }} className="text-white">
+                              {record.status.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatSkiptraceDate(record.skiptraceDate)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                            📋 {record.recordMotivations.length}
                           </span>
-                        ) : (
-                          <span className="text-gray-400 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-500">
-                        {formatSkiptraceDate(record.skiptraceDate)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-500">
-                          <span className="text-lg">📋</span>
-                          {record.recordMotivations.length}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
 
             {/* Pagination */}
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
@@ -844,7 +813,8 @@ export default function RecordsPage() {
             </div>
           </>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Add Property Modal */}
       <AddPropertyModal
