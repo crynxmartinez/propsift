@@ -114,16 +114,11 @@ function PricingCards() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-4 mb-12">
-          <span className={`font-medium ${!annual ? 'text-gray-900' : 'text-gray-500'}`}>Monthly</span>
-          <button
-            onClick={() => setAnnual(!annual)}
-            className={`relative w-14 h-7 rounded-full transition-colors ${annual ? 'bg-blue-600' : 'bg-gray-300'}`}
-          >
-            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${annual ? 'left-8' : 'left-1'}`} />
-          </button>
-          <span className={`font-medium ${annual ? 'text-gray-900' : 'text-gray-500'}`}>
+          <span className={`font-medium ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Monthly</span>
+          <Switch checked={annual} onCheckedChange={setAnnual} />
+          <span className={`font-medium ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>
             Annual
-            <span className="ml-2 text-xs text-green-600 font-semibold">Save 20%</span>
+            <Badge variant="secondary" className="ml-2 text-green-600">Save 20%</Badge>
           </span>
         </div>
 
@@ -175,16 +170,11 @@ function PricingCards() {
                 ))}
               </ul>
 
-              <Link
-                href="/register"
-                className={`block w-full text-center py-3 rounded-lg font-semibold transition-colors ${
-                  plan.popular
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                {plan.cta}
-              </Link>
+              <Button asChild className="w-full" variant={plan.popular ? 'default' : 'secondary'}>
+                <Link href="/register">
+                  {plan.cta}
+                </Link>
+              </Button>
             </div>
           ))}
         </div>
@@ -200,13 +190,12 @@ function PricingCards() {
             <p className="text-gray-600 mb-6">
               For larger teams or custom requirements, contact us for a tailored solution.
             </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Contact Sales
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            <Button asChild size="lg">
+              <Link href="/contact">
+                Contact Sales
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -419,13 +408,12 @@ function CTASection() {
         <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
           14 days free. No credit card required. Cancel anytime.
         </p>
-        <Link
-          href="/register"
-          className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          Get Started Free
-          <ArrowRight className="w-5 h-5" />
-        </Link>
+        <Button asChild size="lg" variant="secondary">
+          <Link href="/register">
+            Get Started Free
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Link>
+        </Button>
       </div>
     </section>
   )
