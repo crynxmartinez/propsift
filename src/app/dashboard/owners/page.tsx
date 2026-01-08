@@ -127,11 +127,11 @@ export default function OwnerRecordsPage() {
       <div className="flex items-center gap-4 mb-6">
         <Link
           href="/dashboard/records"
-          className="text-gray-500 hover:text-gray-700 font-medium"
+          className="text-muted-foreground hover:text-foreground font-medium"
         >
           Property Records
         </Link>
-        <span className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">
+        <span className="text-primary font-medium border-b-2 border-primary pb-1">
           Owner Records
         </span>
       </div>
@@ -140,166 +140,148 @@ export default function OwnerRecordsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           {filters.map((f) => (
-            <button
+            <Button
               key={f.key}
+              variant={filter === f.key ? 'default' : 'secondary'}
+              size="sm"
               onClick={() => {
                 setFilter(f.key)
                 setPage(1)
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                filter === f.key
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
             >
               {f.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search for records..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="pl-10 w-64"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <Filter className="w-4 h-4" />
+          <Button variant="outline">
+            <Filter className="w-4 h-4 mr-2" />
             Filter Records
-          </button>
-          <button 
-            onClick={() => router.push('/dashboard/records/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4" />
+          </Button>
+          <Button onClick={() => router.push('/dashboard/records/new')}>
+            <Plus className="w-4 h-4 mr-2" />
             Add New Owner
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Owner
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mailing Address
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Phones
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Marketing Attempts
-              </th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Properties
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
-                </td>
-              </tr>
-            ) : owners.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  No owners found
-                </td>
-              </tr>
-            ) : (
-              owners.map((owner) => {
-                const address = formatAddress(
-                  owner.mailingStreet,
-                  owner.mailingCity,
-                  owner.mailingState,
-                  owner.mailingZip
-                )
-                return (
-                  <tr key={owner.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/dashboard/owners/${owner.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {owner.ownerFullName}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">
-                        {owner.isCompany ? '' : 'Person'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <p className="text-gray-900">{address.line1 || '—'}</p>
-                        {address.line2 && (
-                          <p className="text-gray-500">{address.line2}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-sm ${
-                        owner.verifiedPercent > 0 ? 'text-green-600' : 'text-gray-500'
-                      }`}>
-                        {owner.totalPhones} ({owner.verifiedPercent}% Verified)
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1" title="Call Attempts">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{owner.callAttempts}</span>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Owner</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Mailing Address</TableHead>
+                <TableHead>Phones</TableHead>
+                <TableHead>Marketing Attempts</TableHead>
+                <TableHead className="text-right">Properties</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                  </TableCell>
+                </TableRow>
+              ) : owners.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    No owners found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                owners.map((owner) => {
+                  const address = formatAddress(
+                    owner.mailingStreet,
+                    owner.mailingCity,
+                    owner.mailingState,
+                    owner.mailingZip
+                  )
+                  return (
+                    <TableRow key={owner.id}>
+                      <TableCell>
+                        <Link
+                          href={`/dashboard/owners/${owner.id}`}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {owner.ownerFullName}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {owner.isCompany ? 'Company' : 'Person'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p>{address.line1 || '—'}</p>
+                          {address.line2 && (
+                            <p className="text-muted-foreground">{address.line2}</p>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1" title="Direct Mail Attempts">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{owner.directMailAttempts}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("text-sm", owner.verifiedPercent > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                          {owner.totalPhones} ({owner.verifiedPercent}% Verified)
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1" title="Call Attempts">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{owner.callAttempts}</span>
+                          </div>
+                          <div className="flex items-center gap-1" title="Direct Mail Attempts">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{owner.directMailAttempts}</span>
+                          </div>
+                          <div className="flex items-center gap-1" title="SMS Attempts">
+                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{owner.smsAttempts}</span>
+                          </div>
+                          <div className="flex items-center gap-1" title="RVM Attempts">
+                            <Voicemail className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{owner.rvmAttempts}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1" title="SMS Attempts">
-                          <MessageSquare className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{owner.smsAttempts}</span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Home className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">{owner.propertyCount}</span>
                         </div>
-                        <div className="flex items-center gap-1" title="RVM Attempts">
-                          <Voicemail className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{owner.rvmAttempts}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Home className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-gray-900">{owner.propertyCount}</span>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Showing {owners.length} of {total} owners
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Page</span>
-          <input
+          <span className="text-sm text-muted-foreground">Page</span>
+          <Input
             type="number"
             value={page}
             onChange={(e) => {
@@ -308,23 +290,25 @@ export default function OwnerRecordsPage() {
             }}
             min={1}
             max={totalPages}
-            className="w-16 px-2 py-1 text-center border border-gray-300 rounded"
+            className="w-16 text-center"
           />
-          <span className="text-sm text-gray-500">of {totalPages}</span>
-          <button
+          <span className="text-sm text-muted-foreground">of {totalPages}</span>
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page <= 1}
-            className="p-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page >= totalPages}
-            className="p-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
