@@ -7,8 +7,21 @@ import {
   MessageSquare,
   Clock,
   CheckCircle,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function ContactPage() {
   return (
@@ -56,10 +69,17 @@ function ContactSection() {
     setSubmitting(false)
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    })
+  }
+
+  const handleSubjectChange = (value: string) => {
+    setFormData({
+      ...formData,
+      subject: value,
     })
   }
 
@@ -102,113 +122,94 @@ function ContactSection() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Us a Message</h2>
             
             {submitted ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
-                <p className="text-gray-600 mb-6">
-                  Thank you for reaching out. We'll get back to you within 24 hours.
-                </p>
-                <button
-                  onClick={() => {
-                    setSubmitted(false)
-                    setFormData({ name: '', email: '', subject: 'general', message: '' })
-                  }}
-                  className="text-blue-600 font-medium hover:text-blue-700"
-                >
-                  Send another message
-                </button>
-              </div>
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
+                  <p className="text-gray-600 mb-6">
+                    Thank you for reaching out. We'll get back to you within 24 hours.
+                  </p>
+                  <Button
+                    variant="link"
+                    onClick={() => {
+                      setSubmitted(false)
+                      setFormData({ name: '', email: '', subject: 'general', message: '' })
+                    }}
+                  >
+                    Send another message
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Your Name *
-                    </label>
-                    <input
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Your Name *</Label>
+                    <Input
                       type="text"
                       id="name"
                       name="name"
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                       placeholder="John Doe"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input
                       type="email"
                       id="email"
                       name="email"
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                       placeholder="john@example.com"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                    Subject *
-                  </label>
-                  <select
-                    id="subject"
-                    name="subject"
-                    required
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
-                  >
-                    <option value="general">General Inquiry</option>
-                    <option value="sales">Sales Question</option>
-                    <option value="support">Technical Support</option>
-                    <option value="billing">Billing Question</option>
-                    <option value="partnership">Partnership Opportunity</option>
-                    <option value="feedback">Feedback / Feature Request</option>
-                  </select>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject *</Label>
+                  <Select value={formData.subject} onValueChange={handleSubjectChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General Inquiry</SelectItem>
+                      <SelectItem value="sales">Sales Question</SelectItem>
+                      <SelectItem value="support">Technical Support</SelectItem>
+                      <SelectItem value="billing">Billing Question</SelectItem>
+                      <SelectItem value="partnership">Partnership Opportunity</SelectItem>
+                      <SelectItem value="feedback">Feedback / Feature Request</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                    Message *
-                  </label>
-                  <textarea
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message *</Label>
+                  <Textarea
                     id="message"
                     name="message"
                     required
                     rows={6}
                     value={formData.message}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none"
                     placeholder="How can we help you?"
+                    className="resize-none"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                <Button type="submit" disabled={submitting}>
                   {submitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Sending...
-                    </>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      Send Message
-                    </>
+                    <Send className="w-4 h-4 mr-2" />
                   )}
-                </button>
+                  {submitting ? 'Sending...' : 'Send Message'}
+                </Button>
               </form>
             )}
           </div>
@@ -242,13 +243,11 @@ function ContactSection() {
               <p className="text-gray-600 mb-4">
                 Check out our FAQ section for answers to common questions about PropSift.
               </p>
-              <Link
-                href="/#faq"
-                className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700"
-              >
-                View FAQ
-                <span aria-hidden="true">→</span>
-              </Link>
+              <Button variant="link" className="p-0 h-auto" asChild>
+                <Link href="/#faq">
+                  View FAQ →
+                </Link>
+              </Button>
             </div>
 
             {/* Office Hours */}
