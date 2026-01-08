@@ -781,7 +781,7 @@ export default function AutomationBuilderPage() {
                           : null
 
                         return (
-                          <tr key={log.id} className="hover:bg-gray-50">
+                          <tr key={log.id} className="hover:bg-muted">
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 log.status === 'completed' 
@@ -882,31 +882,31 @@ export default function AutomationBuilderPage() {
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Record</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Enrollment Reason</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Enrolled</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date Enrolled</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y">
                       {logs.map((log) => {
                         const startedAt = new Date(log.startedAt)
 
                         return (
-                          <tr key={log.id} className="hover:bg-gray-50">
+                          <tr key={log.id} className="hover:bg-muted">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
                                   {log.recordId ? 'R' : '-'}
                                 </div>
-                                <span className="text-sm text-gray-900 max-w-[200px] truncate" title={(log as unknown as { recordName?: string }).recordName || log.recordId || 'Unknown'}>
+                                <span className="text-sm max-w-[200px] truncate" title={(log as unknown as { recordName?: string }).recordName || log.recordId || 'Unknown'}>
                                   {(log as unknown as { recordName?: string }).recordName || (log.recordId ? `Record ${log.recordId.slice(0, 8)}...` : 'Unknown')}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {log.triggeredBy.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {startedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},<br/>
                               {startedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                             </td>

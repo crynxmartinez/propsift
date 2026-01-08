@@ -615,7 +615,7 @@ export default function TasksPage() {
                   {groupTasks.map(task => (
                     <div
                       key={task.id}
-                      className={`px-4 py-3 hover:bg-gray-50 transition-colors ${
+                      className={`px-4 py-3 hover:bg-muted transition-colors ${
                         isOverdue(task) ? 'bg-red-50' : ''
                       }`}
                     >
@@ -1068,7 +1068,7 @@ function CreateTaskModal({
                         setRecordId('')
                         setRecordSearch('')
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded"
                     >
                       <X className="w-4 h-4 text-gray-400" />
                     </button>
@@ -1076,7 +1076,7 @@ function CreateTaskModal({
                   {showRecordDropdown && records.length > 0 && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setShowRecordDropdown(false)} />
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
                         {records.map(record => (
                           <button
                             key={record.id}
@@ -1087,10 +1087,10 @@ function CreateTaskModal({
                               setRecordSearch('')
                               setShowRecordDropdown(false)
                             }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
+                            className="w-full px-3 py-2 text-left hover:bg-muted text-sm"
                           >
                             <div className="font-medium">{record.propertyStreet || 'No address'}</div>
-                            <div className="text-gray-500">{record.ownerFullName}</div>
+                            <div className="text-muted-foreground">{record.ownerFullName}</div>
                           </button>
                         ))}
                       </div>
@@ -1277,7 +1277,7 @@ function CreateTaskModal({
                   </label>
                   <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
                     {users.map(user => (
-                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-muted rounded">
                         <input
                           type="checkbox"
                           checked={roundRobinUsers.includes(user.id)}
@@ -1306,9 +1306,9 @@ function CreateTaskModal({
                   type="checkbox"
                   checked={saveAsTemplate}
                   onChange={(e) => setSaveAsTemplate(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-4 h-4 rounded"
                 />
-                <span className="text-sm text-gray-700">Save as template</span>
+                <span className="text-sm text-foreground">Save as template</span>
               </label>
 
               {saveAsTemplate && (
@@ -1317,7 +1317,7 @@ function CreateTaskModal({
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   placeholder="Template name"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                 />
               )}
             </div>
@@ -1328,14 +1328,14 @@ function CreateTaskModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {isEditing ? 'Update Task' : 'Create Task'}
@@ -1374,48 +1374,48 @@ function TemplateSelectionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+      <div className="bg-card rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-semibold">Select Template</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-4 border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
             />
           </div>
         </div>
 
         <div className="overflow-y-auto max-h-96">
           {Object.keys(groupedTemplates).length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <RefreshCw className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="p-8 text-center text-muted-foreground">
+              <RefreshCw className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
               <p>No templates found</p>
               <p className="text-sm mt-1">Create a task and save it as a template</p>
             </div>
           ) : (
             Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
               <div key={category}>
-                <div className="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-600">
+                <div className="px-4 py-2 bg-muted text-sm font-medium text-muted-foreground">
                   {category}
                 </div>
                 {categoryTemplates.map(template => (
                   <button
                     key={template.id}
                     onClick={() => onSelect(template)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b"
+                    className="w-full px-4 py-3 text-left hover:bg-muted border-b"
                   >
-                    <div className="font-medium text-gray-900">{template.name}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="font-medium">{template.name}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
                       {template.dueDaysFromNow !== null ? `Due: +${template.dueDaysFromNow} days` : 'No due date'}
                       {' • '}
                       Priority: {template.priority}
@@ -1431,7 +1431,7 @@ function TemplateSelectionModal({
         <div className="p-4 border-t">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-full px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
           >
             Cancel
           </button>

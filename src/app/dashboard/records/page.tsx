@@ -832,7 +832,7 @@ export default function RecordsPage() {
 
       {bulkActionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-card rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
                 {bulkActionModal === 'addTags' && 'Add Tags'}
@@ -847,12 +847,12 @@ export default function RecordsPage() {
                 {bulkActionModal === 'deletePhones' && 'Delete Phones'}
                 {bulkActionModal === 'deleteRecords' && 'Delete Records'}
               </h3>
-              <button onClick={() => { setBulkActionModal(null); setBulkSearchQuery('') }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setBulkActionModal(null); setBulkSearchQuery('') }} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               This will affect {selectedIds.size} selected {selectedIds.size === 1 ? 'record' : 'records'}.
             </p>
 
@@ -860,20 +860,20 @@ export default function RecordsPage() {
             {(bulkActionModal === 'addTags' || bulkActionModal === 'removeTags') && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search tags..."
                     value={bulkSearchQuery}
                     onChange={(e) => setBulkSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
                   {tags
                     .filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
                     .map((tag) => (
-                      <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                      <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer border-b last:border-b-0">
                         <input
                           type="checkbox"
                           checked={selectedBulkItems.includes(tag.id)}
@@ -918,11 +918,11 @@ export default function RecordsPage() {
                     </button>
                   )}
                   {tags.filter(tag => tag.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (!bulkSearchQuery.trim() || bulkActionModal === 'removeTags') && (
-                    <p className="text-sm text-gray-400 p-3 text-center">No tags found</p>
+                    <p className="text-sm text-muted-foreground p-3 text-center">No tags found</p>
                   )}
                 </div>
                 {selectedBulkItems.length > 0 && (
-                  <p className="text-xs text-gray-500">{selectedBulkItems.length} selected</p>
+                  <p className="text-xs text-muted-foreground">{selectedBulkItems.length} selected</p>
                 )}
               </div>
             )}
@@ -931,20 +931,20 @@ export default function RecordsPage() {
             {(bulkActionModal === 'addMotivations' || bulkActionModal === 'removeMotivations') && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search motivations..."
                     value={bulkSearchQuery}
                     onChange={(e) => setBulkSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
                   {motivations
                     .filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
                     .map((motivation) => (
-                      <label key={motivation.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                      <label key={motivation.id} className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer border-b last:border-b-0">
                         <input
                           type="checkbox"
                           checked={selectedBulkItems.includes(motivation.id)}
@@ -989,11 +989,11 @@ export default function RecordsPage() {
                     </button>
                   )}
                   {motivations.filter(m => m.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (!bulkSearchQuery.trim() || bulkActionModal === 'removeMotivations') && (
-                    <p className="text-sm text-gray-400 p-3 text-center">No motivations found</p>
+                    <p className="text-sm text-muted-foreground p-3 text-center">No motivations found</p>
                   )}
                 </div>
                 {selectedBulkItems.length > 0 && (
-                  <p className="text-xs text-gray-500">{selectedBulkItems.length} selected</p>
+                  <p className="text-xs text-muted-foreground">{selectedBulkItems.length} selected</p>
                 )}
               </div>
             )}
@@ -1002,20 +1002,20 @@ export default function RecordsPage() {
             {bulkActionModal === 'updateStatus' && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search statuses..."
                     value={bulkSearchQuery}
                     onChange={(e) => setBulkSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
                   {statuses
                     .filter(s => s.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
                     .map((status) => (
-                      <label key={status.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                      <label key={status.id} className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer border-b last:border-b-0">
                         <input
                           type="radio"
                           name="status"
@@ -1032,7 +1032,7 @@ export default function RecordsPage() {
                       </label>
                     ))}
                   {statuses.filter(s => s.name.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
-                    <p className="text-sm text-gray-400 p-3 text-center">No statuses found</p>
+                    <p className="text-sm text-muted-foreground p-3 text-center">No statuses found</p>
                   )}
                 </div>
               </div>
@@ -1068,30 +1068,30 @@ export default function RecordsPage() {
             {bulkActionModal === 'assignToUser' && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={bulkSearchQuery}
                     onChange={(e) => setBulkSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
+                  <label className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer border-b">
                     <input
                       type="radio"
                       name="user"
                       checked={selectedBulkItems.length === 0}
                       onChange={() => setSelectedBulkItems([])}
-                      className="w-4 h-4 border-gray-300 text-blue-600"
+                      className="w-4 h-4"
                     />
-                    <span className="text-sm text-gray-500">Unassigned</span>
+                    <span className="text-sm text-muted-foreground">Unassigned</span>
                   </label>
                   {users
                     .filter(u => (u.name || u.email).toLowerCase().includes(bulkSearchQuery.toLowerCase()))
                     .map((user) => (
-                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer border-b last:border-b-0">
                         <input
                           type="radio"
                           name="user"
@@ -1103,7 +1103,7 @@ export default function RecordsPage() {
                       </label>
                     ))}
                   {users.filter(u => (u.name || u.email).toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && bulkSearchQuery && (
-                    <p className="text-sm text-gray-400 p-3 text-center">No users found</p>
+                    <p className="text-sm text-muted-foreground p-3 text-center">No users found</p>
                   )}
                 </div>
               </div>
@@ -1130,20 +1130,20 @@ export default function RecordsPage() {
             {bulkActionModal === 'addTaskTemplate' && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search templates..."
                     value={bulkSearchQuery}
                     onChange={(e) => setBulkSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary bg-background text-foreground"
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
                   {taskTemplates
                     .filter(t => t.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()) || t.title.toLowerCase().includes(bulkSearchQuery.toLowerCase()))
                     .map((template) => (
-                      <label key={template.id} className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                      <label key={template.id} className="flex items-center gap-2 p-3 hover:bg-muted cursor-pointer border-b last:border-b-0">
                         <input
                           type="radio"
                           name="taskTemplate"
@@ -1152,8 +1152,8 @@ export default function RecordsPage() {
                           className="text-blue-600"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                          <div className="text-xs text-gray-500 truncate">{template.title}</div>
+                          <div className="text-sm font-medium">{template.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{template.title}</div>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded ${
                           template.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
@@ -1166,7 +1166,7 @@ export default function RecordsPage() {
                       </label>
                     ))}
                   {taskTemplates.filter(t => t.name.toLowerCase().includes(bulkSearchQuery.toLowerCase()) || t.title.toLowerCase().includes(bulkSearchQuery.toLowerCase())).length === 0 && (
-                    <p className="text-sm text-gray-400 p-3 text-center">No templates found</p>
+                    <p className="text-sm text-muted-foreground p-3 text-center">No templates found</p>
                   )}
                 </div>
                 {selectedTaskTemplate && (
@@ -1209,7 +1209,7 @@ export default function RecordsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setBulkActionModal(null); setBulkSearchQuery('') }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>

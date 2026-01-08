@@ -569,11 +569,11 @@ export default function SettingsPage() {
       {activeTab === 'users' && canViewUsers && (
         <div className="space-y-6">
           {/* Role Info Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-blue-900 mb-2">Role Access Levels</h3>
+                <h3 className="font-semibold mb-2">Role Access Levels</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {ROLE_INFO.map(role => {
                     const Icon = role.icon
@@ -584,7 +584,7 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <span className={`font-medium ${role.color}`}>{role.label}</span>
-                          <p className="text-xs text-blue-800">{role.description}</p>
+                          <p className="text-xs text-muted-foreground">{role.description}</p>
                         </div>
                       </div>
                     )
@@ -596,7 +596,7 @@ export default function SettingsPage() {
 
           {/* Team Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
+            <h2 className="text-lg font-semibold">Team Members</h2>
             {canManageUsers && (
               <button onClick={() => setShowAddMemberModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
                 <Plus className="w-4 h-4" /> Add Member
@@ -605,45 +605,45 @@ export default function SettingsPage() {
           </div>
 
           {/* Team Table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-card rounded-xl shadow-sm overflow-hidden">
             {loadingTeam ? (
               <div className="p-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                <p className="text-gray-500 mt-2">Loading team members...</p>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                <p className="text-muted-foreground mt-2">Loading team members...</p>
               </div>
             ) : teamMembers.length === 0 ? (
               <div className="p-12 text-center">
-                <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">No team members yet</p>
+                <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground">No team members yet</p>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    {canManageUsers && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                    {canManageUsers && <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y">
                   {teamMembers.map(member => {
                     const roleInfo = getRoleInfo(member.role)
                     const Icon = roleInfo.icon
                     return (
-                      <tr key={member.id} className="hover:bg-gray-50">
+                      <tr key={member.id} className="hover:bg-muted">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-gray-500" />
+                            <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-muted-foreground" />
                             </div>
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium">
                               {member.firstName || member.lastName ? `${member.firstName || ''} ${member.lastName || ''}`.trim() : member.email.split('@')[0]}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{member.email}</td>
+                        <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
                         <td className="px-6 py-4">
                           {editingMemberId === member.id ? (
                             <select value={editingMemberRole} onChange={(e) => setEditingMemberRole(e.target.value)} onBlur={() => { if (editingMemberRole !== member.role) handleUpdateMemberRole(member.id, editingMemberRole); else setEditingMemberId(null); }} className="px-2 py-1 border border-gray-300 rounded text-sm" autoFocus>
@@ -699,9 +699,9 @@ export default function SettingsPage() {
 
       {/* Integrations Tab */}
       {activeTab === 'integrations' && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <Link2 className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">Integrations coming soon</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center">
+          <Link2 className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+          <p className="text-muted-foreground">Integrations coming soon</p>
         </div>
       )}
 
