@@ -362,22 +362,22 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your account and team settings</p>
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage your account and team settings</p>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex gap-8">
-          <button onClick={() => setActiveTab('profile')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'profile' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          <button onClick={() => setActiveTab('profile')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'profile' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
             Profile
           </button>
           {canViewUsers && (
-            <button onClick={() => setActiveTab('users')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'users' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setActiveTab('users')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'users' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
               User Management
             </button>
           )}
-          <button onClick={() => setActiveTab('integrations')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'integrations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          <button onClick={() => setActiveTab('integrations')} className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'integrations' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
             Integrations
           </button>
         </nav>
@@ -390,14 +390,14 @@ export default function SettingsPage() {
           {/* Account Info */}
           <div className="bg-card rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account Info</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Info</h2>
               {editingSection !== 'account' ? (
-                <button onClick={() => setEditingSection('account')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                <button onClick={() => setEditingSection('account')} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
                   <Pencil className="w-4 h-4" />
                 </button>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                  <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-muted-foreground hover:bg-muted rounded-lg">Cancel</button>
                   <button onClick={handleSaveSection} disabled={saving} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
                     {saving && <Loader2 className="w-3 h-3 animate-spin" />} Save
                   </button>
@@ -434,7 +434,7 @@ export default function SettingsPage() {
                 <p className="px-4 py-2 bg-muted rounded-lg text-foreground">{profile.phone || '-'}</p>
               )}
             </div>
-            <button onClick={() => setShowPasswordModal(true)} className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition text-sm font-medium">
+            <button onClick={() => setShowPasswordModal(true)} className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-blue-50 transition text-sm font-medium">
               Update Password
             </button>
           </div>
@@ -442,14 +442,14 @@ export default function SettingsPage() {
           {/* Timezone */}
           <div className="bg-card rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account Timezone</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Timezone</h2>
               {editingSection !== 'timezone' ? (
-                <button onClick={() => setEditingSection('timezone')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                <button onClick={() => setEditingSection('timezone')} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
                   <Pencil className="w-4 h-4" />
                 </button>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                  <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-muted-foreground hover:bg-muted rounded-lg">Cancel</button>
                   <button onClick={handleSaveSection} disabled={saving} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
                     {saving && <Loader2 className="w-3 h-3 animate-spin" />} Save
                   </button>
@@ -472,14 +472,14 @@ export default function SettingsPage() {
           {canEditCompany && (
             <div className="bg-card rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Company Info</h2>
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company Info</h2>
                 {editingSection !== 'company' ? (
-                  <button onClick={() => setEditingSection('company')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                  <button onClick={() => setEditingSection('company')} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
                     <Pencil className="w-4 h-4" />
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button onClick={() => { setEditingSection(null); setFormData(profile) }} className="px-3 py-1 text-sm text-muted-foreground hover:bg-muted rounded-lg">Cancel</button>
                     <button onClick={handleSaveSection} disabled={saving} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
                       {saving && <Loader2 className="w-3 h-3 animate-spin" />} Save
                     </button>

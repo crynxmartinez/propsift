@@ -365,7 +365,7 @@ export default function RecordsPage() {
       return (
         <>
           <div>{street}</div>
-          <div className="text-gray-500">{city}, {state} {zip}</div>
+          <div className="text-muted-foreground">{city}, {state} {zip}</div>
         </>
       )
     }
@@ -592,7 +592,7 @@ export default function RecordsPage() {
             {activeFilters.map((filter, index) => (
               <span
                 key={filter.id}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-card border border-blue-200 rounded-full text-xs text-blue-700"
               >
                 {filter.fieldLabel}
                 <button
@@ -1053,7 +1053,7 @@ export default function RecordsPage() {
                           : temp === 'WARM'
                           ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
                           : 'bg-red-100 border-red-300 text-red-700'
-                        : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                        : 'border-border text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     {temp === 'COLD' && '❄️ Cold'}
