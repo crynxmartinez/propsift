@@ -629,7 +629,7 @@ export default function TasksPage() {
                           className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                             task.status === 'COMPLETED'
                               ? 'bg-green-500 border-green-500 text-white'
-                              : 'border-gray-300 hover:border-blue-500'
+                              : 'border-muted-foreground/50 hover:border-primary'
                           }`}
                         >
                           {task.status === 'COMPLETED' && <Check className="w-3 h-3" />}
@@ -638,7 +638,7 @@ export default function TasksPage() {
                         {/* Task Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`font-medium ${task.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                            <span className={`font-medium ${task.status === 'COMPLETED' ? 'line-through text-muted-foreground' : ''}`}>
                               {task.title}
                             </span>
                             {task.recurrence && task.recurrence !== 'NONE' && (
@@ -647,10 +647,10 @@ export default function TasksPage() {
                           </div>
                           
                           {task.description && (
-                            <p className="text-sm text-gray-500 mb-2 line-clamp-1">{task.description}</p>
+                            <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{task.description}</p>
                           )}
                           
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             {/* Due Date */}
                             <div className={`flex items-center gap-1 ${isOverdue(task) ? 'text-red-600' : ''}`}>
                               {isOverdue(task) ? (
@@ -1070,7 +1070,7 @@ function CreateTaskModal({
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded"
                     >
-                      <X className="w-4 h-4 text-gray-400" />
+                      <X className="w-4 h-4 text-muted-foreground" />
                     </button>
                   )}
                   {showRecordDropdown && records.length > 0 && (
@@ -1103,7 +1103,7 @@ function CreateTaskModal({
 
           {/* Scheduling Section */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Scheduling
             </h3>
@@ -1115,15 +1115,15 @@ function CreateTaskModal({
                   type="checkbox"
                   checked={noDueDate}
                   onChange={(e) => setNoDueDate(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-4 h-4 rounded"
                 />
-                <span className="text-sm text-gray-700">No due date</span>
+                <span className="text-sm">No due date</span>
               </label>
 
               {!noDueDate ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Due Date
                     </label>
                     <input
@@ -1134,7 +1134,7 @@ function CreateTaskModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Due Time (optional)
                     </label>
                     <input
@@ -1149,7 +1149,7 @@ function CreateTaskModal({
                 <div className="space-y-4">
                   {/* Notify After */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Notify after
                     </label>
                     <div className="flex items-center gap-2">
@@ -1172,12 +1172,12 @@ function CreateTaskModal({
                         <option value="years">Years</option>
                       </select>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Leave empty for no notification</p>
+                    <p className="text-xs text-muted-foreground mt-1">Leave empty for no notification</p>
                   </div>
 
                   {/* Repeat Count */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Recurrence
                     </label>
                     <div className="flex items-center gap-2">
@@ -1204,7 +1204,7 @@ function CreateTaskModal({
                             onChange={(e) => setRepeatCount(e.target.value ? parseInt(e.target.value) : 1)}
                             className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-500">times</span>
+                          <span className="text-sm text-muted-foreground">times</span>
                         </>
                       )}
                     </div>
@@ -1216,7 +1216,7 @@ function CreateTaskModal({
 
           {/* Assignment Section */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
               <User className="w-4 h-4" />
               Assignment
             </h3>
@@ -1231,9 +1231,9 @@ function CreateTaskModal({
                     value="MANUAL"
                     checked={assignmentType === 'MANUAL'}
                     onChange={(e) => setAssignmentType(e.target.value)}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">Manual Assignment</span>
+                  <span className="text-sm">Manual Assignment</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -1242,16 +1242,16 @@ function CreateTaskModal({
                     value="ROUND_ROBIN"
                     checked={assignmentType === 'ROUND_ROBIN'}
                     onChange={(e) => setAssignmentType(e.target.value)}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">Round Robin</span>
+                  <span className="text-sm">Round Robin</span>
                 </label>
               </div>
 
               {/* Manual Assignment */}
               {assignmentType === 'MANUAL' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Assign to
                   </label>
                   <select
@@ -1272,7 +1272,7 @@ function CreateTaskModal({
               {/* Round Robin Users */}
               {assignmentType === 'ROUND_ROBIN' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Select users for rotation
                   </label>
                   <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
@@ -1282,14 +1282,14 @@ function CreateTaskModal({
                           type="checkbox"
                           checked={roundRobinUsers.includes(user.id)}
                           onChange={() => toggleRoundRobinUser(user.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-4 h-4 rounded"
                         />
-                        <span className="text-sm text-gray-700">{user.name || user.email}</span>
+                        <span className="text-sm">{user.name || user.email}</span>
                       </label>
                     ))}
                   </div>
                   {roundRobinUsers.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       Next assignment will go to: {users.find(u => u.id === roundRobinUsers[0])?.name || users.find(u => u.id === roundRobinUsers[0])?.email}
                     </p>
                   )}
