@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/roles';
 
 // GET /api/task-templates - Get all task templates
 export async function GET(request: NextRequest) {
@@ -18,10 +19,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const authUser = await getAuthUser(decoded.userId);
+    if (!authUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
 
-    const where: Record<string, unknown> = { createdById: decoded.userId };
+    // Use ownerId for team data sharing - all team members see the same templates
+    const where: Record<string, unknown> = { createdById: authUser.ownerId };
     if (category) {
       where.category = category;
     }

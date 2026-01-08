@@ -301,6 +301,7 @@ export async function POST(request: NextRequest) {
           skipWeekends: skipWeekends || false,
           assignmentType: assignmentType || 'MANUAL',
           roundRobinUsers: roundRobinUsers || [],
+          createdById: authUser.ownerId,
         },
       });
     }
