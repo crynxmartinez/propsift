@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -41,27 +42,23 @@ export function Navbar() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Start Free Trial
-            </Link>
+            <Button variant="ghost" asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/register">Start Free Trial</Link>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+            className="md:hidden"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -80,20 +77,12 @@ export function Navbar() {
               </Link>
             ))}
             <div className="pt-4 border-t border-gray-100 space-y-3">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-gray-600 hover:text-gray-900 font-medium py-2"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full text-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Start Free Trial
-              </Link>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+              </Button>
+              <Button className="w-full" asChild>
+                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>Start Free Trial</Link>
+              </Button>
             </div>
           </div>
         </div>
