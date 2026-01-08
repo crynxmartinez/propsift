@@ -22,6 +22,11 @@ import {
   Home,
   ExternalLink
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 interface RecordData {
   id: string
@@ -430,7 +435,7 @@ export default function OwnerDetailsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -438,7 +443,7 @@ export default function OwnerDetailsPage() {
   if (!record) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Owner not found</p>
+        <p className="text-muted-foreground">Owner not found</p>
       </div>
     )
   }
@@ -446,26 +451,28 @@ export default function OwnerDetailsPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/dashboard/records" className="text-blue-600 hover:text-blue-800">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Link href="/dashboard/records" className="text-primary hover:underline">
           Records
         </Link>
         <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-900">Owner Details</span>
+        <span className="text-foreground">Owner Details</span>
       </div>
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold">
               {record.ownerFullName}
             </h1>
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               {formatAddress(record.mailingStreet, record.mailingCity, record.mailingState, record.mailingZip)}
             </p>
           </div>
-          <button 
+          <Button 
+            variant="outline"
+            size="icon"
             onClick={() => {
               setEditNameData({
                 firstName: record.ownerFirstName || '',
@@ -473,47 +480,61 @@ export default function OwnerDetailsPage() {
               })
               setShowEditNameModal(true)
             }}
-            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-1"
+            className="mt-1"
           >
-            <Pencil className="w-4 h-4 text-gray-600" />
-          </button>
+            <Pencil className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
       {/* Stats Cards - Row 1 */}
       <div className="grid grid-cols-4 gap-4 mb-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.propertyCount || 1}</p>
-          <p className="text-sm text-gray-500">Properties</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.totalPhones || 0}</p>
-          <p className="text-sm text-gray-500">Total Phones</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.totalEmails || 0}</p>
-          <p className="text-sm text-gray-500">Total Emails</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.totalMotivations || 0}</p>
-          <p className="text-sm text-gray-500">Motivations</p>
-        </div>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.propertyCount || 1}</p>
+            <p className="text-sm text-muted-foreground">Properties</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.totalPhones || 0}</p>
+            <p className="text-sm text-muted-foreground">Total Phones</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.totalEmails || 0}</p>
+            <p className="text-sm text-muted-foreground">Total Emails</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.totalMotivations || 0}</p>
+            <p className="text-sm text-muted-foreground">Motivations</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Stats Cards - Row 2 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.totalCallAttempts || 0}</p>
-          <p className="text-sm text-gray-500">Calls Made</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.verifiedNumbersPercent || 0}%</p>
-          <p className="text-sm text-gray-500">Verified Numbers</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-3xl font-bold text-gray-900">{stats?.totalSmsAttempts || 0}</p>
-          <p className="text-sm text-gray-500">SMS Sent</p>
-        </div>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.totalCallAttempts || 0}</p>
+            <p className="text-sm text-muted-foreground">Calls Made</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.verifiedNumbersPercent || 0}%</p>
+            <p className="text-sm text-muted-foreground">Verified Numbers</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <p className="text-3xl font-bold">{stats?.totalSmsAttempts || 0}</p>
+            <p className="text-sm text-muted-foreground">SMS Sent</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content */}
