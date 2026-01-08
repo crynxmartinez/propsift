@@ -2,6 +2,54 @@
 
 import { useState, useEffect } from 'react'
 import { Lock, Eye, EyeOff, Pencil, Loader2, Users, Link2, Info, Plus, MoreVertical, Crown, Shield, ShieldCheck, User, X, Copy, Check } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 
 interface UserProfile {
   id: string
@@ -59,7 +107,6 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
   // Profile editing
   const [editingSection, setEditingSection] = useState<'account' | 'timezone' | 'company' | null>(null)
@@ -86,10 +133,10 @@ export default function SettingsPage() {
   const [newMemberPassword, setNewMemberPassword] = useState('')
   const [createdMemberCredentials, setCreatedMemberCredentials] = useState<{ email: string; password: string } | null>(null)
   const [addingMember, setAddingMember] = useState(false)
-  const [memberMenuId, setMemberMenuId] = useState<string | null>(null)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingMemberRole, setEditingMemberRole] = useState('')
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<TeamMember | null>(null)
 
   // Fetch profile on mount
   useEffect(() => {
@@ -141,7 +188,6 @@ export default function SettingsPage() {
 
   const handleSaveSection = async () => {
     setSaving(true)
-    setMessage(null)
     try {
       const token = localStorage.getItem('token')
       const res = await fetch('/api/settings/profile', {
@@ -157,9 +203,9 @@ export default function SettingsPage() {
       setProfile(updatedProfile)
       setFormData(updatedProfile)
       setEditingSection(null)
-      setMessage({ type: 'success', text: 'Settings saved successfully' })
+      toast.success('Settings saved successfully')
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to save' })
+      toast.error(error instanceof Error ? error.message : 'Failed to save')
     } finally {
       setSaving(false)
     }
@@ -167,13 +213,12 @@ export default function SettingsPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    setMessage(null)
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' })
+      toast.error('New passwords do not match')
       return
     }
     if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters' })
+      toast.error('Password must be at least 6 characters')
       return
     }
     setChangingPassword(true)
@@ -186,13 +231,13 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to change password')
-      setMessage({ type: 'success', text: 'Password changed successfully' })
+      toast.success('Password changed successfully')
       setShowPasswordModal(false)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to change password' })
+      toast.error(err instanceof Error ? err.message : 'Failed to change password')
     } finally {
       setChangingPassword(false)
     }
@@ -222,7 +267,7 @@ export default function SettingsPage() {
       setCreatedMemberCredentials({ email: newMemberEmail.trim(), password: newMemberPassword })
       fetchTeamMembers()
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to add member' })
+      toast.error(error instanceof Error ? error.message : 'Failed to add member')
     } finally {
       setAddingMember(false)
     }
@@ -242,9 +287,8 @@ export default function SettingsPage() {
       }
       fetchTeamMembers()
       setEditingMemberId(null)
-      setMemberMenuId(null)
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update member' })
+      toast.error(error instanceof Error ? error.message : 'Failed to update member')
     }
   }
 
@@ -261,17 +305,16 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Failed to update member')
       }
       fetchTeamMembers()
-      setMemberMenuId(null)
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update member' })
+      toast.error(error instanceof Error ? error.message : 'Failed to update member')
     }
   }
 
-  const handleDeleteMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this team member?')) return
+  const handleDeleteMember = async () => {
+    if (!deleteMemberConfirm) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`/api/team/${memberId}`, {
+      const res = await fetch(`/api/team/${deleteMemberConfirm.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -279,10 +322,11 @@ export default function SettingsPage() {
         const data = await res.json()
         throw new Error(data.error || 'Failed to remove member')
       }
+      toast.success('Team member removed')
       fetchTeamMembers()
-      setMemberMenuId(null)
+      setDeleteMemberConfirm(null)
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to remove member' })
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member')
     }
   }
 
@@ -339,12 +383,6 @@ export default function SettingsPage() {
         </nav>
       </div>
 
-      {/* Messages */}
-      {message && (
-        <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Profile Tab */}
       {activeTab === 'profile' && profile && (
@@ -625,18 +663,27 @@ export default function SettingsPage() {
                         {canManageUsers && (
                           <td className="px-6 py-4 text-right">
                             {member.role !== 'owner' && (
-                              <div className="relative inline-block">
-                                <button onClick={() => setMemberMenuId(memberMenuId === member.id ? null : member.id)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-                                  <MoreVertical className="w-5 h-5" />
-                                </button>
-                                {memberMenuId === member.id && (
-                                  <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                    <button onClick={() => { setEditingMemberId(member.id); setEditingMemberRole(member.role); setMemberMenuId(null); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">Change Role</button>
-                                    <button onClick={() => handleToggleMemberStatus(member.id, member.status)} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">{member.status === 'active' ? 'Deactivate' : 'Activate'}</button>
-                                    <button onClick={() => handleDeleteMember(member.id)} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">Remove</button>
-                                  </div>
-                                )}
-                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => { setEditingMemberId(member.id); setEditingMemberRole(member.role); }}>
+                                    Change Role
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleToggleMemberStatus(member.id, member.status)}>
+                                    {member.status === 'active' ? 'Deactivate' : 'Activate'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setDeleteMemberConfirm(member)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    Remove
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </td>
                         )}
@@ -791,6 +838,27 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Member Confirmation */}
+      <AlertDialog open={!!deleteMemberConfirm} onOpenChange={(open) => !open && setDeleteMemberConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {deleteMemberConfirm?.firstName || deleteMemberConfirm?.email?.split('@')[0]}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
