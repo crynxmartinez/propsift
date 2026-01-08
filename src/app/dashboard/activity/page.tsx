@@ -2,7 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { Activity, Upload, Download, RefreshCw, FileText, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
-import { useToast } from '@/components/Toast'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Progress } from '@/components/ui/progress'
 
 interface ActivityLog {
   id: string
@@ -22,7 +35,6 @@ interface ActivityLog {
 type TabType = 'actions' | 'upload' | 'download'
 
 export default function ActivityPage() {
-  const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('actions')
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,7 +76,7 @@ export default function ActivityPage() {
       const res = await fetch(`/api/activity/${activityId}/download`)
       if (!res.ok) {
         const error = await res.json()
-        showToast(error.error || 'Download failed', 'error')
+        toast.error(error.error || 'Download failed')
         return
       }
       
@@ -77,10 +89,10 @@ export default function ActivityPage() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      showToast('Download started!', 'success')
+      toast.success('Download started!')
     } catch (error) {
       console.error('Download error:', error)
-      showToast('Failed to download file', 'error')
+      toast.error('Failed to download file')
     }
   }
 
@@ -101,53 +113,44 @@ export default function ActivityPage() {
     switch (status) {
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <Badge variant="success" className="gap-1">
             <CheckCircle className="w-3 h-3" />
             Complete
-          </span>
+          </Badge>
         )
       case 'processing':
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <Badge variant="info" className="gap-1">
             <Loader2 className="w-3 h-3 animate-spin" />
             Processing
-          </span>
+          </Badge>
         )
       case 'pending':
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Badge variant="warning" className="gap-1">
             <Clock className="w-3 h-3" />
             Pending
-          </span>
+          </Badge>
         )
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <Badge variant="destructive" className="gap-1">
             <XCircle className="w-3 h-3" />
             Failed
-          </span>
+          </Badge>
         )
       default:
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <Badge variant="secondary">
             {status}
-          </span>
+          </Badge>
         )
     }
   }
 
   const getProgressBar = (processed: number, total: number) => {
     const percentage = total > 0 ? Math.round((processed / total) * 100) : 0
-    return (
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-300"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-      </div>
-    )
+    return <Progress value={percentage} className="h-2" />
   }
 
   const getActionLabel = (action: string) => {
@@ -184,192 +187,173 @@ export default function ActivityPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">System</h1>
-        <button
-          onClick={fetchActivities}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
-        >
+        <h1 className="text-2xl font-bold">System</h1>
+        <Button variant="ghost" onClick={fetchActivities}>
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
-        </button>
+        </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex gap-8">
-          <button
-            onClick={() => { setActiveTab('actions'); setPage(1) }}
-            className={`flex items-center gap-2 pb-3 border-b-2 transition ${
-              activeTab === 'actions'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as TabType); setPage(1) }}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="actions" className="gap-2">
             <Activity className="w-4 h-4" />
             Logs
-          </button>
-          <button
-            onClick={() => { setActiveTab('upload'); setPage(1) }}
-            className={`flex items-center gap-2 pb-3 border-b-2 transition ${
-              activeTab === 'upload'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="gap-2">
             <Upload className="w-4 h-4" />
             Upload
-          </button>
-          <button
-            onClick={() => { setActiveTab('download'); setPage(1) }}
-            className={`flex items-center gap-2 pb-3 border-b-2 transition ${
-              activeTab === 'download'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
+          </TabsTrigger>
+          <TabsTrigger value="download" className="gap-2">
             <Download className="w-4 h-4" />
             Download
-          </button>
-        </nav>
-      </div>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
-      ) : activities.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No activity found</p>
-        </div>
-      ) : (
-        <>
-          {/* Logs Tab */}
-          {activeTab === 'actions' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {activities.map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{activity.description || getActionLabel(activity.action)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{formatDate(activity.createdAt)}</td>
-                      <td className="px-6 py-4">{getStatusBadge(activity.status)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : activities.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No activity found</p>
+          </div>
+        ) : (
+          <>
+            <TabsContent value="actions">
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity) => (
+                        <TableRow key={activity.id}>
+                          <TableCell>{activity.description || getActionLabel(activity.action)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(activity.createdAt)}</TableCell>
+                          <TableCell>{getStatusBadge(activity.status)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Upload Tab */}
-          {activeTab === 'upload' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Breakdown</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Processed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {activities.map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-blue-600">{activity.filename || 'Unknown file'}</td>
-                      <td className="px-6 py-4">
-                        <button className="text-sm text-blue-600 hover:text-blue-800">See Breakdown</button>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{getImportTypeLabel(activity.metadata)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {activity.processed.toLocaleString()} ({activity.total > 0 ? Math.round((activity.processed / activity.total) * 100) : 0}%)
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{formatDate(activity.createdAt).split(' - ')[0]}</td>
-                      <td className="px-6 py-4">{getStatusBadge(activity.status)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <TabsContent value="upload">
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>File</TableHead>
+                        <TableHead>Breakdown</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Processed</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity) => (
+                        <TableRow key={activity.id}>
+                          <TableCell className="text-primary">{activity.filename || 'Unknown file'}</TableCell>
+                          <TableCell>
+                            <Button variant="link" size="sm" className="p-0 h-auto">See Breakdown</Button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{getImportTypeLabel(activity.metadata)}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {activity.processed.toLocaleString()} ({activity.total > 0 ? Math.round((activity.processed / activity.total) * 100) : 0}%)
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(activity.createdAt).split(' - ')[0]}</TableCell>
+                          <TableCell>{getStatusBadge(activity.status)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Download Tab */}
-          {activeTab === 'download' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Processed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {activities.map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-blue-600">{activity.filename || 'Export'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{activity.total.toLocaleString()}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {activity.processed.toLocaleString()} ({activity.total > 0 ? Math.round((activity.processed / activity.total) * 100) : 0}%)
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{formatDate(activity.createdAt)}</td>
-                      <td className="px-6 py-4 w-40">{getProgressBar(activity.processed, activity.total)}</td>
-                      <td className="px-6 py-4">{getStatusBadge(activity.status)}</td>
-                      <td className="px-6 py-4">
-                        {activity.status === 'completed' && (
-                          <button 
-                            onClick={() => handleDownload(activity.id, activity.filename)}
-                            className="text-sm text-blue-600 hover:text-blue-800"
-                          >
-                            Download
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <TabsContent value="download">
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Filename</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Processed</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="w-40">Progress</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity) => (
+                        <TableRow key={activity.id}>
+                          <TableCell className="text-primary">{activity.filename || 'Export'}</TableCell>
+                          <TableCell className="text-muted-foreground">{activity.total.toLocaleString()}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {activity.processed.toLocaleString()} ({activity.total > 0 ? Math.round((activity.processed / activity.total) * 100) : 0}%)
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(activity.createdAt)}</TableCell>
+                          <TableCell>{getProgressBar(activity.processed, activity.total)}</TableCell>
+                          <TableCell>{getStatusBadge(activity.status)}</TableCell>
+                          <TableCell>
+                            {activity.status === 'completed' && (
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="p-0 h-auto"
+                                onClick={() => handleDownload(activity.id, activity.filename)}
+                              >
+                                Download
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-end gap-2 mt-4">
-              <span className="text-sm text-gray-500">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-end gap-2 mt-4">
+                <span className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </Tabs>
     </div>
   )
 }
