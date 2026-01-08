@@ -37,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
 interface RecordItem {
@@ -435,10 +436,10 @@ export default function RecordsPage() {
   return (
     <div className="p-8">
       {/* Row 1: Top Navigation */}
-      <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between mb-4 border-b pb-4">
         {/* Left: Tab Navigation */}
         <div className="flex items-center gap-6">
-          <span className="text-sm font-medium pb-2 border-b-2 text-blue-600 border-blue-600">
+          <span className="text-sm font-medium pb-2 border-b-2 text-primary border-primary">
             Property Records
           </span>
         </div>
@@ -447,52 +448,34 @@ export default function RecordsPage() {
         <div className="flex items-center gap-3">
           {/* Search Bar */}
           <div className="relative">
-            <input
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
               type="text"
               placeholder="Search for records..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-64 pl-10"
             />
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
 
           {/* Add New Property Button */}
-          <div className="relative" data-dropdown>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowAddDropdown(!showAddDropdown)
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-            >
-              Add New Property
-            </button>
-            {showAddDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                <button 
-                  onClick={() => {
-                    setShowAddModal(true)
-                    setShowAddDropdown(false)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Add Single Property
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowBulkImportModal(true)
-                    setShowAddDropdown(false)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  Bulk Import
-                </button>
-              </div>
-            )}
-          </div>
-
+          <DropdownMenu open={showAddDropdown} onOpenChange={setShowAddDropdown}>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Property
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowAddModal(true)}>
+                Add Single Property
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowBulkImportModal(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Import
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -500,136 +483,85 @@ export default function RecordsPage() {
       <div className="flex items-center justify-between mb-6">
         {/* Left: 3-way Toggle Filter (pill style) */}
         <div className="flex items-center gap-4">
-          <div className="inline-flex bg-gray-100 rounded-lg p-1">
-            <button
+          <div className="inline-flex bg-muted rounded-lg p-1">
+            <Button
+              variant={filter === 'complete' ? 'default' : 'ghost'}
+              size="sm"
               onClick={() => setFilter('complete')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                filter === 'complete'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
             >
               Clean
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={filter === 'incomplete' ? 'default' : 'ghost'}
+              size="sm"
               onClick={() => setFilter('incomplete')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                filter === 'incomplete'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
             >
               Incomplete
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={filter === 'all' ? 'default' : 'ghost'}
+              size="sm"
               onClick={() => setFilter('all')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                filter === 'all'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
             >
               All
-            </button>
+            </Button>
           </div>
 
           {/* Selection indicator + Manage button (only when items selected) */}
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Selecting {selectedIds.size} {selectedIds.size === 1 ? 'property' : 'properties'}
               </span>
-              <div className="relative" data-dropdown>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowManageDropdown(!showManageDropdown)
-                  }}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-                >
-                  Manage
-                  <Settings className="w-4 h-4" />
-                </button>
-                {showManageDropdown && (
-                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                    <button
-                      onClick={() => openBulkActionModal('addTags')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Tag className="w-4 h-4" /> Add tags
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('removeTags')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Tag className="w-4 h-4" /> Remove tags
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('addMotivations')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Target className="w-4 h-4" /> Add motivation
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('removeMotivations')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Target className="w-4 h-4" /> Remove motivation
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('updateStatus')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4" /> Update status
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('updateTemperature')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Thermometer className="w-4 h-4" /> Update temperature
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('assignToUser')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <User className="w-4 h-4" /> Assign to user
-                    </button>
-                    <div className="border-t border-gray-100 my-1" />
-                    <button
-                      onClick={() => openBulkActionModal('addTaskTemplate')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <CheckSquare className="w-4 h-4" /> Add task template
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('clearTasks')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <XCircle className="w-4 h-4" /> Clear tasks
-                    </button>
-                    <div className="border-t border-gray-100 my-1" />
-                    <button
-                      onClick={() => openBulkActionModal('deletePhones')}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Phone className="w-4 h-4" /> Delete phones
-                    </button>
-                    <button
-                      onClick={() => openBulkActionModal('deleteRecords')}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
-                    <div className="border-t border-gray-100 my-1" />
-                    <button
-                      onClick={handleExportRecords}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" /> Export properties
-                    </button>
-                  </div>
-                )}
-              </div>
+              <DropdownMenu open={showManageDropdown} onOpenChange={setShowManageDropdown}>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">
+                    Manage
+                    <Settings className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => openBulkActionModal('addTags')}>
+                    <Tag className="w-4 h-4 mr-2" /> Add tags
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('removeTags')}>
+                    <Tag className="w-4 h-4 mr-2" /> Remove tags
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('addMotivations')}>
+                    <Target className="w-4 h-4 mr-2" /> Add motivation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('removeMotivations')}>
+                    <Target className="w-4 h-4 mr-2" /> Remove motivation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('updateStatus')}>
+                    <Settings className="w-4 h-4 mr-2" /> Update status
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('updateTemperature')}>
+                    <Thermometer className="w-4 h-4 mr-2" /> Update temperature
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('assignToUser')}>
+                    <User className="w-4 h-4 mr-2" /> Assign to user
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => openBulkActionModal('addTaskTemplate')}>
+                    <CheckSquare className="w-4 h-4 mr-2" /> Add task template
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('clearTasks')}>
+                    <XCircle className="w-4 h-4 mr-2" /> Clear tasks
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => openBulkActionModal('deletePhones')}>
+                    <Phone className="w-4 h-4 mr-2" /> Delete phones
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBulkActionModal('deleteRecords')} className="text-destructive focus:text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleExportRecords}>
+                    <Download className="w-4 h-4 mr-2" /> Export properties
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
@@ -637,42 +569,31 @@ export default function RecordsPage() {
         {/* Right: Assigned to me + Filter Records */}
         <div className="flex items-center gap-4">
           {/* Assigned to me toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <button
-              onClick={() => setAssignedToMe(!assignedToMe)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                assignedToMe ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                  assignedToMe ? 'translate-x-5' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className="text-sm text-gray-600">Assigned to me</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={assignedToMe}
+              onCheckedChange={setAssignedToMe}
+            />
+            <span className="text-sm text-muted-foreground">Assigned to me</span>
+          </div>
 
           {/* Filter Records Button */}
-          <button 
+          <Button
+            variant={activeFilters.length > 0 ? 'secondary' : 'outline'}
+            size="sm"
             onClick={() => {
               setShowFilterPanel(true)
               if (tags.length === 0) fetchBulkOptions()
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm ${
-              activeFilters.length > 0 
-                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4 mr-2" />
             Filter Records
             {activeFilters.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+              <Badge variant="default" className="ml-2">
                 {activeFilters.length}
-              </span>
+              </Badge>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
