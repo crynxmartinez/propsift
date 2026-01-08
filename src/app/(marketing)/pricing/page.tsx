@@ -10,6 +10,10 @@ import {
   ChevronUp,
   Zap
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default function PricingPage() {
   return (
