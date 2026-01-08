@@ -16,6 +16,9 @@ import {
   Flag,
   Tag
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 interface Status {
   id: string
@@ -222,13 +225,13 @@ export default function RecordDetailPanel({
 
   if (error || !record) {
     return (
-      <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl border-l border-gray-200 z-50 p-6">
+      <div className="fixed inset-y-0 right-0 w-96 bg-background shadow-xl border-l z-50 p-6">
         <div className="flex justify-end">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
-        <p className="text-red-500 text-center mt-8">{error || 'Record not found'}</p>
+        <p className="text-destructive text-center mt-8">{error || 'Record not found'}</p>
       </div>
     )
   }
@@ -262,20 +265,18 @@ export default function RecordDetailPanel({
             </div>
             <div className="flex items-center gap-2">
               {onNavigate && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => onNavigate(recordId)}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition"
                   title="Open full details"
                 >
-                  <ExternalLink className="w-5 h-5 text-gray-500" />
-                </button>
+                  <ExternalLink className="w-5 h-5" />
+                </Button>
               )}
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-200 rounded-lg transition"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="w-5 h-5" />
+              </Button>
             </div>
           </div>
 
