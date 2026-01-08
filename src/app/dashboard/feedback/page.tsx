@@ -8,7 +8,6 @@ import {
   ChevronUp,
   Plus,
   Search,
-  Filter,
   Lightbulb,
   Wrench,
   Bug,
@@ -17,8 +16,32 @@ import {
   Clock,
   Calendar,
   X,
-  Pin
+  Pin,
+  Loader2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 interface FeedbackPost {
   id: string
@@ -219,88 +242,89 @@ export default function FeedbackPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Feature Requests</h1>
-          <p className="text-gray-500 mt-1">Vote on features you want or suggest new ones</p>
+          <h1 className="text-2xl font-bold">Feature Requests</h1>
+          <p className="text-muted-foreground mt-1">Vote on features you want or suggest new ones</p>
         </div>
-        <button
-          onClick={() => setShowNewPostModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
+        <Button onClick={() => setShowNewPostModal(true)}>
+          <Plus className="w-4 h-4" />
           New Request
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search requests..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search requests..."
+                  className="pl-10"
+                />
+              </div>
+            </form>
+
+            {/* Status Filter */}
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="planned">Planned</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Category Filter */}
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="feature">Feature</SelectItem>
+                <SelectItem value="improvement">Improvement</SelectItem>
+                <SelectItem value="bug">Bug</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="votes">Most Voted</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="comments">Most Discussed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* My Posts Toggle */}
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="myPosts"
+                checked={myPosts}
+                onCheckedChange={(checked) => setMyPosts(checked === true)}
               />
+              <Label htmlFor="myPosts" className="text-sm cursor-pointer">My Requests</Label>
             </div>
-          </form>
-
-          {/* Status Filter */}
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-          >
-            <option value="all">All Status</option>
-            <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="planned">Planned</option>
-            <option value="completed">Completed</option>
-          </select>
-
-          {/* Category Filter */}
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-          >
-            <option value="all">All Categories</option>
-            <option value="feature">Feature</option>
-            <option value="improvement">Improvement</option>
-            <option value="bug">Bug</option>
-            <option value="other">Other</option>
-          </select>
-
-          {/* Sort */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-          >
-            <option value="votes">Most Voted</option>
-            <option value="newest">Newest</option>
-            <option value="comments">Most Discussed</option>
-          </select>
-
-          {/* My Posts Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={myPosts}
-              onChange={(e) => setMyPosts(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-600">My Requests</span>
-          </label>
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
           {error}
         </div>
       )}
@@ -308,21 +332,20 @@ export default function FeedbackPage() {
       {/* Loading */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No requests found</h3>
-          <p className="text-gray-500 mb-4">Be the first to suggest a feature!</p>
-          <button
-            onClick={() => setShowNewPostModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            New Request
-          </button>
-        </div>
+        <Card className="text-center py-12">
+          <CardContent>
+            <MessageSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No requests found</h3>
+            <p className="text-muted-foreground mb-4">Be the first to suggest a feature!</p>
+            <Button onClick={() => setShowNewPostModal(true)}>
+              <Plus className="w-4 h-4" />
+              New Request
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
           {posts.map((post) => {
@@ -332,72 +355,72 @@ export default function FeedbackPage() {
             const CategoryIcon = categoryInfo.icon
 
             return (
-              <div
-                key={post.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
-              >
-                <div className="flex gap-4">
-                  {/* Vote Button */}
-                  <button
-                    onClick={() => handleVote(post.id)}
-                    className={`flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2 transition-colors flex-shrink-0 ${
-                      post.hasVoted
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <ChevronUp className="w-5 h-5" />
-                    <span className="text-lg font-bold">{post.voteCount}</span>
-                  </button>
+              <Card key={post.id} className="hover:border-primary/30 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    {/* Vote Button */}
+                    <button
+                      onClick={() => handleVote(post.id)}
+                      className={cn(
+                        "flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2 transition-colors flex-shrink-0",
+                        post.hasVoted
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <ChevronUp className="w-5 h-5" />
+                      <span className="text-lg font-bold">{post.voteCount}</span>
+                    </button>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <Link
-                        href={`/dashboard/feedback/${post.id}`}
-                        className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1"
-                      >
-                        {post.isPinned && (
-                          <Pin className="w-4 h-4 inline-block mr-2 text-blue-600" />
-                        )}
-                        {post.title}
-                      </Link>
-                      <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="text-sm">{post.commentCount}</span>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <Link
+                          href={`/dashboard/feedback/${post.id}`}
+                          className="text-lg font-semibold hover:text-primary transition-colors line-clamp-1"
+                        >
+                          {post.isPinned && (
+                            <Pin className="w-4 h-4 inline-block mr-2 text-primary" />
+                          )}
+                          {post.title}
+                        </Link>
+                        <div className="flex items-center gap-2 text-muted-foreground flex-shrink-0">
+                          <MessageSquare className="w-4 h-4" />
+                          <span className="text-sm">{post.commentCount}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{post.description}</p>
+
+                      <div className="flex items-center gap-3 mt-3 flex-wrap">
+                        {/* Category Badge */}
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium", categoryInfo.bgColor, categoryInfo.color)}>
+                          <CategoryIcon className="w-3 h-3" />
+                          {categoryInfo.label}
+                        </span>
+
+                        {/* Status Badge */}
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium", statusInfo.bgColor, statusInfo.color)}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusInfo.label}
+                        </span>
+
+                        <span className="text-xs text-muted-foreground">•</span>
+
+                        <span className="text-xs text-muted-foreground">
+                          Posted by {getDisplayName(post.createdBy)}
+                        </span>
+
+                        <span className="text-xs text-muted-foreground">•</span>
+
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(post.createdAt)}
+                        </span>
                       </div>
                     </div>
-
-                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">{post.description}</p>
-
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      {/* Category Badge */}
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${categoryInfo.bgColor} ${categoryInfo.color}`}>
-                        <CategoryIcon className="w-3 h-3" />
-                        {categoryInfo.label}
-                      </span>
-
-                      {/* Status Badge */}
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {statusInfo.label}
-                      </span>
-
-                      <span className="text-xs text-gray-400">•</span>
-
-                      <span className="text-xs text-gray-500">
-                        Posted by {getDisplayName(post.createdBy)}
-                      </span>
-
-                      <span className="text-xs text-gray-400">•</span>
-
-                      <span className="text-xs text-gray-500">
-                        {formatDate(post.createdAt)}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )
           })}
         </div>
@@ -406,109 +429,106 @@ export default function FeedbackPage() {
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
             disabled={pagination.page === 1}
-            className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Previous
-          </button>
-          <span className="text-sm text-gray-600">
+          </Button>
+          <span className="text-sm text-muted-foreground">
             Page {pagination.page} of {pagination.totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
             disabled={pagination.page === pagination.totalPages}
-            className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
 
       {/* New Post Modal */}
-      {showNewPostModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">New Feature Request</h2>
-              <button
-                onClick={() => setShowNewPostModal(false)}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Dialog open={showNewPostModal} onOpenChange={setShowNewPostModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Feature Request</DialogTitle>
+            <DialogDescription>
+              Submit a new feature request or suggestion for the platform.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreatePost} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={newPostTitle}
+                onChange={(e) => setNewPostTitle(e.target.value)}
+                placeholder="Brief summary of your request"
+                maxLength={200}
+                required
+              />
+              <p className="text-xs text-muted-foreground">{newPostTitle.length}/200</p>
             </div>
 
-            <form onSubmit={handleCreatePost} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={newPostTitle}
-                  onChange={(e) => setNewPostTitle(e.target.value)}
-                  placeholder="Brief summary of your request"
-                  maxLength={200}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-                <p className="text-xs text-gray-400 mt-1">{newPostTitle.length}/200</p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                value={newPostDescription}
+                onChange={(e) => setNewPostDescription(e.target.value)}
+                placeholder="Describe your feature request in detail. What problem does it solve? How would it work?"
+                maxLength={5000}
+                required
+                rows={5}
+              />
+              <p className="text-xs text-muted-foreground">{newPostDescription.length}/5000</p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
-                </label>
-                <textarea
-                  value={newPostDescription}
-                  onChange={(e) => setNewPostDescription(e.target.value)}
-                  placeholder="Describe your feature request in detail. What problem does it solve? How would it work?"
-                  maxLength={5000}
-                  required
-                  rows={5}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                />
-                <p className="text-xs text-gray-400 mt-1">{newPostDescription.length}/5000</p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={newPostCategory} onValueChange={setNewPostCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="feature">Feature Request</SelectItem>
+                  <SelectItem value="improvement">Improvement</SelectItem>
+                  <SelectItem value="bug">Bug Report</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
-                  value={newPostCategory}
-                  onChange={(e) => setNewPostCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                >
-                  <option value="feature">Feature Request</option>
-                  <option value="improvement">Improvement</option>
-                  <option value="bug">Bug Report</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowNewPostModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || !newPostTitle.trim() || !newPostDescription.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Request'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowNewPostModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting || !newPostTitle.trim() || !newPostDescription.trim()}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Request'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
