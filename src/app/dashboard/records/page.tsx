@@ -752,65 +752,58 @@ export default function RecordsPage() {
               </Table>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Show</span>
-                <div className="relative" data-dropdown>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowLimitDropdown(!showLimitDropdown)
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50"
-                  >
-                    {limit}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                  {showLimitDropdown && (
-                    <div className="absolute bottom-full mb-1 left-0 w-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Show</span>
+                  <DropdownMenu open={showLimitDropdown} onOpenChange={setShowLimitDropdown}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {limit}
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
                       {[10, 20, 50, 100].map((l) => (
-                        <button
+                        <DropdownMenuItem
                           key={l}
                           onClick={() => {
                             setLimit(l)
                             setPage(1)
-                            setShowLimitDropdown(false)
                           }}
-                          className={`w-full px-3 py-1 text-left text-sm hover:bg-gray-100 ${
-                            limit === l ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                          }`}
+                          className={limit === l ? 'bg-accent' : ''}
                         >
                           {l}
-                        </button>
+                        </DropdownMenuItem>
                       ))}
-                    </div>
-                  )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <span className="text-sm text-muted-foreground">per page</span>
                 </div>
-                <span className="text-sm text-gray-500">per page</span>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-500">
-                  Page {page} of {totalPages}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages || totalPages === 0}
-                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    Page {page} of {totalPages}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages || totalPages === 0}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
           </>
         )}
         </CardContent>
