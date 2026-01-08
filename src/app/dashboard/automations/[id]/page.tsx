@@ -584,9 +584,9 @@ export default function AutomationBuilderPage() {
   const hasTrigger = nodes.some((n) => n.type === 'trigger')
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="bg-card border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/dashboard/automations')}
@@ -595,7 +595,7 @@ export default function AutomationBuilderPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-semibold text-gray-900">{automation.name}</h1>
+            <h1 className="font-semibold">{automation.name}</h1>
             {automation.folder && (
               <span 
                 className="text-xs px-2 py-0.5 rounded"
@@ -616,8 +616,8 @@ export default function AutomationBuilderPage() {
             onClick={handleToggleActive}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
               automation.isActive
-                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             {automation.isActive ? (
@@ -655,13 +655,13 @@ export default function AutomationBuilderPage() {
       {/* Test Workflow Modal */}
       {showTestModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-4">Test Automation</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Select a record to test this automation with. The automation will run immediately with the selected record.
             </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Select Record
               </label>
               <select
@@ -691,7 +691,7 @@ export default function AutomationBuilderPage() {
                   setTestRecordId('')
                   setTestResult(null)
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg"
               >
                 Close
               </button>
@@ -708,7 +708,7 @@ export default function AutomationBuilderPage() {
       )}
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-4">
+      <div className="bg-card border-b px-4">
         <div className="flex gap-6">
           {[
             { id: 'builder', label: 'Builder', icon: GitBranch },
@@ -721,8 +721,8 @@ export default function AutomationBuilderPage() {
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex items-center gap-2 py-3 border-b-2 transition ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -753,26 +753,26 @@ export default function AutomationBuilderPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : logs.length === 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No execution logs yet</h3>
-                  <p className="text-gray-500">
+                <div className="bg-card rounded-lg border p-12 text-center">
+                  <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No execution logs yet</h3>
+                  <p className="text-muted-foreground">
                     Logs will appear here when the automation runs
                   </p>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-card rounded-lg border overflow-hidden">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-muted border-b">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Triggered By</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Triggered By</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Started</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Duration</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Error</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y">
                       {logs.map((log) => {
                         const startedAt = new Date(log.startedAt)
                         const completedAt = log.completedAt ? new Date(log.completedAt) : null
@@ -790,18 +790,18 @@ export default function AutomationBuilderPage() {
                                   ? 'bg-red-100 text-red-700'
                                   : log.status === 'running'
                                   ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-gray-100 text-gray-700'
+                                  : 'bg-muted text-muted-foreground'
                               }`}>
                                 {log.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {log.triggeredBy.replace(/_/g, ' ')}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {startedAt.toLocaleString()}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {duration !== null ? `${duration}s` : '-'}
                             </td>
                             <td className="px-4 py-3 text-sm text-red-600 max-w-xs truncate">
@@ -823,26 +823,26 @@ export default function AutomationBuilderPage() {
           <div className="flex-1 p-6 overflow-auto">
             <div className="max-w-2xl mx-auto">
               <h2 className="text-lg font-semibold mb-6">Automation Settings</h2>
-              <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+              <div className="bg-card rounded-lg border p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <p className="text-gray-900">{automation.name}</p>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Name</label>
+                  <p className="text-foreground">{automation.name}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <p className="text-gray-600">{automation.description || 'No description'}</p>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+                  <p className="text-muted-foreground">{automation.description || 'No description'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Folder</label>
-                  <p className="text-gray-600">{automation.folder?.name || 'Uncategorized'}</p>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Folder</label>
+                  <p className="text-muted-foreground">{automation.folder?.name || 'Uncategorized'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Runs</label>
-                  <p className="text-gray-900">{automation.runCount}</p>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Total Runs</label>
+                  <p className="text-foreground">{automation.runCount}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Run</label>
-                  <p className="text-gray-600">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Last Run</label>
+                  <p className="text-muted-foreground">
                     {automation.lastRunAt 
                       ? new Date(automation.lastRunAt).toLocaleString()
                       : 'Never'
@@ -860,7 +860,7 @@ export default function AutomationBuilderPage() {
             <div className="max-w-6xl mx-auto">
               <div className="mb-6">
                 <h2 className="text-lg font-semibold">Enrollment History</h2>
-                <p className="text-sm text-gray-500">View a history of all the Records that have entered this Workflow</p>
+                <p className="text-sm text-muted-foreground">View a history of all the Records that have entered this Workflow</p>
               </div>
 
               {logsLoading ? (
@@ -868,20 +868,20 @@ export default function AutomationBuilderPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : logs.length === 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                  <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No enrollment history yet</h3>
-                  <p className="text-gray-500">
+                <div className="bg-card rounded-lg border p-12 text-center">
+                  <History className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No enrollment history yet</h3>
+                  <p className="text-muted-foreground">
                     Records will appear here when they enter this automation
                   </p>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-card rounded-lg border overflow-hidden">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-muted border-b">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Record</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrollment Reason</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Record</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Enrollment Reason</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Enrolled</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
