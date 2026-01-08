@@ -2,7 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, MoreHorizontal, Edit2, Trash2, LayoutGrid } from 'lucide-react'
+import { Plus, MoreHorizontal, Edit2, Trash2, LayoutGrid, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface BoardColumn {
   id: string
@@ -30,7 +60,6 @@ export default function BoardListPage() {
   const router = useRouter()
   const [boards, setBoards] = useState<Board[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   
   // Create modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -46,12 +75,8 @@ export default function BoardListPage() {
   const [updating, setUpdating] = useState(false)
   
   // Delete confirmation state
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingBoard, setDeletingBoard] = useState<Board | null>(null)
   const [deleting, setDeleting] = useState(false)
-  
-  // Dropdown menu state
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchBoards()
@@ -67,7 +92,7 @@ export default function BoardListPage() {
       const data = await res.json()
       setBoards(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch boards')
+      toast.error(err instanceof Error ? err.message : 'Failed to fetch boards')
     } finally {
       setLoading(false)
     }
@@ -103,7 +128,7 @@ export default function BoardListPage() {
       setNewBoardName('')
       setNewBoardDescription('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create board')
+      toast.error(err instanceof Error ? err.message : 'Failed to create board')
     } finally {
       setCreating(false)
     }
@@ -138,7 +163,7 @@ export default function BoardListPage() {
       setShowEditModal(false)
       setEditingBoard(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update board')
+      toast.error(err instanceof Error ? err.message : 'Failed to update board')
     } finally {
       setUpdating(false)
     }
@@ -160,11 +185,11 @@ export default function BoardListPage() {
         throw new Error(data.error || 'Failed to delete board')
       }
       
+      toast.success('Board deleted')
       setBoards(boards.filter(b => b.id !== deletingBoard.id))
-      setShowDeleteModal(false)
       setDeletingBoard(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete board')
+      toast.error(err instanceof Error ? err.message : 'Failed to delete board')
     } finally {
       setDeleting(false)
     }
@@ -175,13 +200,6 @@ export default function BoardListPage() {
     setEditBoardName(board.name)
     setEditBoardDescription(board.description || '')
     setShowEditModal(true)
-    setOpenMenuId(null)
-  }
-
-  const openDeleteModal = (board: Board) => {
-    setDeletingBoard(board)
-    setShowDeleteModal(true)
-    setOpenMenuId(null)
   }
 
   if (loading) {
@@ -197,58 +215,45 @@ export default function BoardListPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Boards</h1>
-          <p className="text-gray-500 mt-1">Manage your kanban boards</p>
+          <h1 className="text-2xl font-bold">Boards</h1>
+          <p className="text-muted-foreground mt-1">Manage your kanban boards</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          <Plus className="w-5 h-5" />
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4" />
           Create Board
-        </button>
+        </Button>
       </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          {error}
-          <button onClick={() => setError('')} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
 
       {/* Boards grid */}
       {boards.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <LayoutGrid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No boards yet</h3>
-          <p className="text-gray-500 mb-4">Create your first kanban board to organize your records</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Create Board
-          </button>
-        </div>
+        <Card className="text-center py-12 border-dashed">
+          <CardContent>
+            <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No boards yet</h3>
+            <p className="text-muted-foreground mb-4">Create your first kanban board to organize your records</p>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4" />
+              Create Board
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {boards.map((board) => (
-            <div
+            <Card
               key={board.id}
-              className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer relative group"
+              className="hover:shadow-md transition cursor-pointer relative group"
             >
-              {/* Card content - clickable */}
-              <div
+              <CardContent
                 onClick={() => router.push(`/dashboard/board/${board.id}`)}
                 className="p-5"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 text-lg">{board.name}</h3>
+                  <h3 className="font-semibold text-lg">{board.name}</h3>
                 </div>
                 
                 {board.description && (
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{board.description}</p>
+                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{board.description}</p>
                 )}
                 
                 {/* Column preview */}
@@ -262,215 +267,164 @@ export default function BoardListPage() {
                     />
                   ))}
                   {board.columns.length > 5 && (
-                    <div className="h-2 flex-1 rounded-full bg-gray-300" title={`+${board.columns.length - 5} more columns`} />
+                    <div className="h-2 flex-1 rounded-full bg-muted" title={`+${board.columns.length - 5} more columns`} />
                   )}
                 </div>
                 
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{board._count.columns} columns</span>
                   <span>{board.totalRecords} records</span>
                 </div>
-              </div>
+              </CardContent>
               
               {/* Menu button */}
               <div className="absolute top-3 right-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setOpenMenuId(openMenuId === board.id ? null : board.id)
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <MoreHorizontal className="w-5 h-5 text-gray-500" />
-                </button>
-                
-                {/* Dropdown menu */}
-                {openMenuId === board.id && (
-                  <div className="absolute right-0 top-8 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openEditModal(board)
-                      }}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditModal(board); }}>
+                      <Edit2 className="w-4 h-4 mr-2" />
                       Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openDeleteModal(board)
-                      }}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); setDeletingBoard(board); }}
+                      className="text-destructive focus:text-destructive"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 mr-2" />
                       Delete
-                    </button>
-                  </div>
-                )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Create Board</h2>
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Board</DialogTitle>
+            <DialogDescription>Create a new kanban board to organize your records.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="boardName">Board Name *</Label>
+              <Input
+                id="boardName"
+                value={newBoardName}
+                onChange={(e) => setNewBoardName(e.target.value)}
+                placeholder="e.g., Sales Pipeline"
+                autoFocus
+              />
             </div>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Board Name *
-                </label>
-                <input
-                  type="text"
-                  value={newBoardName}
-                  onChange={(e) => setNewBoardName(e.target.value)}
-                  placeholder="e.g., Sales Pipeline"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={newBoardDescription}
-                  onChange={(e) => setNewBoardDescription(e.target.value)}
-                  placeholder="Optional description..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false)
-                    setNewBoardName('')
-                    setNewBoardDescription('')
-                  }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating || !newBoardName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  {creating ? 'Creating...' : 'Create Board'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && editingBoard && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Edit Board</h2>
+            <div className="space-y-2">
+              <Label htmlFor="boardDesc">Description</Label>
+              <Textarea
+                id="boardDesc"
+                value={newBoardDescription}
+                onChange={(e) => setNewBoardDescription(e.target.value)}
+                placeholder="Optional description..."
+                rows={3}
+              />
             </div>
-            <form onSubmit={handleEdit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Board Name *
-                </label>
-                <input
-                  type="text"
-                  value={editBoardName}
-                  onChange={(e) => setEditBoardName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={editBoardDescription}
-                  onChange={(e) => setEditBoardDescription(e.target.value)}
-                  placeholder="Optional description..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false)
-                    setEditingBoard(null)
-                  }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updating || !editBoardName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  {updating ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && deletingBoard && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Delete Board</h2>
-              <p className="text-gray-600">
-                Are you sure you want to delete <strong>{deletingBoard.name}</strong>? 
-                This will remove all columns and record positions from this board. 
-                The records themselves will not be deleted.
-              </p>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-              <button
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
-                  setShowDeleteModal(false)
-                  setDeletingBoard(null)
+                  setShowCreateModal(false)
+                  setNewBoardName('')
+                  setNewBoardDescription('')
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
-              >
-                {deleting ? 'Deleting...' : 'Delete Board'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+              <Button type="submit" disabled={creating || !newBoardName.trim()}>
+                {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : 'Create Board'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Click outside to close menu */}
-      {openMenuId && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => setOpenMenuId(null)}
-        />
-      )}
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={(open) => { if (!open) { setShowEditModal(false); setEditingBoard(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Board</DialogTitle>
+            <DialogDescription>Update the board details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editBoardName">Board Name *</Label>
+              <Input
+                id="editBoardName"
+                value={editBoardName}
+                onChange={(e) => setEditBoardName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editBoardDesc">Description</Label>
+              <Textarea
+                id="editBoardDesc"
+                value={editBoardDescription}
+                onChange={(e) => setEditBoardDescription(e.target.value)}
+                placeholder="Optional description..."
+                rows={3}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setShowEditModal(false); setEditingBoard(null); }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updating || !editBoardName.trim()}>
+                {updating ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingBoard} onOpenChange={(open) => !open && setDeletingBoard(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Board</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingBoard?.name}</strong>? 
+              This will remove all columns and record positions from this board. 
+              The records themselves will not be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</> : 'Delete Board'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
