@@ -2,6 +2,26 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Loader2, Search, Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface AddPropertyModalProps {
   isOpen: boolean
@@ -360,64 +380,57 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
     return true
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Property</h2>
-          <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Add New Property</DialogTitle>
+        </DialogHeader>
 
         {/* Step Indicator */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="py-4 border-b">
           <div className="flex items-center justify-center">
             {/* Step 1 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 1 ? <Check className="w-4 h-4" /> : '1'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 1 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 1 ? 'text-foreground' : 'text-muted-foreground')}>
                 Property
               </span>
             </div>
             
             {/* Line 1-2 */}
-            <div className={`w-16 h-0.5 mx-2 ${step > 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-16 h-0.5 mx-2", step > 1 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 2 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 {step > 2 ? <Check className="w-4 h-4" /> : '2'}
               </div>
-              <span className={`ml-2 text-sm ${step >= 2 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 2 ? 'text-foreground' : 'text-muted-foreground')}>
                 Owner
               </span>
             </div>
             
             {/* Line 2-3 */}
-            <div className={`w-16 h-0.5 mx-2 ${step > 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={cn("w-16 h-0.5 mx-2", step > 2 ? 'bg-primary' : 'bg-muted')} />
             
             {/* Step 3 */}
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 3
               </div>
-              <span className={`ml-2 text-sm ${step >= 3 ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={cn("ml-2 text-sm", step >= 3 ? 'text-foreground' : 'text-muted-foreground')}>
                 Assignment
               </span>
             </div>
@@ -425,30 +438,27 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 overflow-y-auto max-h-[60vh]">
+        <div className="py-6 overflow-y-auto max-h-[60vh]">
           {/* Step 1: Property Address */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Address
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
+                <Label>Search Address</Label>
+                <div className="relative mt-1">
+                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
                     value={addressQuery}
                     onChange={(e) => setAddressQuery(e.target.value)}
                     placeholder="Start typing an address..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="pl-10"
                   />
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   {searchingAddress && (
-                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Loader2 className="w-4 h-4 text-primary animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
                   )}
                   
                   {/* Address Dropdown */}
                   {showAddressDropdown && addressResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-popover border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {addressResults.map((result, index) => {
                         const street = [result.address.house_number, result.address.road].filter(Boolean).join(' ')
                         const city = result.address.city || result.address.town || result.address.village || ''
@@ -459,7 +469,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                           <button
                             key={index}
                             onClick={() => selectAddress(result)}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-accent border-b last:border-0"
                           >
                             {displayAddress || result.display_name}
                           </button>
@@ -468,47 +478,43 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Select from dropdown or manually enter below
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                  <input
-                    type="text"
+                  <Label>Street</Label>
+                  <Input
                     value={formData.propertyStreet}
                     onChange={(e) => updateFormData('propertyStreet', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="mt-1"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <input
-                      type="text"
+                    <Label>City</Label>
+                    <Input
                       value={formData.propertyCity}
                       onChange={(e) => updateFormData('propertyCity', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                    <input
-                      type="text"
+                    <Label>State</Label>
+                    <Input
                       value={formData.propertyState}
                       onChange={(e) => updateFormData('propertyState', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Zip</label>
-                    <input
-                      type="text"
+                    <Label>Zip</Label>
+                    <Input
                       value={formData.propertyZip}
                       onChange={(e) => updateFormData('propertyZip', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -521,127 +527,107 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
             <div className="space-y-4">
               {/* Is Company Toggle */}
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => updateFormData('isCompany', !formData.isCompany)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      formData.isCompany ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        formData.isCompany ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                  <span className="text-sm text-gray-700">This is a company</span>
-                </label>
+                <Switch
+                  checked={formData.isCompany}
+                  onCheckedChange={(checked) => updateFormData('isCompany', checked)}
+                />
+                <span className="text-sm">This is a company</span>
               </div>
 
               {/* Owner Name */}
               {formData.isCompany ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                  <input
-                    type="text"
+                  <Label>Company Name</Label>
+                  <Input
                     value={formData.ownerFullName}
                     onChange={(e) => updateFormData('ownerFullName', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="mt-1"
                   />
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input
-                        type="text"
+                      <Label>First Name</Label>
+                      <Input
                         value={formData.ownerFirstName}
                         onChange={(e) => updateFormData('ownerFirstName', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="mt-1"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input
-                        type="text"
+                      <Label>Last Name</Label>
+                      <Input
                         value={formData.ownerLastName}
                         onChange={(e) => updateFormData('ownerLastName', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="mt-1"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name / Company Name <span className="text-gray-400 font-normal">(optional override)</span>
-                    </label>
-                    <input
-                      type="text"
+                    <Label>
+                      Full Name / Company Name <span className="text-muted-foreground font-normal">(optional override)</span>
+                    </Label>
+                    <Input
                       value={formData.ownerFullName}
                       onChange={(e) => updateFormData('ownerFullName', e.target.value)}
                       placeholder={`${formData.ownerFirstName} ${formData.ownerLastName}`.trim() || 'Auto-generated from first + last name'}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                 </>
               )}
 
               {/* Mailing Address */}
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-900">Mailing Address</h3>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <h3 className="text-sm font-medium">Mailing Address</h3>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="sameAsProperty"
                       checked={formData.sameAsProperty}
-                      onChange={(e) => updateFormData('sameAsProperty', e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateFormData('sameAsProperty', !!checked)}
                     />
-                    <span className="text-sm text-gray-600">Same as property</span>
-                  </label>
+                    <label htmlFor="sameAsProperty" className="text-sm text-muted-foreground cursor-pointer">Same as property</label>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                    <input
-                      type="text"
+                    <Label>Street</Label>
+                    <Input
                       value={formData.mailingStreet}
                       onChange={(e) => updateFormData('mailingStreet', e.target.value)}
                       disabled={formData.sameAsProperty}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
+                      className="mt-1"
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input
-                        type="text"
+                      <Label>City</Label>
+                      <Input
                         value={formData.mailingCity}
                         onChange={(e) => updateFormData('mailingCity', e.target.value)}
                         disabled={formData.sameAsProperty}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
+                        className="mt-1"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                      <input
-                        type="text"
+                      <Label>State</Label>
+                      <Input
                         value={formData.mailingState}
                         onChange={(e) => updateFormData('mailingState', e.target.value)}
                         disabled={formData.sameAsProperty}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
+                        className="mt-1"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Zip</label>
-                      <input
-                        type="text"
+                      <Label>Zip</Label>
+                      <Input
                         value={formData.mailingZip}
                         onChange={(e) => updateFormData('mailingZip', e.target.value)}
                         disabled={formData.sameAsProperty}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
+                        className="mt-1"
                       />
                     </div>
                   </div>
@@ -649,27 +635,27 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
               </div>
 
               {/* Contact Info */}
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Contact Information</h3>
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-medium mb-3">Contact Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input
+                    <Label>Phone</Label>
+                    <Input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => updateFormData('phone', e.target.value)}
                       placeholder="(555) 123-4567"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
+                    <Label>Email</Label>
+                    <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => updateFormData('email', e.target.value)}
                       placeholder="owner@example.com"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -684,36 +670,37 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
               <div className="grid grid-cols-2 gap-4">
                 {/* Status */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    value={formData.statusId}
-                    onChange={(e) => updateFormData('statusId', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
-                    <option value="">Select a status</option>
-                    {statuses.map((status) => (
-                      <option key={status.id} value={status.id}>
-                        {status.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Label>Status</Label>
+                  <Select value={formData.statusId} onValueChange={(value) => updateFormData('statusId', value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Assign To */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                  <select
-                    value={formData.assignedToId}
-                    onChange={(e) => updateFormData('assignedToId', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
-                    <option value="">Unassigned</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name || user.email}
-                      </option>
-                    ))}
-                  </select>
+                  <Label>Assign To</Label>
+                  <Select value={formData.assignedToId} onValueChange={(value) => updateFormData('assignedToId', value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -897,21 +884,21 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                 </div>
 
                 {/* Notes Box */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-hidden">
                   {/* Header */}
-                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
-                    <span className="text-blue-600">—</span>
-                    <span className="text-sm font-medium text-blue-600">NOTES</span>
+                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted">
+                    <span className="text-primary">—</span>
+                    <span className="text-sm font-medium text-primary">NOTES</span>
                   </div>
                   
                   {/* Notes Textarea */}
                   <div className="p-3">
-                    <textarea
+                    <Textarea
                       value={formData.notes}
                       onChange={(e) => updateFormData('notes', e.target.value)}
                       rows={8}
                       placeholder="Add any notes about this property..."
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                      className="resize-none"
                     />
                   </div>
                 </div>
@@ -921,45 +908,31 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition"
-          >
+        <div className="flex items-center justify-between pt-4 border-t">
+          <Button variant="ghost" onClick={handleClose}>
             Cancel
-          </button>
+          </Button>
           
           <div className="flex items-center gap-3">
             {step > 1 && (
-              <button
-                onClick={() => setStep(step - 1)}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-              >
+              <Button variant="outline" onClick={() => setStep(step - 1)}>
                 Back
-              </button>
+              </Button>
             )}
             
             {step < 3 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={!canProceed()}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <Button onClick={() => setStep(step + 1)} disabled={!canProceed()}>
                 Next
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {submitting ? 'Creating...' : 'Create Property'}
-              </button>
+              </Button>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
