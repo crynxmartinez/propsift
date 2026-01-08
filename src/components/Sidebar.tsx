@@ -14,7 +14,8 @@ import {
   CheckSquare,
   LayoutGrid,
   Workflow,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react'
 
 const menuItems = [
@@ -26,6 +27,7 @@ const menuItems = [
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
+  { name: 'Feedback', href: '/dashboard/feedback', icon: MessageSquare },
   { name: 'System', href: '/dashboard/activity', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]

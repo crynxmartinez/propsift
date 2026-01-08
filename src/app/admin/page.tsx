@@ -15,7 +15,16 @@ import {
   MoreVertical,
   UserCheck,
   UserX,
-  Crown
+  Crown,
+  MessageSquare,
+  ChevronUp,
+  Pin,
+  Lightbulb,
+  Wrench,
+  Bug,
+  HelpCircle,
+  Clock,
+  Calendar
 } from 'lucide-react'
 
 interface Stats {
@@ -70,7 +79,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'accounts' | 'users'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'accounts' | 'users' | 'feedback'>('overview')
   
   // Stats
   const [stats, setStats] = useState<Stats | null>(null)
@@ -91,6 +100,17 @@ export default function AdminDashboard() {
   
   // Action menu
   const [actionMenuUser, setActionMenuUser] = useState<string | null>(null)
+
+  // Feedback
+  const [feedbackPosts, setFeedbackPosts] = useState<any[]>([])
+  const [feedbackPage, setFeedbackPage] = useState(1)
+  const [feedbackTotalPages, setFeedbackTotalPages] = useState(1)
+  const [feedbackStatus, setFeedbackStatus] = useState('')
+  const [feedbackSearch, setFeedbackSearch] = useState('')
+  const [editingPost, setEditingPost] = useState<string | null>(null)
+  const [editStatus, setEditStatus] = useState('')
+  const [editAdminNote, setEditAdminNote] = useState('')
+  const [editPinned, setEditPinned] = useState(false)
 
   // Check authorization
   useEffect(() => {
@@ -198,6 +218,70 @@ export default function AdminDashboard() {
     return () => clearTimeout(debounce)
   }, [authorized, activeTab, usersPage, usersSearch, usersRoleFilter, usersStatusFilter])
 
+  // Fetch feedback
+  useEffect(() => {
+    if (!authorized || activeTab !== 'feedback') return
+
+    const fetchFeedback = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        const params = new URLSearchParams({
+          page: feedbackPage.toString(),
+          limit: '20',
+          sort: 'votes'
+        })
+        if (feedbackStatus) params.set('status', feedbackStatus)
+        if (feedbackSearch) params.set('search', feedbackSearch)
+
+        const response = await fetch(`/api/feedback?${params}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setFeedbackPosts(data.posts)
+          setFeedbackTotalPages(data.pagination.totalPages)
+        }
+      } catch (error) {
+        console.error('Error fetching feedback:', error)
+      }
+    }
+
+    const debounce = setTimeout(fetchFeedback, 300)
+    return () => clearTimeout(debounce)
+  }, [authorized, activeTab, feedbackPage, feedbackStatus, feedbackSearch])
+
+  const handleUpdateFeedback = async (postId: string) => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const response = await fetch(`/api/feedback/${postId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: editStatus,
+          adminNote: editAdminNote,
+          isPinned: editPinned
+        })
+      })
+
+      if (response.ok) {
+        setEditingPost(null)
+        // Refresh list
+        setFeedbackSearch(prev => prev + ' ')
+        setTimeout(() => setFeedbackSearch(prev => prev.trim()), 100)
+      }
+    } catch (error) {
+      console.error('Error updating feedback:', error)
+    }
+  }
+
   const handleUserAction = async (userId: string, action: 'activate' | 'deactivate' | 'make_admin' | 'remove_admin') => {
     const token = localStorage.getItem('token')
     if (!token) return
@@ -297,6 +381,16 @@ export default function AdminDashboard() {
               }`}
             >
               Users
+            </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`py-4 border-b-2 text-sm font-medium ${
+                activeTab === 'feedback'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Feedback
             </button>
           </nav>
         </div>
@@ -685,6 +779,224 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Feedback Tab */}
+        {activeTab === 'feedback' && (
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search feedback..."
+                      value={feedbackSearch}
+                      onChange={(e) => {
+                        setFeedbackSearch(e.target.value)
+                        setFeedbackPage(1)
+                      }}
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <select
+                  value={feedbackStatus}
+                  onChange={(e) => {
+                    setFeedbackStatus(e.target.value)
+                    setFeedbackPage(1)
+                  }}
+                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="planned">Planned</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Feedback List */}
+            <div className="space-y-4">
+              {feedbackPosts.length === 0 ? (
+                <div className="bg-white rounded-xl p-8 shadow-sm border text-center">
+                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No feedback posts found</p>
+                </div>
+              ) : (
+                feedbackPosts.map((post) => {
+                  const statusColors: Record<string, string> = {
+                    open: 'bg-green-100 text-green-700',
+                    in_progress: 'bg-blue-100 text-blue-700',
+                    planned: 'bg-yellow-100 text-yellow-700',
+                    completed: 'bg-gray-100 text-gray-700'
+                  }
+                  const categoryIcons: Record<string, any> = {
+                    feature: Lightbulb,
+                    improvement: Wrench,
+                    bug: Bug,
+                    other: HelpCircle
+                  }
+                  const CategoryIcon = categoryIcons[post.category] || HelpCircle
+
+                  return (
+                    <div key={post.id} className="bg-white rounded-xl p-4 shadow-sm border">
+                      {editingPost === post.id ? (
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex flex-col items-center w-16">
+                              <ChevronUp className="w-5 h-5 text-gray-400" />
+                              <span className="text-lg font-bold text-gray-900">{post.voteCount}</span>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900">{post.title}</h3>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{post.description}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                              <select
+                                value={editStatus}
+                                onChange={(e) => setEditStatus(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="planned">Planned</option>
+                                <option value="completed">Completed</option>
+                              </select>
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Admin Note</label>
+                              <input
+                                type="text"
+                                value={editAdminNote}
+                                onChange={(e) => setEditAdminNote(e.target.value)}
+                                placeholder="Add a public note..."
+                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-4 border-t">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editPinned}
+                                onChange={(e) => setEditPinned(e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-600">Pin to top</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setEditingPost(null)}
+                                className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleUpdateFeedback(post.id)}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center w-16 flex-shrink-0">
+                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                            <span className="text-lg font-bold text-gray-900">{post.voteCount}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                  {post.isPinned && <Pin className="w-4 h-4 text-blue-600" />}
+                                  {post.title}
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{post.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
+                                <MessageSquare className="w-4 h-4" />
+                                <span className="text-sm">{post.commentCount}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 mt-3 flex-wrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusColors[post.status] || statusColors.open}`}>
+                                {post.status === 'in_progress' ? 'In Progress' : post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                              </span>
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <CategoryIcon className="w-3 h-3" />
+                                {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                by {post.createdBy?.email || 'Unknown'}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {new Date(post.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            {post.adminNote && (
+                              <div className="mt-3 p-2 bg-blue-50 border border-blue-100 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                  <Crown className="w-3 h-3 inline mr-1" />
+                                  {post.adminNote}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setEditingPost(post.id)
+                              setEditStatus(post.status)
+                              setEditAdminNote(post.adminNote || '')
+                              setEditPinned(post.isPinned)
+                            }}
+                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg flex-shrink-0"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Pagination */}
+            {feedbackTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setFeedbackPage(p => Math.max(1, p - 1))}
+                  disabled={feedbackPage === 1}
+                  className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Previous
+                </button>
+                <span className="text-sm text-gray-500">
+                  Page {feedbackPage} of {feedbackTotalPages}
+                </span>
+                <button
+                  onClick={() => setFeedbackPage(p => Math.min(feedbackTotalPages, p + 1))}
+                  disabled={feedbackPage === feedbackTotalPages}
+                  className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
