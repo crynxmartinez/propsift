@@ -87,6 +87,7 @@ export default function FeedbackPage() {
   const fetchPosts = async () => {
     try {
       setLoading(true)
+      setError('')
       const token = localStorage.getItem('token')
       if (!token) {
         router.push('/login')
@@ -110,7 +111,8 @@ export default function FeedbackPage() {
           router.push('/login')
           return
         }
-        throw new Error('Failed to fetch feedback')
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch feedback')
       }
 
       const data = await res.json()
