@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -13,128 +12,32 @@ import {
   TrendingUp,
   Phone,
   Mail,
+  Building,
   ChevronDown,
   ChevronUp,
-  Star,
-  Menu,
-  X
+  Star
 } from 'lucide-react'
+import { useState } from 'react'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <main>
-        <HeroSection />
-        <SocialProofBar />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <PricingSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <CTASection />
-      </main>
-      <Footer />
+    <div className="bg-white">
+      <HeroSection />
+      <SocialProofBar />
+      <FeaturesSection />
+      <HowItWorksSection />
+      <PricingSection />
+      <TestimonialsSection />
+      <FAQSection />
+      <CTASection />
     </div>
-  )
-}
-
-function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  const navLinks = [
-    { href: '/features', label: 'Features' },
-    { href: '/pricing', label: 'Pricing' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
-  ]
-
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">PropSift</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Start Free Trial
-            </Link>
-          </div>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-600 hover:text-gray-900"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </div>
-
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100">
-          <div className="px-4 py-4 space-y-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-gray-600 hover:text-gray-900 font-medium py-2"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="pt-4 border-t border-gray-100 space-y-3">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-gray-600 hover:text-gray-900 font-medium py-2"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full text-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-    </nav>
   )
 }
 
 function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50 pt-16">
+    <section className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full opacity-50 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full opacity-30 blur-3xl" />
@@ -142,6 +45,7 @@ function HeroSection() {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Content */}
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-6">
               <Zap className="w-4 h-4" />
@@ -185,15 +89,19 @@ function HeroSection() {
             </div>
           </div>
 
+          {/* Right: Dashboard Preview */}
           <div className="relative">
             <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+              {/* Mock Dashboard Header */}
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                 <div className="w-3 h-3 rounded-full bg-green-400" />
               </div>
               
+              {/* Mock Dashboard Content */}
               <div className="p-6">
+                {/* KPI Cards */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-blue-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">Total Records</p>
@@ -217,6 +125,7 @@ function HeroSection() {
                   </div>
                 </div>
 
+                {/* Mock Chart */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-gray-700 mb-3">Lead Temperature</p>
                   <div className="flex items-end gap-2 h-20">
@@ -233,6 +142,7 @@ function HeroSection() {
               </div>
             </div>
 
+            {/* Floating badge */}
             <div className="absolute -bottom-4 -left-4 bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -385,7 +295,7 @@ function HowItWorksSection() {
       number: '01',
       title: 'Import Your Leads',
       description: 'Bulk import from skip trace services, list providers, or add properties manually. PropSift handles any CSV format.',
-      icon: ClipboardList,
+      icon: Building,
     },
     {
       number: '02',
@@ -397,7 +307,7 @@ function HowItWorksSection() {
       number: '03',
       title: 'Work Your Pipeline',
       description: 'Tasks, calls, and follow-ups are tracked automatically. Automations handle the repetitive work so you can focus on conversations.',
-      icon: Phone,
+      icon: ClipboardList,
     },
     {
       number: '04',
@@ -424,6 +334,7 @@ function HowItWorksSection() {
             const Icon = step.icon
             return (
               <div key={step.number} className="relative">
+                {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gray-200 -translate-x-1/2" />
                 )}
@@ -614,7 +525,7 @@ function TestimonialsSection() {
                   <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">&quot;{testimonial.quote}&quot;</p>
+              <p className="text-gray-700 mb-6 leading-relaxed">"{testimonial.quote}"</p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                   <span className="text-blue-600 font-semibold text-sm">{testimonial.avatar}</span>
@@ -670,7 +581,7 @@ function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-xl text-gray-600">
-            Got questions? We&apos;ve got answers.
+            Got questions? We've got answers.
           </p>
         </div>
 
@@ -735,110 +646,5 @@ function CTASection() {
         </p>
       </div>
     </section>
-  )
-}
-
-function Footer() {
-  const currentYear = new Date().getFullYear()
-
-  const footerLinks = {
-    product: [
-      { href: '/features', label: 'Features' },
-      { href: '/pricing', label: 'Pricing' },
-      { href: '/about', label: 'About' },
-      { href: '/contact', label: 'Contact' },
-    ],
-    legal: [
-      { href: '/privacy', label: 'Privacy Policy' },
-      { href: '/terms', label: 'Terms of Service' },
-    ],
-    account: [
-      { href: '/login', label: 'Login' },
-      { href: '/register', label: 'Sign Up' },
-    ],
-  }
-
-  return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
-              <span className="text-xl font-bold text-white">PropSift</span>
-            </Link>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              The all-in-one CRM built for real estate wholesalers. Organize leads, automate follow-ups, and close more deals.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-white font-semibold mb-4">Product</h3>
-            <ul className="space-y-3">
-              {footerLinks.product.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-white font-semibold mb-4">Legal</h3>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-white font-semibold mb-4">Account</h3>
-            <ul className="space-y-3">
-              {footerLinks.account.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-sm">
-              &copy; {currentYear} PropSift. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors text-sm">
-                Privacy
-              </Link>
-              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors text-sm">
-                Terms
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
   )
 }
