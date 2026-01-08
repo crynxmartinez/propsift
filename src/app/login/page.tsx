@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogIn, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react'
+import { LogIn, Mail, Lock, AlertCircle, UserPlus, Home } from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,6 +41,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      {/* Home Button */}
+      <Link
+        href="/"
+        className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 transition-colors"
+      >
+        <Home className="w-4 h-4" />
+        <span className="text-sm font-medium">Home</span>
+      </Link>
+
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
