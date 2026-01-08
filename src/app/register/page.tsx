@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Mail, Lock, AlertCircle, LogIn, Home } from 'lucide-react'
+import { UserPlus, Mail, Lock, AlertCircle, LogIn, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterPage() {
@@ -54,17 +54,17 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Home Button */}
-      <Link
-        href="/"
-        className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 transition-colors"
-      >
-        <Home className="w-4 h-4" />
-        <span className="text-sm font-medium">Home</span>
-      </Link>
-
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Back to Home - Inside Card */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
               <UserPlus className="w-8 h-8 text-white" />
