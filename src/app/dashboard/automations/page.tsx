@@ -417,7 +417,7 @@ export default function AutomationsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -427,45 +427,46 @@ export default function AutomationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Automations</h1>
-          <p className="text-gray-500">Create workflows to automate your tasks</p>
+          <h1 className="text-2xl font-bold">Automations</h1>
+          <p className="text-muted-foreground">Create workflows to automate your tasks</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowCreateFolderModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
-            <Folder className="w-4 h-4" />
+            <Folder className="w-4 h-4 mr-2" />
             New Folder
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowCreateAutomationModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 mr-2" />
             New Automation
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="Search automations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="pl-10 pr-10"
           />
           {searchQuery && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -474,11 +475,11 @@ export default function AutomationsPage() {
       <div className="space-y-4">
         {/* Folders */}
         {filteredFolders.map((folder) => (
-          <div key={folder.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <Card key={folder.id}>
             {/* Folder Header */}
             <div
               onClick={() => toggleFolder(folder.id)}
-              className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+              className="flex items-center justify-between px-4 py-3 bg-muted/50 cursor-pointer hover:bg-muted"
             >
               <div className="flex items-center gap-3">
                 <div 
@@ -492,322 +493,298 @@ export default function AutomationsPage() {
                   )}
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">{folder.name}</span>
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="font-medium">{folder.name}</span>
+                  <span className="ml-2 text-sm text-muted-foreground">
                     ({folder._count.automations} automation{folder._count.automations !== 1 ? 's' : ''})
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation()
                     setEditingFolder(folder)
                     setFolderName(folder.name)
                     setFolderColor(folder.color)
                   }}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
                 >
                   <Pencil className="w-4 h-4" />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation()
                     setDeletingFolder(folder)
                   }}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
                 {expandedFolders.has(folder.id) ? (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 )}
               </div>
             </div>
 
             {/* Folder Contents */}
             {expandedFolders.has(folder.id) && (
-              <div>
+              <CardContent className="p-0">
                 {folder.automations.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-gray-500">
+                  <div className="px-4 py-8 text-center text-muted-foreground">
                     No automations in this folder
                   </div>
                 ) : (
                   folder.automations.map(renderAutomationRow)
                 )}
-              </div>
+              </CardContent>
             )}
-          </div>
+          </Card>
         ))}
 
         {/* Uncategorized Automations */}
         {filteredUncategorized.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <span className="font-medium text-gray-700">Uncategorized</span>
-              <span className="ml-2 text-sm text-gray-500">
+          <Card>
+            <div className="px-4 py-3 bg-muted/50 border-b">
+              <span className="font-medium">Uncategorized</span>
+              <span className="ml-2 text-sm text-muted-foreground">
                 ({filteredUncategorized.length} automation{filteredUncategorized.length !== 1 ? 's' : ''})
               </span>
             </div>
-            {filteredUncategorized.map(renderAutomationRow)}
-          </div>
+            <CardContent className="p-0">
+              {filteredUncategorized.map(renderAutomationRow)}
+            </CardContent>
+          </Card>
         )}
 
         {/* Empty State */}
         {filteredFolders.length === 0 && filteredUncategorized.length === 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Zap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No automations yet</h3>
-            <p className="text-gray-500 mb-6">
+          <Card className="p-12 text-center">
+            <Zap className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No automations yet</h3>
+            <p className="text-muted-foreground mb-6">
               Create your first automation to start automating your workflows
             </p>
-            <button
-              onClick={() => setShowCreateAutomationModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4" />
+            <Button onClick={() => setShowCreateAutomationModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               Create Automation
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
 
       {/* Create Folder Modal */}
-      {showCreateFolderModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Create Folder</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Folder Name
-                </label>
-                <input
-                  type="text"
-                  value={folderName}
-                  onChange={(e) => setFolderName(e.target.value)}
-                  placeholder="e.g., Lead Follow-up"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Color
-                </label>
-                <div className="flex gap-2">
-                  {['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9'].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setFolderColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 ${folderColor === color ? 'border-gray-900' : 'border-transparent'}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
+      <Dialog open={showCreateFolderModal} onOpenChange={setShowCreateFolderModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Folder Name</Label>
+              <Input
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                placeholder="e.g., Lead Follow-up"
+                className="mt-1"
+              />
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowCreateFolderModal(false)
-                  setFolderName('')
-                  setFolderColor('#6366f1')
-                }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFolder}
-                disabled={!folderName.trim() || saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Creating...' : 'Create Folder'}
-              </button>
+            <div>
+              <Label>Color</Label>
+              <div className="flex gap-2 mt-1">
+                {['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setFolderColor(color)}
+                    className={cn("w-8 h-8 rounded-full border-2", folderColor === color ? 'border-foreground' : 'border-transparent')}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateFolderModal(false)
+                setFolderName('')
+                setFolderColor('#6366f1')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateFolder}
+              disabled={!folderName.trim() || saving}
+            >
+              {saving ? 'Creating...' : 'Create Folder'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Folder Modal */}
-      {editingFolder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Edit Folder</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Folder Name
-                </label>
-                <input
-                  type="text"
-                  value={folderName}
-                  onChange={(e) => setFolderName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Color
-                </label>
-                <div className="flex gap-2">
-                  {['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9'].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setFolderColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 ${folderColor === color ? 'border-gray-900' : 'border-transparent'}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
+      <Dialog open={!!editingFolder} onOpenChange={(open) => !open && setEditingFolder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Folder Name</Label>
+              <Input
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                className="mt-1"
+              />
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setEditingFolder(null)
-                  setFolderName('')
-                  setFolderColor('#6366f1')
-                }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateFolder}
-                disabled={!folderName.trim() || saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+            <div>
+              <Label>Color</Label>
+              <div className="flex gap-2 mt-1">
+                {['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setFolderColor(color)}
+                    className={cn("w-8 h-8 rounded-full border-2", folderColor === color ? 'border-foreground' : 'border-transparent')}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingFolder(null)
+                setFolderName('')
+                setFolderColor('#6366f1')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateFolder}
+              disabled={!folderName.trim() || saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Folder Confirmation */}
-      {deletingFolder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-2">Delete Folder</h2>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete &quot;{deletingFolder.name}&quot;? 
-              {deletingFolder._count.automations > 0 && (
-                <span className="block mt-2 text-sm">
+      <AlertDialog open={!!deletingFolder} onOpenChange={(open) => !open && setDeletingFolder(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Folder</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deletingFolder?.name}&quot;?
+              {deletingFolder && deletingFolder._count.automations > 0 && (
+                <span className="block mt-2">
                   The {deletingFolder._count.automations} automation(s) in this folder will be moved to Uncategorized.
                 </span>
               )}
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeletingFolder(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteFolder}
-                disabled={saving}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {saving ? 'Deleting...' : 'Delete Folder'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFolder}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {saving ? 'Deleting...' : 'Delete Folder'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Create Automation Modal */}
-      {showCreateAutomationModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Create Automation</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Automation Name
-                </label>
-                <input
-                  type="text"
-                  value={automationName}
-                  onChange={(e) => setAutomationName(e.target.value)}
-                  placeholder="e.g., New Lead Welcome Sequence"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Folder (optional)
-                </label>
-                <select
-                  value={automationFolderId || ''}
-                  onChange={(e) => setAutomationFolderId(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">No folder</option>
-                  {folders.map((folder) => (
-                    <option key={folder.id} value={folder.id}>
-                      {folder.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <Dialog open={showCreateAutomationModal} onOpenChange={setShowCreateAutomationModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Automation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Automation Name</Label>
+              <Input
+                value={automationName}
+                onChange={(e) => setAutomationName(e.target.value)}
+                placeholder="e.g., New Lead Welcome Sequence"
+                className="mt-1"
+              />
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowCreateAutomationModal(false)
-                  setAutomationName('')
-                  setAutomationFolderId(null)
-                }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            <div>
+              <Label>Folder (optional)</Label>
+              <Select
+                value={automationFolderId || ''}
+                onValueChange={(value) => setAutomationFolderId(value || null)}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateAutomation}
-                disabled={!automationName.trim() || saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Creating...' : 'Create & Open Builder'}
-              </button>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="No folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No folder</SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateAutomationModal(false)
+                setAutomationName('')
+                setAutomationFolderId(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateAutomation}
+              disabled={!automationName.trim() || saving}
+            >
+              {saving ? 'Creating...' : 'Create & Open Builder'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Automation Confirmation */}
-      {deletingAutomation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-2">Delete Automation</h2>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete &quot;{deletingAutomation.name}&quot;? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeletingAutomation(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAutomation}
-                disabled={saving}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {saving ? 'Deleting...' : 'Delete Automation'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog open={!!deletingAutomation} onOpenChange={(open) => !open && setDeletingAutomation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Automation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deletingAutomation?.name}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAutomation}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {saving ? 'Deleting...' : 'Delete Automation'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
