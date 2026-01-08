@@ -3,10 +3,41 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download, CheckSquare, XCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import AddPropertyModal from '@/components/AddPropertyModal'
 import BulkImportModal from '@/components/BulkImportModal'
 import RecordFilterPanel, { FilterBlock } from '@/components/RecordFilterPanel'
-import { useToast } from '@/components/Toast'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 
 interface RecordItem {
   id: string
@@ -75,7 +106,6 @@ interface TaskTemplate {
 
 export default function RecordsPage() {
   const router = useRouter()
-  const { showToast } = useToast()
   const [records, setRecords] = useState<RecordItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
@@ -232,10 +262,10 @@ export default function RecordsPage() {
         throw new Error('Export failed')
       }
       
-      showToast(`Export started! ${recordCount} records queued. Go to Activity > Download to download your file.`, 'success', 5000)
+      toast.success(`Export started! ${recordCount} records queued. Go to Activity > Download to download your file.`)
     } catch (error) {
       console.error('Export error:', error)
-      showToast('Failed to export records', 'error')
+      toast.error('Failed to export records')
     }
   }
 
@@ -263,10 +293,10 @@ export default function RecordsPage() {
           setBulkActionModal(null)
           setSelectedIds(new Set())
           setSelectedTaskTemplate('')
-          showToast(`Created ${data.count} tasks successfully`, 'success')
+          toast.success(`Created ${data.count} tasks successfully`)
         } else {
           const error = await res.json()
-          showToast(error.error || 'Failed to create tasks', 'error')
+          toast.error(error.error || 'Failed to create tasks')
         }
         return
       }
@@ -282,10 +312,10 @@ export default function RecordsPage() {
           const data = await res.json()
           setBulkActionModal(null)
           setSelectedIds(new Set())
-          showToast(`Deleted ${data.deletedCount} tasks from ${data.recordCount} records`, 'success')
+          toast.success(`Deleted ${data.deletedCount} tasks from ${data.recordCount} records`)
         } else {
           const error = await res.json()
-          showToast(error.error || 'Failed to clear tasks', 'error')
+          toast.error(error.error || 'Failed to clear tasks')
         }
         return
       }
@@ -327,14 +357,14 @@ export default function RecordsPage() {
         setBulkActionModal(null)
         setSelectedIds(new Set())
         fetchRecords()
-        showToast('Bulk action completed successfully', 'success')
+        toast.success('Bulk action completed successfully')
       } else {
         const error = await res.json()
-        showToast(error.error || 'Bulk action failed', 'error')
+        toast.error(error.error || 'Bulk action failed')
       }
     } catch (error) {
       console.error('Error executing bulk action:', error)
-      showToast('Failed to execute bulk action', 'error')
+      toast.error('Failed to execute bulk action')
     } finally {
       setBulkActionLoading(false)
     }
@@ -1004,10 +1034,10 @@ export default function RecordsPage() {
                             setTags([...tags, newTag])
                             setSelectedBulkItems([...selectedBulkItems, newTag.id])
                             setBulkSearchQuery('')
-                            showToast(`Tag "${newTag.name}" created`, 'success')
+                            toast.success(`Tag "${newTag.name}" created`)
                           }
                         } catch (error) {
-                          showToast('Failed to create tag', 'error')
+                          toast.error('Failed to create tag')
                         }
                       }}
                       className="w-full p-3 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
@@ -1075,10 +1105,10 @@ export default function RecordsPage() {
                             setMotivations([...motivations, newMotivation])
                             setSelectedBulkItems([...selectedBulkItems, newMotivation.id])
                             setBulkSearchQuery('')
-                            showToast(`Motivation "${newMotivation.name}" created`, 'success')
+                            toast.success(`Motivation "${newMotivation.name}" created`)
                           }
                         } catch (error) {
-                          showToast('Failed to create motivation', 'error')
+                          toast.error('Failed to create motivation')
                         }
                       }}
                       className="w-full p-3 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
