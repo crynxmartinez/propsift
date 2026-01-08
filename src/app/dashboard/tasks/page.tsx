@@ -554,57 +554,58 @@ export default function TasksPage() {
           { key: 'COMPLETED', label: 'Completed', count: counts.completed },
           { key: 'NO_DUE_DATE', label: 'No Due Date', count: counts.noDueDate },
         ].map(tab => (
-          <button
+          <Button
             key={tab.key}
+            variant="ghost"
             onClick={() => setStatusFilter(tab.key as StatusFilter)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 rounded-none",
               statusFilter === tab.key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
           >
             {tab.label} ({tab.count})
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Task List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : tasks.length === 0 ? (
         <div className="text-center py-12">
-          <CheckSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
-          <p className="text-gray-500 mb-4">Create your first task to get started</p>
-          <button
+          <CheckSquare className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No tasks found</h3>
+          <p className="text-muted-foreground mb-4">Create your first task to get started</p>
+          <Button
             onClick={() => {
               setEditingTask(null)
               setShowCreateModal(true)
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Create Task
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedTasks).map(([groupKey, groupTasks]) => (
-            <div key={groupKey} className="bg-white rounded-lg border shadow-sm">
+            <Card key={groupKey}>
               {/* Group Header */}
               <button
                 onClick={() => toggleGroup(groupKey)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   {collapsedGroups.has(groupKey) ? (
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
                   )}
-                  <span className="font-medium text-gray-900">{groupKey}</span>
-                  <span className="text-sm text-gray-500">({groupTasks.length})</span>
+                  <span className="font-medium">{groupKey}</span>
+                  <span className="text-sm text-muted-foreground">({groupTasks.length})</span>
                 </div>
               </button>
 
@@ -692,73 +693,48 @@ export default function TasksPage() {
                         </span>
 
                         {/* Actions Menu */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setActionMenuTask(actionMenuTask === task.id ? null : task.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                          </button>
-                          
-                          {actionMenuTask === task.id && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setActionMenuTask(null)} />
-                              <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border z-20">
-                                {task.status !== 'IN_PROGRESS' && task.status !== 'COMPLETED' && (
-                                  <button
-                                    onClick={() => {
-                                      updateTaskStatus(task.id, 'IN_PROGRESS')
-                                      setActionMenuTask(null)
-                                    }}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                  >
-                                    <Play className="w-4 h-4" />
-                                    Start Task
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    setEditingTask(task)
-                                    setShowCreateModal(true)
-                                    setActionMenuTask(null)
-                                  }}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                {task.record && (
-                                  <button
-                                    onClick={() => {
-                                      router.push(`/dashboard/records/${task.record!.id}`)
-                                      setActionMenuTask(null)
-                                    }}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
-                                  >
-                                    <MapPin className="w-4 h-4" />
-                                    View Property
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    deleteTask(task.id)
-                                    setActionMenuTask(null)
-                                  }}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {task.status !== 'IN_PROGRESS' && task.status !== 'COMPLETED' && (
+                              <DropdownMenuItem onClick={() => updateTaskStatus(task.id, 'IN_PROGRESS')}>
+                                <Play className="w-4 h-4 mr-2" />
+                                Start Task
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => {
+                              setEditingTask(task)
+                              setShowCreateModal(true)
+                            }}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            {task.record && (
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/records/${task.record!.id}`)}>
+                                <MapPin className="w-4 h-4 mr-2" />
+                                View Property
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => deleteTask(task.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
