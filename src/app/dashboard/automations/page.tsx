@@ -357,35 +357,35 @@ export default function AutomationsPage() {
     <div
       key={automation.id}
       onClick={() => router.push(`/dashboard/automations/${automation.id}`)}
-      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+      className="flex items-center justify-between px-4 py-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
     >
       <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full ${automation.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+        <div className={`w-2 h-2 rounded-full ${automation.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">{automation.name}</span>
+            <span className="font-medium">{automation.name}</span>
             {automation.isDraft && !automation.isActive && (
               <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">Draft</span>
             )}
           </div>
           {automation.description && (
-            <p className="text-sm text-gray-500 truncate max-w-md">{automation.description}</p>
+            <p className="text-sm text-muted-foreground truncate max-w-md">{automation.description}</p>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-6">
         <div className="text-right">
-          <div className="text-sm text-gray-600">{automation.runCount} runs</div>
-          <div className="text-xs text-gray-400">Last: {formatDate(automation.lastRunAt)}</div>
+          <div className="text-sm text-muted-foreground">{automation.runCount} runs</div>
+          <div className="text-xs text-muted-foreground">Last: {formatDate(automation.lastRunAt)}</div>
         </div>
 
         <button
           onClick={(e) => handleToggleActive(automation, e)}
           className={`p-2 rounded-lg transition ${
             automation.isActive 
-              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+              ? 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' 
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
           title={automation.isActive ? 'Pause automation' : 'Activate automation'}
         >
@@ -394,7 +394,7 @@ export default function AutomationsPage() {
 
         <button
           onClick={(e) => handleDuplicateAutomation(automation, e)}
-          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"
+          className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition"
           title="Duplicate automation"
         >
           <Copy className="w-4 h-4" />
@@ -405,7 +405,7 @@ export default function AutomationsPage() {
             e.stopPropagation()
             setDeletingAutomation(automation)
           }}
-          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition"
           title="Delete automation"
         >
           <Trash2 className="w-4 h-4" />
