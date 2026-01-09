@@ -227,14 +227,8 @@ export function NextUpCard({
     .filter(Boolean)
     .join(', ')
 
-  const bucketLabel = {
-    'call-now': 'Call Now',
-    'follow-up-today': 'Follow Up Today',
-    'call-queue': 'Call Queue',
-    'verify-first': 'Verify First',
-    'get-numbers': 'Get Numbers',
-    'nurture': 'Nurture',
-  }[activeBucket || 'call-now'] || 'Queue'
+  // Show the record's actual nextAction, not the selected bucket
+  const bucketLabel = nextAction || 'Queue'
 
   const canSkip = score < 110
   const canSnooze = score < 90
