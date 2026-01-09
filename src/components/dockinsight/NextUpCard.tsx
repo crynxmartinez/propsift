@@ -22,13 +22,13 @@ import {
   Zap,
   PhoneCall,
   PhoneOff,
-  PhoneMissed,
   MessageSquare,
   History,
   ExternalLink,
-  XCircle,
-  CheckCircle2,
-  HelpCircle
+  Check,
+  X,
+  Ban,
+  Skull
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -356,33 +356,60 @@ export function NextUpCard({
                 </div>
               </button>
               <div className="flex items-center gap-1">
-                {/* Status buttons for primary phone */}
+                {/* Status buttons for primary phone - matches records page */}
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
-                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'verified')}
-                  title="Mark Verified"
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('PRIMARY') ? "bg-green-100 text-green-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'PRIMARY')}
+                  title="Primary"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
-                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'wrong')}
-                  title="Mark Wrong Number"
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('CORRECT') ? "bg-blue-100 text-blue-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'CORRECT')}
+                  title="Correct"
                 >
-                  <XCircle className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30"
-                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'no_answer')}
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('WRONG') ? "bg-red-100 text-red-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'WRONG')}
+                  title="Wrong Number"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('NO_ANSWER') ? "bg-yellow-100 text-yellow-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'NO_ANSWER')}
                   title="No Answer"
                 >
-                  <PhoneMissed className="w-4 h-4" />
+                  <PhoneOff className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('DNC') ? "bg-orange-100 text-orange-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'DNC')}
+                  title="DNC"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn("h-7 w-7 p-0", (primaryPhone?.statuses || phones[0].statuses)?.includes('DEAD') ? "bg-gray-200 text-gray-600" : "text-gray-300 hover:text-gray-500")}
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'DEAD')}
+                  title="Dead"
+                >
+                  <Skull className="w-3.5 h-3.5" />
                 </Button>
                 <Button 
                   size="sm" 
@@ -424,38 +451,65 @@ export function NextUpCard({
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 w-7 p-0 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
-                        onClick={() => onPhoneStatus(record.id, phone.id, 'verified')}
-                        title="Mark Verified"
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('PRIMARY') ? "bg-green-100 text-green-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'PRIMARY')}
+                        title="Primary"
                       >
-                        <CheckCircle2 className="w-3 h-3" />
+                        <Check className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 w-7 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
-                        onClick={() => onPhoneStatus(record.id, phone.id, 'wrong')}
-                        title="Mark Wrong Number"
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('CORRECT') ? "bg-blue-100 text-blue-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'CORRECT')}
+                        title="Correct"
                       >
-                        <XCircle className="w-3 h-3" />
+                        <Check className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 w-7 p-0 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30"
-                        onClick={() => onPhoneStatus(record.id, phone.id, 'no_answer')}
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('WRONG') ? "bg-red-100 text-red-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'WRONG')}
+                        title="Wrong"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('NO_ANSWER') ? "bg-yellow-100 text-yellow-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'NO_ANSWER')}
                         title="No Answer"
                       >
-                        <PhoneMissed className="w-3 h-3" />
+                        <PhoneOff className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('DNC') ? "bg-orange-100 text-orange-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'DNC')}
+                        title="DNC"
+                      >
+                        <Ban className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={cn("h-6 w-6 p-0", phone.statuses?.includes('DEAD') ? "bg-gray-200 text-gray-600" : "text-gray-300 hover:text-gray-500")}
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'DEAD')}
+                        title="Dead"
+                      >
+                        <Skull className="w-3 h-3" />
                       </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="text-green-600 border-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 ml-1"
+                        className="text-green-600 border-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 ml-1 h-6 w-6 p-0"
                         onClick={() => handleAction(`call-${phone.id}`, () => onCall(record.id, phone.number, phone.id))}
                         disabled={actionLoading !== null}
                       >

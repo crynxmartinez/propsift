@@ -956,10 +956,10 @@ export default function PropertyDetailsPage() {
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {record.propertyStreet || 'No Address'}
             </h1>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               {[record.propertyCity, record.propertyState, record.propertyZip].filter(Boolean).join(', ')}
             </p>
           </div>
@@ -987,7 +987,7 @@ export default function PropertyDetailsPage() {
           <div className="relative">
             <button
               onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800"
               style={record.status ? { backgroundColor: record.status.color + '20', borderColor: record.status.color } : {}}
             >
               {record.status ? (
@@ -995,15 +995,15 @@ export default function PropertyDetailsPage() {
                   {record.status.name}
                 </span>
               ) : (
-                <span className="text-sm text-gray-500">Set Status</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Set Status</span>
               )}
               <ChevronDown className="w-4 h-4" />
             </button>
             {showStatusDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
                 <button
                   onClick={() => { updateRecord({ statusId: null }); setShowStatusDropdown(false) }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-gray-500"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                 >
                   No Status
                 </button>
@@ -1011,7 +1011,7 @@ export default function PropertyDetailsPage() {
                   <button
                     key={status.id}
                     onClick={() => { updateRecord({ statusId: status.id }); setShowStatusDropdown(false) }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800 flex items-center gap-2"
                   >
                     <span
                       className="w-3 h-3 rounded-full"
@@ -1028,19 +1028,19 @@ export default function PropertyDetailsPage() {
           <div className="relative">
             <button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800"
             >
-              <User className="w-4 h-4 text-gray-400" />
+              <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <span className="text-sm">
                 {record.assignedTo?.name || record.assignedTo?.email || 'Choose user'}
               </span>
               <ChevronDown className="w-4 h-4" />
             </button>
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 min-w-[200px] max-w-[280px] bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              <div className="absolute right-0 mt-2 min-w-[200px] max-w-[280px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
                 <button
                   onClick={() => handleAssignUser('')}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800"
                 >
                   Unassigned
                 </button>
@@ -1048,7 +1048,7 @@ export default function PropertyDetailsPage() {
                   <button
                     key={user.id}
                     onClick={() => handleAssignUser(user.id)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 truncate"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800 truncate"
                   >
                     {user.name || user.email}
                   </button>
@@ -1061,7 +1061,7 @@ export default function PropertyDetailsPage() {
           <div className="relative">
             <button
               onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800"
             >
               <span className="text-sm">
                 {recordBoardPositions.length > 0 
@@ -1071,21 +1071,21 @@ export default function PropertyDetailsPage() {
               <ChevronDown className="w-4 h-4" />
             </button>
             {showBoardDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
                 {/* Current board positions */}
                 {recordBoardPositions.length > 0 && (
                   <div className="p-2 border-b border-gray-100">
-                    <p className="text-xs text-gray-500 px-2 mb-1">Current Boards</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 px-2 mb-1">Current Boards</p>
                     {recordBoardPositions.map((pos) => (
                       <div
                         key={pos.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:bg-gray-800"
                       >
                         <span
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: pos.column.color }}
                         />
-                        <span className="text-sm text-gray-700 flex-1">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
                           {pos.column.board.name} → {pos.column.name}
                         </span>
                       </div>
@@ -1095,9 +1095,9 @@ export default function PropertyDetailsPage() {
                 
                 {/* Add to board */}
                 <div className="p-2">
-                  <p className="text-xs text-gray-500 px-2 mb-1">Add to Board</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 px-2 mb-1">Add to Board</p>
                   {boards.length === 0 ? (
-                    <p className="text-sm text-gray-400 px-2 py-1">No boards available</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">No boards available</p>
                   ) : (
                     boards.map((board) => {
                       const isExpanded = expandedBoards.has(board.id)
@@ -1116,15 +1116,15 @@ export default function PropertyDetailsPage() {
                               }
                               setExpandedBoards(newExpanded)
                             }}
-                            className={`w-full flex items-center justify-between px-2 py-1.5 text-left text-sm rounded hover:bg-gray-100 ${
-                              alreadyOnBoard ? 'text-green-600' : 'text-gray-700'
+                            className={`w-full flex items-center justify-between px-2 py-1.5 text-left text-sm rounded hover:bg-gray-100 dark:bg-gray-800 ${
+                              alreadyOnBoard ? 'text-green-600' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <span className="font-medium">{board.name}</span>
                             <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </button>
                           {isExpanded && (
-                            <div className="ml-2 border-l-2 border-gray-200 pl-2 mt-1">
+                            <div className="ml-2 border-l-2 border-gray-200 dark:border-gray-700 pl-2 mt-1">
                               {board.columns.map((column) => (
                                 <button
                                   key={column.id}
@@ -1132,8 +1132,8 @@ export default function PropertyDetailsPage() {
                                   disabled={alreadyOnBoard}
                                   className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded ${
                                     alreadyOnBoard 
-                                      ? 'text-gray-400 cursor-not-allowed' 
-                                      : 'text-gray-700 hover:bg-gray-100'
+                                      ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800'
                                   }`}
                                 >
                                   <span
@@ -1172,11 +1172,11 @@ export default function PropertyDetailsPage() {
         {/* Left Column - Map & Tabs */}
         <div className="col-span-8">
           {/* Map Section */}
-          <div className="bg-white rounded-lg border border-gray-200 mb-6">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">MAP</span>
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">MAP</span>
             </div>
-            <div className="h-64 bg-gray-100 flex items-center justify-center">
+            <div className="h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
               {fullAddress ? (
                 <iframe
                   width="100%"
@@ -1187,7 +1187,7 @@ export default function PropertyDetailsPage() {
                   allowFullScreen
                 />
               ) : (
-                <p className="text-gray-400">No address available for map</p>
+                <p className="text-gray-400 dark:text-gray-500">No address available for map</p>
               )}
             </div>
             {/* Description */}
@@ -1196,15 +1196,15 @@ export default function PropertyDetailsPage() {
                 value={record.description || ''}
                 onChange={(e) => updateRecord({ description: e.target.value })}
                 placeholder="Enter a short description of the property here..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 rows={2}
               />
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="flex gap-8 px-6">
                 {[
                   { id: 'overview', label: 'Property Overview', icon: Info },
@@ -1218,7 +1218,7 @@ export default function PropertyDetailsPage() {
                     className={`py-4 text-sm font-medium border-b-2 transition ${
                       activeTab === tab.id
                         ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {tab.label}
@@ -1239,12 +1239,12 @@ export default function PropertyDetailsPage() {
                       { key: 'smsAttempts' as const, label: 'SMS Attempts' },
                       { key: 'rvmAttempts' as const, label: 'RVM Attempts' },
                     ]).map((item) => (
-                      <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">{item.label}</span>
+                      <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleAttemptChange(item.key, -1)}
-                            className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded text-gray-600 hover:bg-gray-100"
+                            className="w-6 h-6 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800"
                           >
                             -
                           </button>
@@ -1253,7 +1253,7 @@ export default function PropertyDetailsPage() {
                           </span>
                           <button
                             onClick={() => handleAttemptChange(item.key, 1)}
-                            className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded text-gray-600 hover:bg-gray-100"
+                            className="w-6 h-6 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800"
                           >
                             +
                           </button>
@@ -1264,110 +1264,110 @@ export default function PropertyDetailsPage() {
 
                   {/* Property Stats */}
                   <div className="grid grid-cols-4 gap-4">
-                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'estimatedValue', label: 'Estimated Value', value: record.estimatedValue?.toString() || '', type: 'currency' })}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(record.estimatedValue)}</p>
-                      <p className="text-sm text-gray-500">Estimated Value</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(record.estimatedValue)}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Value</p>
                     </div>
-                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'bedrooms', label: 'Bedrooms', value: record.bedrooms?.toString() || '', type: 'number' })}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="text-2xl font-bold text-gray-900">{record.bedrooms ?? '—'}</p>
-                      <p className="text-sm text-gray-500">Bedrooms</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{record.bedrooms ?? '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
                     </div>
-                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'sqft', label: 'Square Feet', value: record.sqft?.toString() || '', type: 'number' })}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="text-2xl font-bold text-gray-900">{record.sqft ? `${record.sqft} sqft` : '—'}</p>
-                      <p className="text-sm text-gray-500">Sqft</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{record.sqft ? `${record.sqft} sqft` : '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Sqft</p>
                     </div>
-                    <div className="relative group text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="relative group text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'yearBuilt', label: 'Year Built', value: record.yearBuilt?.toString() || '', type: 'number' })}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="text-2xl font-bold text-gray-900">{record.yearBuilt ?? '—'}</p>
-                      <p className="text-sm text-gray-500">Year</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{record.yearBuilt ?? '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Year</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-4">
-                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'structureType', label: 'Structure Type', value: record.structureType || '', type: 'text' })}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="font-medium text-gray-900">{record.structureType || '—'}</p>
-                      <p className="text-sm text-gray-500">Structure Type</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{record.structureType || '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Structure Type</p>
                     </div>
-                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'heatingType', label: 'Heating Type', value: record.heatingType || '', type: 'text' })}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="font-medium text-gray-900">{record.heatingType || '—'}</p>
-                      <p className="text-sm text-gray-500">Heating Type</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{record.heatingType || '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Heating Type</p>
                     </div>
-                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'airConditioner', label: 'Air Conditioner', value: record.airConditioner || '', type: 'text' })}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="font-medium text-gray-900">{record.airConditioner || '—'}</p>
-                      <p className="text-sm text-gray-500">Air Conditioner</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{record.airConditioner || '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Air Conditioner</p>
                     </div>
-                    <div className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                    <div className="relative group text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <button 
                         onClick={() => setEditFieldModal({ field: 'bathrooms', label: 'Bathrooms', value: record.bathrooms?.toString() || '', type: 'number' })}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
-                        <Pencil className="w-3 h-3 text-gray-400" />
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                       </button>
-                      <p className="font-medium text-gray-900">{record.bathrooms ?? '—'}</p>
-                      <p className="text-sm text-gray-500">Bathrooms</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{record.bathrooms ?? '—'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
                     </div>
                   </div>
 
                   {/* Motivations & Tags + Notes */}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Motivations & Tags Box */}
-                    <div className="border border-gray-200 rounded-lg">
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
                       {/* Header */}
-                      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
+                      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                         <span className="text-blue-600">—</span>
                         <span className="text-sm font-medium text-blue-600">MOTIVATIONS & TAGS</span>
                       </div>
                       
                       {/* Tabs */}
-                      <div className="flex border-b border-gray-200">
+                      <div className="flex border-b border-gray-200 dark:border-gray-700">
                         <button
                           type="button"
                           onClick={() => setActiveListTab('motivations')}
                           className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
                             activeListTab === 'motivations'
                               ? 'border-blue-600 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700'
+                              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                           }`}
                         >
                           Motivations ({record.recordMotivations.length})
@@ -1378,7 +1378,7 @@ export default function PropertyDetailsPage() {
                           className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition ${
                             activeListTab === 'tags'
                               ? 'border-blue-600 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700'
+                              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                           }`}
                         >
                           Tags ({record.recordTags.length})
@@ -1394,7 +1394,7 @@ export default function PropertyDetailsPage() {
                             onChange={(e) => setListSearch(e.target.value)}
                             onFocus={() => activeListTab === 'motivations' ? setShowMotivationDropdown(true) : setShowTagDropdown(true)}
                             placeholder={`Search ${activeListTab}...`}
-                            className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
                           <button
                             type="button"
@@ -1406,7 +1406,7 @@ export default function PropertyDetailsPage() {
                           
                           {/* Motivation Dropdown */}
                           {activeListTab === 'motivations' && showMotivationDropdown && (
-                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                               {motivations
                                 .filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id))
                                 .filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase()))
@@ -1434,14 +1434,14 @@ export default function PropertyDetailsPage() {
                                 </button>
                               )}
                               {motivations.filter(m => !record.recordMotivations.some(rm => rm.motivation.id === m.id)).filter(m => m.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && !listSearch.trim() && (
-                                <div className="px-4 py-2 text-sm text-gray-400">No motivations available</div>
+                                <div className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">No motivations available</div>
                               )}
                             </div>
                           )}
                           
                           {/* Tag Dropdown */}
                           {activeListTab === 'tags' && showTagDropdown && (
-                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                               {tags
                                 .filter(t => !record.recordTags.some(rt => rt.tag.id === t.id))
                                 .filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase()))
@@ -1469,7 +1469,7 @@ export default function PropertyDetailsPage() {
                                 </button>
                               )}
                               {tags.filter(t => !record.recordTags.some(rt => rt.tag.id === t.id)).filter(t => t.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && !listSearch.trim() && (
-                                <div className="px-4 py-2 text-sm text-gray-400">No tags available</div>
+                                <div className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">No tags available</div>
                               )}
                             </div>
                           )}
@@ -1485,19 +1485,19 @@ export default function PropertyDetailsPage() {
                                 key={rm.motivation.id}
                                 className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
                               >
-                                <span className="text-sm text-gray-700">{rm.motivation.name}</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300">{rm.motivation.name}</span>
                                 <button
                                   type="button"
                                   onClick={() => removeMotivation(rm.motivation.id)}
                                   disabled={removingMotivation === rm.motivation.id}
-                                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 disabled:opacity-50"
                                 >
                                   {removingMotivation === rm.motivation.id ? <Loader2 className="w-3 h-3 animate-spin" /> : '×'}
                                 </button>
                               </div>
                             ))}
                             {record.recordMotivations.length === 0 && (
-                              <div className="px-4 py-6 text-center text-sm text-gray-400">
+                              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
                                 No motivations selected
                               </div>
                             )}
@@ -1509,19 +1509,19 @@ export default function PropertyDetailsPage() {
                                 key={rt.tag.id}
                                 className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
                               >
-                                <span className="text-sm text-gray-700">{rt.tag.name}</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300">{rt.tag.name}</span>
                                 <button
                                   type="button"
                                   onClick={() => removeTag(rt.tag.id)}
                                   disabled={removingTag === rt.tag.id}
-                                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 disabled:opacity-50"
                                 >
                                   {removingTag === rt.tag.id ? <Loader2 className="w-3 h-3 animate-spin" /> : '×'}
                                 </button>
                               </div>
                             ))}
                             {record.recordTags.length === 0 && (
-                              <div className="px-4 py-6 text-center text-sm text-gray-400">
+                              <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
                                 No tags selected
                               </div>
                             )}
@@ -1531,9 +1531,9 @@ export default function PropertyDetailsPage() {
                     </div>
 
                     {/* Notes Box */}
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                       {/* Header */}
-                      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                         <div className="flex items-center gap-2">
                           <span className="text-blue-600">—</span>
                           <span className="text-sm font-medium text-blue-600">NOTES</span>
@@ -1544,16 +1544,16 @@ export default function PropertyDetailsPage() {
                             setEditNotesValue(record.notes || '')
                             setShowEditNotesModal(true)
                           }}
-                          className="p-1 hover:bg-gray-100 rounded"
+                          className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                         >
-                          <Pencil className="w-3 h-3 text-gray-500" />
+                          <Pencil className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                         </button>
                       </div>
                       
                       {/* Notes Content */}
                       <div className="p-4">
-                        <div className="text-sm text-gray-700 whitespace-pre-wrap min-h-[120px]">
-                          {record.notes || <span className="text-gray-400">No notes added</span>}
+                        <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-[120px]">
+                          {record.notes || <span className="text-gray-400 dark:text-gray-500">No notes added</span>}
                         </div>
                       </div>
                     </div>
@@ -1572,7 +1572,7 @@ export default function PropertyDetailsPage() {
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && addComment()}
                       placeholder="Write a message..."
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
                     <button
                       onClick={addComment}
@@ -1581,7 +1581,7 @@ export default function PropertyDetailsPage() {
                       Send
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     💡 Tip: You can type @ to tag users and # to tag roles.
                   </p>
 
@@ -1590,19 +1590,19 @@ export default function PropertyDetailsPage() {
                     {comments.map((comment) => (
                       <div key={comment.id} className="border-b border-gray-100 pb-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
                             {comment.user.name || comment.user.email}
                           </span>
-                          <span className="text-gray-500">commented</span>
+                          <span className="text-gray-500 dark:text-gray-400">commented</span>
                         </div>
-                        <p className="text-sm text-gray-500 mb-2">{formatDate(comment.createdAt)}</p>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="text-gray-700">{comment.content}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{formatDate(comment.createdAt)}</p>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                          <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
                         </div>
                       </div>
                     ))}
                     {comments.length === 0 && (
-                      <p className="text-center text-gray-400 py-8">No comments yet</p>
+                      <p className="text-center text-gray-400 dark:text-gray-500 py-8">No comments yet</p>
                     )}
                   </div>
                 </div>
@@ -1619,7 +1619,7 @@ export default function PropertyDetailsPage() {
                         setActivityEventType(e.target.value)
                         setTimeout(fetchActivityLogs, 0)
                       }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                     >
                       <option value="all">Showing All Events</option>
                       <option value="created">Created</option>
@@ -1632,7 +1632,7 @@ export default function PropertyDetailsPage() {
                         setActivityUserId(e.target.value)
                         setTimeout(fetchActivityLogs, 0)
                       }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                     >
                       <option value="all">From all users</option>
                       {users.map((user) => (
@@ -1651,21 +1651,21 @@ export default function PropertyDetailsPage() {
                           <Pencil className="w-4 h-4 text-blue-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
                             {log.user?.name || log.user?.email || 'System'} {log.action} the property
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {formatDate(log.createdAt)} • {log.source || 'Unknown'}
                           </p>
                           {log.field && (
-                            <div className="mt-2 bg-gray-50 rounded-lg p-3">
+                            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                               <p className="text-sm">
                                 <span className="font-medium">{log.field}</span>
                                 {log.oldValue && (
-                                  <span className="text-gray-400 line-through ml-2">{log.oldValue}</span>
+                                  <span className="text-gray-400 dark:text-gray-500 line-through ml-2">{log.oldValue}</span>
                                 )}
                                 {log.newValue && (
-                                  <span className="text-gray-900 ml-2">{log.newValue}</span>
+                                  <span className="text-gray-900 dark:text-gray-100 ml-2">{log.newValue}</span>
                                 )}
                               </p>
                             </div>
@@ -1674,7 +1674,7 @@ export default function PropertyDetailsPage() {
                       </div>
                     ))}
                     {activityLogs.length === 0 && (
-                      <p className="text-center text-gray-400 py-8">No activity logs yet</p>
+                      <p className="text-center text-gray-400 dark:text-gray-500 py-8">No activity logs yet</p>
                     )}
                   </div>
                 </div>
@@ -1692,7 +1692,7 @@ export default function PropertyDetailsPage() {
                           {customFields.filter(f => f.displayType === 'card').map(field => {
                             const fieldValue = customFieldValues.find(v => v.fieldId === field.id)
                             return (
-                              <div key={field.id} className="relative group text-center p-4 border border-gray-200 rounded-lg">
+                              <div key={field.id} className="relative group text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                                 <button 
                                   onClick={() => setEditCustomFieldModal({ 
                                     fieldId: field.id, 
@@ -1700,16 +1700,16 @@ export default function PropertyDetailsPage() {
                                     value: fieldValue?.value || '', 
                                     fieldType: field.fieldType 
                                   })}
-                                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 rounded"
+                                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                                 >
-                                  <Pencil className="w-3 h-3 text-gray-400" />
+                                  <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                 </button>
-                                <p className="font-medium text-gray-900">
+                                <p className="font-medium text-gray-900 dark:text-gray-100">
                                   {field.fieldType === 'boolean' 
                                     ? (fieldValue?.value === 'true' ? 'Yes' : fieldValue?.value === 'false' ? 'No' : '—')
                                     : fieldValue?.value || '—'}
                                 </p>
-                                <p className="text-sm text-gray-500">{field.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{field.name}</p>
                               </div>
                             )
                           })}
@@ -1720,10 +1720,10 @@ export default function PropertyDetailsPage() {
                       {customFields.filter(f => f.displayType === 'row').map(field => {
                         const fieldValue = customFieldValues.find(v => v.fieldId === field.id)
                         return (
-                          <div key={field.id} className="relative group flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                          <div key={field.id} className="relative group flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                             <div>
-                              <p className="text-sm text-gray-500">{field.name}</p>
-                              <p className="font-medium text-gray-900">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{field.name}</p>
+                              <p className="font-medium text-gray-900 dark:text-gray-100">
                                 {field.fieldType === 'boolean' 
                                   ? (fieldValue?.value === 'true' ? 'Yes' : fieldValue?.value === 'false' ? 'No' : '—')
                                   : fieldValue?.value || '—'}
@@ -1736,9 +1736,9 @@ export default function PropertyDetailsPage() {
                                 value: fieldValue?.value || '', 
                                 fieldType: field.fieldType 
                               })}
-                              className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 rounded"
+                              className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 dark:bg-gray-800 rounded"
                             >
-                              <Pencil className="w-4 h-4 text-gray-400" />
+                              <Pencil className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             </button>
                           </div>
                         )
@@ -1747,15 +1747,15 @@ export default function PropertyDetailsPage() {
                   )}
 
                   {/* Add new field button */}
-                  <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                  <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                     <button 
                       onClick={() => setShowAddFieldModal(true)}
-                      className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-3"
+                      className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center transition mb-3"
                     >
-                      <Plus className="w-6 h-6 text-gray-400" />
+                      <Plus className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                     </button>
-                    <h3 className="text-sm font-medium text-gray-700 mb-1">Add Custom Field</h3>
-                    <p className="text-xs text-gray-500 max-w-sm">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add Custom Field</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
                       Custom fields apply to all records
                     </p>
                   </div>
@@ -1768,8 +1768,8 @@ export default function PropertyDetailsPage() {
         {/* Right Column - Sidebar */}
         <div className="col-span-4 space-y-6">
           {/* Temperature */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">PROPERTY TEMPERATURE</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">PROPERTY TEMPERATURE</h3>
             <div className="flex items-center gap-2">
               {[
                 { value: 'COLD', icon: Snowflake, color: 'blue', label: 'Cold' },
@@ -1786,7 +1786,7 @@ export default function PropertyDetailsPage() {
                         : temp.color === 'yellow'
                         ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
                         : 'bg-red-100 border-red-300 text-red-700'
-                      : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800'
                   }`}
                 >
                   <temp.icon className="w-4 h-4" />
@@ -1797,42 +1797,42 @@ export default function PropertyDetailsPage() {
           </div>
 
           {/* Owner Info */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center gap-2 mb-3">
               {record.isCompany ? (
-                <Building2 className="w-5 h-5 text-gray-400" />
+                <Building2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               ) : (
-                <User className="w-5 h-5 text-gray-400" />
+                <User className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               )}
-              <span className="font-medium text-gray-900">{record.ownerFullName}</span>
-              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+              <span className="font-medium text-gray-900 dark:text-gray-100">{record.ownerFullName}</span>
+              <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">
                 {record.isCompany ? 'Company' : 'Person'}
               </span>
             </div>
             
             {/* Property Address */}
             <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-1">Property Address</p>
-              <p className="text-sm text-gray-900">{record.propertyStreet || '—'}</p>
-              <p className="text-sm text-gray-900">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Property Address</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">{record.propertyStreet || '—'}</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">
                 {[record.propertyCity, record.propertyState, record.propertyZip].filter(Boolean).join(', ') || '—'}
               </p>
             </div>
 
             {/* Mailing Address */}
             <div>
-              <p className="text-sm text-gray-500 mb-1">Mailing Address</p>
-              <p className="text-sm text-gray-900">{record.mailingStreet || '—'}</p>
-              <p className="text-sm text-gray-900">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Mailing Address</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">{record.mailingStreet || '—'}</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">
                 {[record.mailingCity, record.mailingState, record.mailingZip].filter(Boolean).join(', ') || '—'}
               </p>
             </div>
           </div>
 
           {/* Phone Numbers */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 PHONE NUMBERS ({record.phoneNumbers.length}/30)
               </h3>
               <button
@@ -1846,10 +1846,10 @@ export default function PropertyDetailsPage() {
               {record.phoneNumbers.map((phone) => (
                 <div key={phone.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
+                    <Phone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <span className="text-sm">{formatPhoneNumber(phone.number)}</span>
                     <span className={`text-xs px-2 py-0.5 rounded ${
-                      phone.type === 'MOBILE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                      phone.type === 'MOBILE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                     }`}>
                       {phone.type}
                     </span>
@@ -1875,8 +1875,8 @@ export default function PropertyDetailsPage() {
                                 ? 'bg-yellow-100 text-yellow-600'
                                 : status.color === 'orange'
                                 ? 'bg-orange-100 text-orange-600'
-                                : 'bg-gray-100 text-gray-600'
-                              : 'text-gray-300 hover:text-gray-500'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                              : 'text-gray-300 hover:text-gray-500 dark:text-gray-400'
                           }`}
                         >
                           {StatusIcon && <StatusIcon className="w-3 h-3" />}
@@ -1893,15 +1893,15 @@ export default function PropertyDetailsPage() {
                 </div>
               ))}
               {record.phoneNumbers.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-4">No phone numbers</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No phone numbers</p>
               )}
             </div>
           </div>
 
           {/* Emails */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 EMAILS ({record.emails.length}/15)
               </h3>
               <button
@@ -1915,7 +1915,7 @@ export default function PropertyDetailsPage() {
               {record.emails.map((email) => (
                 <div key={email.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
+                    <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <span className="text-sm">{email.email}</span>
                     {email.isPrimary && (
                       <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">Primary</span>
@@ -1930,7 +1930,7 @@ export default function PropertyDetailsPage() {
                 </div>
               ))}
               {record.emails.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-4">No emails</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No emails</p>
               )}
             </div>
           </div>
@@ -1940,26 +1940,26 @@ export default function PropertyDetailsPage() {
       {/* Add Phone Modal */}
       {showAddPhoneModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Add Phone Number</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                 <input
                   type="tel"
                   value={newPhone.number}
                   onChange={(e) => setNewPhone({ ...newPhone, number: formatPhoneNumber(e.target.value) })}
                   placeholder="(555) 123-4567"
                   maxLength={14}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
                 <select
                   value={newPhone.type}
                   onChange={(e) => setNewPhone({ ...newPhone, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="MOBILE">Mobile</option>
                   <option value="LANDLINE">Landline</option>
@@ -1970,7 +1970,7 @@ export default function PropertyDetailsPage() {
               <button
                 onClick={() => setShowAddPhoneModal(false)}
                 disabled={savingPhone}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1990,23 +1990,23 @@ export default function PropertyDetailsPage() {
       {/* Add Email Modal */}
       {showAddEmailModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Add Email</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
               <input
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="email@example.com"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddEmailModal(false)}
                 disabled={savingEmail}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2026,16 +2026,16 @@ export default function PropertyDetailsPage() {
       {/* Confirmation Dialog */}
       {confirmDelete.type && confirmDelete.id && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               This will permanently delete this {confirmDelete.type === 'phone' ? 'phone number' : 'email'}. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmDelete({ type: null, id: null })}
                 disabled={deletingItem}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2061,23 +2061,23 @@ export default function PropertyDetailsPage() {
       {/* Edit Field Modal */}
       {editFieldModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold mb-4">Edit {editFieldModal.label}</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{editFieldModal.label}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{editFieldModal.label}</label>
               <input
                 type={editFieldModal.type === 'currency' || editFieldModal.type === 'number' ? 'text' : 'text'}
                 value={editFieldModal.value}
                 onChange={(e) => setEditFieldModal({ ...editFieldModal, value: e.target.value })}
                 placeholder={`Enter ${editFieldModal.label.toLowerCase()}`}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setEditFieldModal(null)}
                 disabled={savingField}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2097,25 +2097,25 @@ export default function PropertyDetailsPage() {
       {/* Add Custom Field Modal */}
       {showAddFieldModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Add Custom Field</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Field Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Field Name</label>
                 <input
                   type="text"
                   value={newFieldData.name}
                   onChange={(e) => setNewFieldData({ ...newFieldData, name: e.target.value })}
                   placeholder="e.g., Pool, Garage Size, HOA Fee"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Field Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Field Type</label>
                 <select
                   value={newFieldData.fieldType}
                   onChange={(e) => setNewFieldData({ ...newFieldData, fieldType: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
@@ -2124,7 +2124,7 @@ export default function PropertyDetailsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Display Style</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Display Style</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -2155,7 +2155,7 @@ export default function PropertyDetailsPage() {
               <button
                 onClick={() => { setShowAddFieldModal(false); setNewFieldData({ name: '', fieldType: 'text', displayType: 'card' }) }}
                 disabled={savingCustomField}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2175,15 +2175,15 @@ export default function PropertyDetailsPage() {
       {/* Edit Custom Field Value Modal */}
       {editCustomFieldModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold mb-4">Edit {editCustomFieldModal.name}</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{editCustomFieldModal.name}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{editCustomFieldModal.name}</label>
               {editCustomFieldModal.fieldType === 'boolean' ? (
                 <select
                   value={editCustomFieldModal.value}
                   onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select...</option>
                   <option value="true">Yes</option>
@@ -2194,7 +2194,7 @@ export default function PropertyDetailsPage() {
                   type="date"
                   value={editCustomFieldModal.value}
                   onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               ) : (
                 <input
@@ -2202,7 +2202,7 @@ export default function PropertyDetailsPage() {
                   value={editCustomFieldModal.value}
                   onChange={(e) => setEditCustomFieldModal({ ...editCustomFieldModal, value: e.target.value })}
                   placeholder={`Enter ${editCustomFieldModal.name.toLowerCase()}`}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               )}
             </div>
@@ -2210,7 +2210,7 @@ export default function PropertyDetailsPage() {
               <button
                 onClick={() => setEditCustomFieldModal(null)}
                 disabled={savingCustomFieldValue}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2230,48 +2230,48 @@ export default function PropertyDetailsPage() {
       {/* Edit Address Modal */}
       {showEditAddressModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Edit Property Address</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street</label>
                 <input
                   type="text"
                   value={editAddressData.street}
                   onChange={(e) => setEditAddressData({ ...editAddressData, street: e.target.value })}
                   placeholder="123 Main St"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
                   <input
                     type="text"
                     value={editAddressData.city}
                     onChange={(e) => setEditAddressData({ ...editAddressData, city: e.target.value })}
                     placeholder="City"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
                   <input
                     type="text"
                     value={editAddressData.state}
                     onChange={(e) => setEditAddressData({ ...editAddressData, state: e.target.value })}
                     placeholder="State"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zip</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zip</label>
                   <input
                     type="text"
                     value={editAddressData.zip}
                     onChange={(e) => setEditAddressData({ ...editAddressData, zip: e.target.value })}
                     placeholder="12345"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -2280,7 +2280,7 @@ export default function PropertyDetailsPage() {
               <button
                 onClick={() => setShowEditAddressModal(false)}
                 disabled={savingAddress}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2300,7 +2300,7 @@ export default function PropertyDetailsPage() {
       {/* Edit Notes Modal */}
       {showEditNotesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-lg">
             <h3 className="text-lg font-semibold mb-4">Edit Notes</h3>
             <div>
               <textarea
@@ -2308,14 +2308,14 @@ export default function PropertyDetailsPage() {
                 onChange={(e) => setEditNotesValue(e.target.value)}
                 placeholder="Add notes about this property..."
                 rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowEditNotesModal(false)}
                 disabled={savingNotes}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-50"
               >
                 Cancel
               </button>
