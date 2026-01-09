@@ -263,14 +263,13 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          statuses: [status] 
-        }),
+        body: JSON.stringify({ status }), // Send single status to toggle
       })
       
       if (res.ok) {
-        toast.success(`Phone marked as ${status}`)
-        await fetchAll()
+        toast.success(`Phone status updated`)
+        // Refresh to get updated phone statuses
+        await fetchNextUp()
       }
     } catch (error) {
       console.error('Error updating phone status:', error)
