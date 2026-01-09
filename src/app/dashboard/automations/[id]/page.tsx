@@ -37,7 +37,13 @@ import {
   CircleDot,
   ChevronRight,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Phone,
+  PhoneCall,
+  MessageSquare,
+  Voicemail,
+  Mail,
+  Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -99,6 +105,31 @@ const triggerCategories = [
     items: [
       { type: 'record_created', label: 'Record Created', description: 'When a new record is created' },
       { type: 'record_updated', label: 'Record Updated', description: 'When any record field changes' },
+      { type: 'skiptrace_completed', label: 'Skiptrace Completed', description: 'When skiptrace date is set' },
+    ]
+  },
+  {
+    name: 'Call',
+    icon: PhoneCall,
+    items: [
+      { type: 'call_logged', label: 'Call Logged', description: 'When a call is made/logged' },
+      { type: 'call_result_changed', label: 'Call Result Changed', description: 'When call result is set or changed' },
+    ]
+  },
+  {
+    name: 'Contact',
+    icon: MessageSquare,
+    items: [
+      { type: 'sms_sent', label: 'SMS Sent', description: 'When SMS is logged' },
+      { type: 'rvm_sent', label: 'RVM Sent', description: 'When ringless voicemail is logged' },
+      { type: 'direct_mail_sent', label: 'Direct Mail Sent', description: 'When direct mail is logged' },
+    ]
+  },
+  {
+    name: 'Phone',
+    icon: Phone,
+    items: [
+      { type: 'phone_status_changed', label: 'Phone Status Changed', description: 'When phone marked wrong/DNC/etc' },
     ]
   },
   {

@@ -32,6 +32,18 @@ interface Board {
   columns: { id: string; name: string; color: string }[]
 }
 
+interface CallResult {
+  id: string
+  name: string
+  color: string
+}
+
+interface TaskTemplate {
+  id: string
+  name: string
+  title: string
+}
+
 interface NodeConfigPanelProps {
   node: Node
   onClose: () => void
@@ -51,6 +63,8 @@ export default function NodeConfigPanel({
   const [motivations, setMotivations] = useState<Motivation[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [boards, setBoards] = useState<Board[]>([])
+  const [callResults, setCallResults] = useState<CallResult[]>([])
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -62,12 +76,14 @@ export default function NodeConfigPanel({
       const token = localStorage.getItem('token')
       const headers = { Authorization: `Bearer ${token}` }
 
-      const [statusesRes, tagsRes, motivationsRes, usersRes, boardsRes] = await Promise.all([
+      const [statusesRes, tagsRes, motivationsRes, usersRes, boardsRes, callResultsRes, taskTemplatesRes] = await Promise.all([
         fetch('/api/statuses', { headers }),
         fetch('/api/tags', { headers }),
         fetch('/api/motivations', { headers }),
         fetch('/api/users', { headers }),
         fetch('/api/boards', { headers }),
+        fetch('/api/call-results', { headers }),
+        fetch('/api/task-templates', { headers }),
       ])
 
       if (statusesRes.ok) setStatuses(await statusesRes.json())
@@ -75,6 +91,8 @@ export default function NodeConfigPanel({
       if (motivationsRes.ok) setMotivations(await motivationsRes.json())
       if (usersRes.ok) setUsers(await usersRes.json())
       if (boardsRes.ok) setBoards(await boardsRes.json())
+      if (callResultsRes.ok) setCallResults(await callResultsRes.json())
+      if (taskTemplatesRes.ok) setTaskTemplates(await taskTemplatesRes.json())
     } catch (error) {
       console.error('Error fetching options:', error)
     } finally {
@@ -547,6 +565,96 @@ export default function NodeConfigPanel({
           </div>
         )
 
+      case 'call_logged':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Call Result (optional)
+              </label>
+              <select
+                value={(config.callResultId as string) || ''}
+                onChange={(e) => updateConfig('callResultId', e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any call result</option>
+                {callResults.map((cr) => (
+                  <option key={cr.id} value={cr.id}>{cr.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'call_result_changed':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                From Call Result (optional)
+              </label>
+              <select
+                value={(config.fromCallResultId as string) || ''}
+                onChange={(e) => updateConfig('fromCallResultId', e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any call result</option>
+                {callResults.map((cr) => (
+                  <option key={cr.id} value={cr.id}>{cr.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                To Call Result (optional)
+              </label>
+              <select
+                value={(config.toCallResultId as string) || ''}
+                onChange={(e) => updateConfig('toCallResultId', e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any call result</option>
+                {callResults.map((cr) => (
+                  <option key={cr.id} value={cr.id}>{cr.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'phone_status_changed':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Status (optional)
+              </label>
+              <select
+                value={(config.phoneStatus as string) || ''}
+                onChange={(e) => updateConfig('phoneStatus', e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any status</option>
+                <option value="PRIMARY">Primary</option>
+                <option value="CORRECT">Correct</option>
+                <option value="WRONG">Wrong</option>
+                <option value="NO_ANSWER">No Answer</option>
+                <option value="DNC">DNC</option>
+                <option value="DEAD">Dead</option>
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'sms_sent':
+      case 'rvm_sent':
+      case 'direct_mail_sent':
+      case 'skiptrace_completed':
+      case 'record_created':
+      case 'record_updated':
+      case 'record_unassigned':
+      case 'task_created':
+      case 'task_completed':
       default:
         return (
           <p className="text-sm text-gray-500">
