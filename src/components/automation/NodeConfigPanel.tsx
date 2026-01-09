@@ -195,16 +195,37 @@ export default function NodeConfigPanel({
         <label className="block text-xs font-medium text-gray-500 mb-1">Field</label>
         <select
           value={condition.field}
-          onChange={(e) => updateCondition(branchId, index, { field: e.target.value, value: '' })}
+          onChange={(e) => updateCondition(branchId, index, { field: e.target.value, value: '', operator: 'equals' })}
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select field...</option>
-          <option value="status">Status</option>
-          <option value="temperature">Temperature</option>
-          <option value="isComplete">Is Complete</option>
-          <option value="hasTag">Has Tag</option>
-          <option value="hasMotivation">Has Motivation</option>
-          <option value="isAssigned">Is Assigned</option>
+          <optgroup label="Record">
+            <option value="status">Status</option>
+            <option value="temperature">Temperature</option>
+            <option value="isComplete">Is Complete</option>
+            <option value="isAssigned">Is Assigned</option>
+          </optgroup>
+          <optgroup label="Call">
+            <option value="callResult">Call Result</option>
+            <option value="callAttempts">Call Attempts</option>
+            <option value="lastContactType">Last Contact Type</option>
+            <option value="lastContactResult">Last Contact Result</option>
+            <option value="daysSinceLastContact">Days Since Last Contact</option>
+          </optgroup>
+          <optgroup label="Phone">
+            <option value="phoneStatus">Phone Status</option>
+            <option value="hasPhoneNumbers">Has Phone Numbers</option>
+            <option value="phoneCount">Phone Count</option>
+            <option value="hasValidPhone">Has Valid Phone</option>
+          </optgroup>
+          <optgroup label="Tags & Motivations">
+            <option value="hasTag">Has Tag</option>
+            <option value="hasMotivation">Has Motivation</option>
+            <option value="motivationCount">Motivation Count</option>
+          </optgroup>
+          <optgroup label="Time">
+            <option value="daysSinceCreated">Days Since Created</option>
+          </optgroup>
         </select>
       </div>
 
@@ -216,11 +237,28 @@ export default function NodeConfigPanel({
           onChange={(e) => updateCondition(branchId, index, { operator: e.target.value })}
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="equals">Equals</option>
-          <option value="not_equals">Not Equals</option>
-          <option value="contains">Contains</option>
-          <option value="is_empty">Is Empty</option>
-          <option value="is_not_empty">Is Not Empty</option>
+          {/* Numeric fields get numeric operators */}
+          {['callAttempts', 'phoneCount', 'motivationCount', 'daysSinceLastContact', 'daysSinceCreated'].includes(condition.field) ? (
+            <>
+              <option value="equals">Equals</option>
+              <option value="not_equals">Not Equals</option>
+              <option value="greater_than">Greater Than</option>
+              <option value="less_than">Less Than</option>
+              <option value="greater_or_equal">Greater or Equal</option>
+              <option value="less_or_equal">Less or Equal</option>
+            </>
+          ) : ['hasPhoneNumbers', 'hasValidPhone', 'isComplete'].includes(condition.field) ? (
+            <>
+              <option value="equals">Equals</option>
+            </>
+          ) : (
+            <>
+              <option value="equals">Equals</option>
+              <option value="not_equals">Not Equals</option>
+              <option value="is_empty">Is Empty</option>
+              <option value="is_not_empty">Is Not Empty</option>
+            </>
+          )}
         </select>
       </div>
 
@@ -324,6 +362,98 @@ export default function NodeConfigPanel({
               <option value="true">Yes</option>
               <option value="false">No</option>
             </select>
+          )}
+          {/* Call Result */}
+          {condition.field === 'callResult' && (
+            <select
+              value={condition.value}
+              onChange={(e) => {
+                const selectedCallResult = callResults.find(cr => cr.id === e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: selectedCallResult?.name || e.target.value
+                })
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select call result...</option>
+              {callResults.map((cr) => (
+                <option key={cr.id} value={cr.id}>{cr.name}</option>
+              ))}
+            </select>
+          )}
+          {/* Last Contact Result */}
+          {condition.field === 'lastContactResult' && (
+            <select
+              value={condition.value}
+              onChange={(e) => {
+                const selectedCallResult = callResults.find(cr => cr.id === e.target.value)
+                updateCondition(branchId, index, { 
+                  value: e.target.value,
+                  valueName: selectedCallResult?.name || e.target.value
+                })
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select call result...</option>
+              {callResults.map((cr) => (
+                <option key={cr.id} value={cr.id}>{cr.name}</option>
+              ))}
+            </select>
+          )}
+          {/* Last Contact Type */}
+          {condition.field === 'lastContactType' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select contact type...</option>
+              <option value="CALL">Call</option>
+              <option value="SMS">SMS</option>
+              <option value="RVM">RVM</option>
+              <option value="DIRECT_MAIL">Direct Mail</option>
+              <option value="EMAIL">Email</option>
+            </select>
+          )}
+          {/* Phone Status */}
+          {condition.field === 'phoneStatus' && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select phone status...</option>
+              <option value="PRIMARY">Primary</option>
+              <option value="CORRECT">Correct</option>
+              <option value="WRONG">Wrong</option>
+              <option value="NO_ANSWER">No Answer</option>
+              <option value="DNC">DNC</option>
+              <option value="DEAD">Dead</option>
+            </select>
+          )}
+          {/* Boolean fields */}
+          {['hasPhoneNumbers', 'hasValidPhone'].includes(condition.field) && (
+            <select
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select...</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          )}
+          {/* Numeric fields */}
+          {['callAttempts', 'phoneCount', 'motivationCount', 'daysSinceLastContact', 'daysSinceCreated'].includes(condition.field) && (
+            <input
+              type="number"
+              value={condition.value}
+              onChange={(e) => updateCondition(branchId, index, { value: e.target.value })}
+              placeholder="Enter number..."
+              min="0"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
           )}
           {!condition.field && (
             <input
