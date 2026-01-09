@@ -198,7 +198,9 @@ export async function GET() {
     return NextResponse.json({
       buckets: {
         callNow: bucketCounts['call-now'],
-        followUp: bucketCounts['follow-up'],
+        followUpToday: bucketCounts['follow-up-today'],
+        callQueue: bucketCounts['call-queue'],
+        verifyFirst: bucketCounts['verify-first'],
         getNumbers: bucketCounts['get-numbers'],
         nurture: bucketCounts['nurture'],
         notWorkable: bucketCounts['not-workable'],
@@ -206,7 +208,7 @@ export async function GET() {
       kpis: {
         totalRecords: records.length,
         hotLeads: temperatureCounts.hot,
-        callReady: bucketCounts['call-now'],
+        callReady: bucketCounts['call-now'] + bucketCounts['call-queue'],
         tasksDue: tasksDueToday,
         unassignedHot,
       },

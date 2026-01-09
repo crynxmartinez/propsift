@@ -1,11 +1,20 @@
 /**
- * DockInsight v2 - Priority Scoring Engine
+ * DockInsight v2.2 - Priority Scoring Engine
  * 
  * This module computes priority scores for records to determine
  * which leads should be contacted first.
  * 
- * Score Range: 0-100
+ * Score Range: 0-160+ (uncapped for stacking motivations)
  * Higher score = Higher priority = Contact sooner
+ * 
+ * Key Features:
+ * - Motivation stacking with diminishing returns
+ * - Synergy bonuses for distress combinations
+ * - Smart Rescue for old unworked leads
+ * - Fatigue reset on engagement
+ * - Status modifier
+ * - Channel readiness
+ * - Improvement suggestions
  */
 
 import { Task, RecordPhoneNumber, Motivation, Status, RecordTag } from '@prisma/client'
@@ -15,18 +24,38 @@ import { Task, RecordPhoneNumber, Motivation, Status, RecordTag } from '@prisma/
 // ============================================
 
 export type NextAction = 
-  | 'Call Now'      // Score ≥70, has valid phone
-  | 'Follow Up'     // Has task due today/overdue
-  | 'Get Numbers'   // No valid phone numbers
-  | 'Nurture'       // Score <50, workable
-  | 'Not Workable'  // DNC, Dead, Under Contract
+  | 'Call Now'        // Score ≥90, has callable phone, high confidence
+  | 'Follow Up Today' // Has task due today/overdue
+  | 'Call Queue'      // Score 50-89, has callable phone
+  | 'Verify First'    // Score ≥70 but low confidence (bad data)
+  | 'Get Numbers'     // No valid phone numbers
+  | 'Nurture'         // Score <50, workable
+  | 'Not Workable'    // DNC, Dead, Under Contract
 
 export type Confidence = 'High' | 'Medium' | 'Low'
+
+export type ScoreCategory = 
+  | 'temperature' 
+  | 'motivation' 
+  | 'synergy'
+  | 'task' 
+  | 'contact' 
+  | 'engagement' 
+  | 'fatigue' 
+  | 'status'
+  | 'channel'
+  | 'age'
+  | 'data'
 
 export interface ScoreReason {
   label: string
   delta: number
-  category: 'temperature' | 'motivation' | 'task' | 'contact' | 'engagement' | 'fatigue' | 'data'
+  category: ScoreCategory
+}
+
+export interface ImprovementSuggestion {
+  action: string
+  delta: number
 }
 
 export interface PriorityResult {
@@ -35,15 +64,20 @@ export interface PriorityResult {
   confidence: Confidence
   reasons: ScoreReason[]
   topReason: string
+  reasonString: string
+  suggestions: ImprovementSuggestion[]
   flags: {
     hasValidPhone: boolean
     hasMobilePhone: boolean
+    hasCallablePhone: boolean
+    hasEmail: boolean
     hasTask: boolean
     hasOverdueTask: boolean
     isDnc: boolean
     isClosed: boolean
     isSnoozed: boolean
     neverContacted: boolean
+    smartRescue: boolean
   }
 }
 
@@ -61,13 +95,12 @@ export interface RecordWithRelations {
   skiptraceDate?: Date | null
   createdAt: Date
   updatedAt: Date
-  // DockInsight v2 fields
   lastContactedAt?: Date | null
   lastContactType?: string | null
   lastContactResult?: string | null
   hasEngaged?: boolean
   snoozedUntil?: Date | null
-  // Relations
+  email?: string | null
   phoneNumbers?: RecordPhoneNumber[]
   recordMotivations?: Array<{ motivation: Motivation }>
   recordTags?: RecordTag[]
@@ -76,30 +109,47 @@ export interface RecordWithRelations {
 }
 
 // ============================================
-// SCORING WEIGHTS
+// SCORING WEIGHTS (v2.2)
 // ============================================
 
 const TEMPERATURE_SCORES: { [key: string]: number } = {
   'HOT': 40,
-  'WARM': 25,
-  'COLD': 10,
+  'WARM': 20,
+  'COLD': 5,
 }
 
 const MOTIVATION_WEIGHTS: { [key: string]: { weight: number; urgency: 'urgent' | 'high' | 'medium' | 'low' } } = {
-  'Pre-Foreclosure': { weight: 12, urgency: 'urgent' },
-  'Tax Lien': { weight: 12, urgency: 'urgent' },
+  'Pre-Foreclosure': { weight: 15, urgency: 'urgent' },
+  'Tax Lien': { weight: 15, urgency: 'urgent' },
   'Probate': { weight: 12, urgency: 'urgent' },
-  'Divorce': { weight: 8, urgency: 'high' },
-  'Tired Landlord': { weight: 8, urgency: 'high' },
-  'Code Violation': { weight: 8, urgency: 'high' },
-  'Vacant': { weight: 5, urgency: 'medium' },
+  'Divorce': { weight: 10, urgency: 'high' },
+  'Tired Landlord': { weight: 10, urgency: 'high' },
+  'Code Violation': { weight: 10, urgency: 'high' },
+  'Vacant': { weight: 8, urgency: 'medium' },
   'Absentee': { weight: 5, urgency: 'medium' },
-  'Inherited': { weight: 5, urgency: 'medium' },
-  'High Equity': { weight: 3, urgency: 'low' },
-  'MLS Expired': { weight: 3, urgency: 'low' },
+  'Inherited': { weight: 8, urgency: 'medium' },
+  'High Equity': { weight: 5, urgency: 'low' },
+  'MLS Expired': { weight: 8, urgency: 'low' },
+  'FSBO': { weight: 6, urgency: 'low' },
 }
 
-const MOTIVATION_CAP = 30
+const SYNERGY_PAIRS: Array<{ pair: [string, string]; bonus: number }> = [
+  { pair: ['Pre-Foreclosure', 'Tax Lien'], bonus: 10 },
+  { pair: ['Pre-Foreclosure', 'Vacant'], bonus: 8 },
+  { pair: ['Tax Lien', 'Vacant'], bonus: 8 },
+  { pair: ['Probate', 'Vacant'], bonus: 6 },
+  { pair: ['Absentee', 'Vacant'], bonus: 5 },
+  { pair: ['Tired Landlord', 'Code Violation'], bonus: 6 },
+]
+
+const STATUS_MODIFIERS: { [key: string]: number } = {
+  'new lead': 5,
+  'attempting contact': 0,
+  'in negotiation': 10,
+  'follow up': 5,
+  'appointment set': 15,
+  'contract sent': 20,
+}
 
 const EXCLUDED_STATUSES = [
   'dead',
@@ -109,6 +159,7 @@ const EXCLUDED_STATUSES = [
   'sold',
   'not interested',
   'wrong number',
+  'closed',
 ]
 
 // ============================================
@@ -142,23 +193,57 @@ function isDnc(status: Status | null | undefined): boolean {
   return name.includes('dnc') || name.includes('do not call')
 }
 
+function getStatusModifier(status: Status | null | undefined): { modifier: number; name: string } | null {
+  if (!status) return null
+  const name = status.name.toLowerCase()
+  for (const [key, value] of Object.entries(STATUS_MODIFIERS)) {
+    if (name.includes(key)) {
+      return { modifier: value, name: status.name }
+    }
+  }
+  return null
+}
+
+function isPhoneCallable(phone: RecordPhoneNumber): boolean {
+  const statuses = phone.statuses || []
+  const badStatuses = ['wrong', 'disconnected', 'invalid', 'bad', 'dnc']
+  return !statuses.some(s => 
+    badStatuses.some(bad => s.toLowerCase().includes(bad))
+  )
+}
+
 function hasValidPhone(phoneNumbers: RecordPhoneNumber[] | undefined): boolean {
   if (!phoneNumbers || phoneNumbers.length === 0) return false
+  return phoneNumbers.some(p => isPhoneCallable(p))
+}
+
+function hasCallablePhone(phoneNumbers: RecordPhoneNumber[] | undefined): boolean {
+  if (!phoneNumbers || phoneNumbers.length === 0) return false
   return phoneNumbers.some(p => {
-    const statuses = p.statuses || []
-    return !statuses.some(s => 
-      s.toLowerCase().includes('wrong') || 
-      s.toLowerCase().includes('disconnected') ||
-      s.toLowerCase().includes('invalid')
-    )
+    if (!isPhoneCallable(p)) return false
+    const type = p.type?.toUpperCase() || ''
+    return type === 'MOBILE' || type === 'CELL' || type === 'LANDLINE' || type === 'HOME' || type === ''
   })
 }
 
 function hasMobilePhone(phoneNumbers: RecordPhoneNumber[] | undefined): boolean {
   if (!phoneNumbers || phoneNumbers.length === 0) return false
-  return phoneNumbers.some(p => 
-    p.type?.toUpperCase() === 'MOBILE' || p.type?.toUpperCase() === 'CELL'
-  )
+  return phoneNumbers.some(p => {
+    if (!isPhoneCallable(p)) return false
+    const type = p.type?.toUpperCase() || ''
+    return type === 'MOBILE' || type === 'CELL'
+  })
+}
+
+function hasVerifiedMobile(phoneNumbers: RecordPhoneNumber[] | undefined): boolean {
+  if (!phoneNumbers || phoneNumbers.length === 0) return false
+  return phoneNumbers.some(p => {
+    if (!isPhoneCallable(p)) return false
+    const type = p.type?.toUpperCase() || ''
+    const statuses = p.statuses || []
+    const isVerified = statuses.some(s => s.toLowerCase().includes('verified'))
+    return (type === 'MOBILE' || type === 'CELL') && isVerified
+  })
 }
 
 function getOverdueTask(tasks: Task[] | undefined): Task | null {
@@ -166,13 +251,18 @@ function getOverdueTask(tasks: Task[] | undefined): Task | null {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   
-  return tasks.find(t => {
+  const overdueTasks = tasks.filter(t => {
     if (t.status === 'COMPLETED' || t.status === 'CANCELLED') return false
     if (!t.dueDate) return false
     const dueDate = new Date(t.dueDate)
     dueDate.setHours(0, 0, 0, 0)
     return dueDate < now
-  }) || null
+  })
+  
+  if (overdueTasks.length === 0) return null
+  return overdueTasks.sort((a, b) => 
+    new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()
+  )[0]
 }
 
 function getTaskDueToday(tasks: Task[] | undefined): Task | null {
@@ -202,28 +292,40 @@ function getTaskDueTomorrow(tasks: Task[] | undefined): Task | null {
   }) || null
 }
 
+function isCallTask(task: Task | null): boolean {
+  if (!task) return false
+  const title = task.title?.toLowerCase() || ''
+  return title.includes('call') || title.includes('phone') || title.includes('dial')
+}
+
 // ============================================
-// MAIN SCORING FUNCTION
+// MAIN SCORING FUNCTION (v2.2)
 // ============================================
 
 export function computePriority(record: RecordWithRelations): PriorityResult {
   const reasons: ScoreReason[] = []
   let score = 0
   
-  // Flags
+  // ============================================
+  // FLAGS
+  // ============================================
+  
   const flags = {
     hasValidPhone: hasValidPhone(record.phoneNumbers),
     hasMobilePhone: hasMobilePhone(record.phoneNumbers),
+    hasCallablePhone: hasCallablePhone(record.phoneNumbers),
+    hasEmail: Boolean(record.email && record.email.includes('@')),
     hasTask: (record.tasks?.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length || 0) > 0,
     hasOverdueTask: getOverdueTask(record.tasks) !== null,
     isDnc: isDnc(record.status),
     isClosed: isStatusExcluded(record.status),
     isSnoozed: record.snoozedUntil ? new Date(record.snoozedUntil) > new Date() : false,
     neverContacted: !record.lastContactedAt && record.callAttempts === 0,
+    smartRescue: false,
   }
   
   // ============================================
-  // EXCLUSIONS - Return early if not workable
+  // WORKABILITY GATE - Hard Blocks
   // ============================================
   
   if (flags.isDnc || flags.isClosed) {
@@ -233,6 +335,21 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
       confidence: 'High',
       reasons: [{ label: flags.isDnc ? 'DNC' : 'Closed Status', delta: 0, category: 'data' }],
       topReason: flags.isDnc ? 'Do Not Call' : 'Closed',
+      reasonString: flags.isDnc ? 'DNC - Do Not Call' : 'Closed status - not workable',
+      suggestions: [],
+      flags,
+    }
+  }
+  
+  if (flags.isSnoozed) {
+    return {
+      score: 0,
+      nextAction: 'Nurture',
+      confidence: 'High',
+      reasons: [{ label: '💤 Snoozed', delta: 0, category: 'data' }],
+      topReason: 'Snoozed',
+      reasonString: 'Lead is snoozed - will resurface later',
+      suggestions: [],
       flags,
     }
   }
@@ -242,33 +359,69 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   // ============================================
   
   const temp = record.temperature?.toUpperCase() || 'COLD'
-  const tempScore = TEMPERATURE_SCORES[temp] || 10
+  const tempScore = TEMPERATURE_SCORES[temp] || 5
   score += tempScore
   
   const tempLabel = temp === 'HOT' ? '🔥 Hot Lead' : temp === 'WARM' ? '🌡️ Warm Lead' : '❄️ Cold Lead'
   reasons.push({ label: tempLabel, delta: tempScore, category: 'temperature' })
   
   // ============================================
-  // 2. MOTIVATIONS (Capped at 30)
+  // 2. MOTIVATIONS (Stacking with Diminishing Returns)
   // ============================================
   
-  let motivationTotal = 0
   const motivations = record.recordMotivations || []
+  const motivationNames = motivations.map(rm => rm.motivation.name)
+  let motivationTotal = 0
+  let motivationCount = 0
   
-  for (const rm of motivations) {
+  const sortedMotivations = [...motivations].sort((a, b) => {
+    const aWeight = MOTIVATION_WEIGHTS[a.motivation.name]?.weight || 0
+    const bWeight = MOTIVATION_WEIGHTS[b.motivation.name]?.weight || 0
+    return bWeight - aWeight
+  })
+  
+  for (const rm of sortedMotivations) {
     const name = rm.motivation.name
     const config = MOTIVATION_WEIGHTS[name]
-    if (config && motivationTotal < MOTIVATION_CAP) {
-      const addAmount = Math.min(config.weight, MOTIVATION_CAP - motivationTotal)
+    if (config) {
+      let addAmount = config.weight
+      
+      if (motivationCount === 1) addAmount = Math.floor(addAmount * 0.8)
+      else if (motivationCount === 2) addAmount = Math.floor(addAmount * 0.6)
+      else if (motivationCount >= 3) addAmount = Math.floor(addAmount * 0.4)
+      
       motivationTotal += addAmount
+      motivationCount++
       reasons.push({ label: name, delta: addAmount, category: 'motivation' })
     }
   }
   
   score += motivationTotal
   
+  // Stacking bonus for 3+ motivations
+  if (motivationCount >= 3) {
+    const stackingBonus = 4 * (motivationCount - 2)
+    score += stackingBonus
+    reasons.push({ label: `📚 ${motivationCount} Motivations Stacked`, delta: stackingBonus, category: 'motivation' })
+  }
+  
   // ============================================
-  // 3. TASK URGENCY
+  // 3. SYNERGY BONUSES
+  // ============================================
+  
+  for (const synergy of SYNERGY_PAIRS) {
+    if (motivationNames.includes(synergy.pair[0]) && motivationNames.includes(synergy.pair[1])) {
+      score += synergy.bonus
+      reasons.push({ 
+        label: `⚡ ${synergy.pair[0]} + ${synergy.pair[1]} Synergy`, 
+        delta: synergy.bonus, 
+        category: 'synergy' 
+      })
+    }
+  }
+  
+  // ============================================
+  // 4. TASK URGENCY
   // ============================================
   
   const overdueTask = getOverdueTask(record.tasks)
@@ -276,29 +429,37 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   const taskDueTomorrow = getTaskDueTomorrow(record.tasks)
   
   if (overdueTask) {
-    score += 25
-    reasons.push({ label: '⚠️ Task Overdue', delta: 25, category: 'task' })
+    let taskBonus = 25
+    if (isCallTask(overdueTask) && flags.hasCallablePhone) {
+      taskBonus += 5
+    }
+    score += taskBonus
+    reasons.push({ label: '⚠️ Task Overdue', delta: taskBonus, category: 'task' })
   } else if (taskDueToday) {
-    score += 15
-    reasons.push({ label: '📋 Task Due Today', delta: 15, category: 'task' })
+    let taskBonus = 15
+    if (isCallTask(taskDueToday) && flags.hasCallablePhone) {
+      taskBonus += 5
+    }
+    score += taskBonus
+    reasons.push({ label: '📋 Task Due Today', delta: taskBonus, category: 'task' })
   } else if (taskDueTomorrow) {
     score += 5
     reasons.push({ label: '📅 Task Due Tomorrow', delta: 5, category: 'task' })
   }
   
   // ============================================
-  // 4. CONTACT RECENCY
+  // 5. CONTACT RECENCY
   // ============================================
   
   const hoursSinceContact = hoursSince(record.lastContactedAt)
   const daysSinceContact = daysSince(record.lastContactedAt)
   
   if (flags.neverContacted) {
-    score += 20
-    reasons.push({ label: '✨ Never Contacted', delta: 20, category: 'contact' })
+    score += 15
+    reasons.push({ label: '✨ Never Contacted', delta: 15, category: 'contact' })
   } else if (hoursSinceContact < 24) {
-    score -= 30
-    reasons.push({ label: '⏸️ Contacted <24h ago', delta: -30, category: 'contact' })
+    score -= 25
+    reasons.push({ label: '⏸️ Contacted <24h ago', delta: -25, category: 'contact' })
   } else if (daysSinceContact >= 1 && daysSinceContact < 3) {
     score -= 10
     reasons.push({ label: '🕐 Contacted 1-3 days ago', delta: -10, category: 'contact' })
@@ -306,86 +467,102 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
     score += 5
     reasons.push({ label: '📆 Contacted 3-7 days ago', delta: 5, category: 'contact' })
   } else if (daysSinceContact >= 7) {
-    score += 15
-    reasons.push({ label: '🔄 No contact 7+ days', delta: 15, category: 'contact' })
+    score += 10
+    reasons.push({ label: '🔄 No contact 7+ days', delta: 10, category: 'contact' })
   }
   
   // ============================================
-  // 5. ENGAGEMENT
+  // 6. ENGAGEMENT
   // ============================================
   
   if (record.hasEngaged) {
-    score += 15
-    reasons.push({ label: '💬 Has Engaged Before', delta: 15, category: 'engagement' })
-  }
-  
-  // Fresh skiptrace
-  const daysSinceSkiptrace = daysSince(record.skiptraceDate)
-  if (daysSinceSkiptrace <= 3) {
-    score += 10
-    reasons.push({ label: '📞 Fresh Skiptrace', delta: 10, category: 'data' })
-  }
-  
-  // Mobile phone bonus
-  if (flags.hasMobilePhone) {
-    score += 5
-    reasons.push({ label: '📱 Has Mobile', delta: 5, category: 'data' })
+    score += 20
+    reasons.push({ label: '💬 Has Engaged Before', delta: 20, category: 'engagement' })
   }
   
   // ============================================
-  // 6. FATIGUE PENALTIES
+  // 7. NO-RESPONSE FATIGUE
+  // Reset fatigue if they engaged or were contacted recently
   // ============================================
   
   const attempts = record.callAttempts || 0
+  const recentContact = daysSinceContact < 7
+  const hadEngagement = record.hasEngaged
   
-  if (attempts >= 10) {
-    score -= 25
-    reasons.push({ label: '😫 10+ Call Attempts', delta: -25, category: 'fatigue' })
-  } else if (attempts >= 7) {
-    score -= 15
-    reasons.push({ label: '😓 7-9 Call Attempts', delta: -15, category: 'fatigue' })
-  } else if (attempts >= 5) {
-    score -= 10
-    reasons.push({ label: '😐 5-6 Call Attempts', delta: -10, category: 'fatigue' })
-  } else if (attempts >= 3) {
-    score -= 5
-    reasons.push({ label: '📉 3-4 Call Attempts', delta: -5, category: 'fatigue' })
+  if (!hadEngagement && !recentContact) {
+    const noResponseStreak = attempts
+    
+    if (noResponseStreak >= 7) {
+      score -= 20
+      reasons.push({ label: '😫 7+ No-Response Streak', delta: -20, category: 'fatigue' })
+    } else if (noResponseStreak >= 5) {
+      score -= 12
+      reasons.push({ label: '😓 5-6 No-Response Streak', delta: -12, category: 'fatigue' })
+    } else if (noResponseStreak >= 3) {
+      score -= 6
+      reasons.push({ label: '😐 3-4 No-Response Streak', delta: -6, category: 'fatigue' })
+    }
   }
   
   // ============================================
-  // 7. SNOOZE PENALTY
+  // 8. LEAD AGE + SMART RESCUE
   // ============================================
   
-  if (flags.isSnoozed) {
-    score = 0
-    reasons.push({ label: '💤 Snoozed', delta: -score, category: 'data' })
+  const daysSinceCreated = daysSince(record.createdAt)
+  
+  if (daysSinceCreated >= 30 && flags.neverContacted && motivationCount >= 1) {
+    score += 8
+    flags.smartRescue = true
+    reasons.push({ label: '🆘 Smart Rescue (30+ days, never contacted)', delta: 8, category: 'age' })
+  } else if (daysSinceCreated >= 14 && flags.neverContacted) {
+    score += 4
+    reasons.push({ label: '📅 Aging Lead (14+ days)', delta: 4, category: 'age' })
   }
   
   // ============================================
-  // CAP SCORE
+  // 9. STATUS MODIFIER
   // ============================================
   
-  score = Math.max(0, Math.min(100, score))
-  
-  // ============================================
-  // DETERMINE NEXT ACTION
-  // ============================================
-  
-  let nextAction: NextAction
-  
-  if (flags.isSnoozed) {
-    nextAction = 'Nurture'
-  } else if (overdueTask || taskDueToday) {
-    nextAction = 'Follow Up'
-  } else if (!flags.hasValidPhone) {
-    nextAction = 'Get Numbers'
-  } else if (score >= 70) {
-    nextAction = 'Call Now'
-  } else if (score >= 50) {
-    nextAction = 'Call Now' // Still call, just lower priority
-  } else {
-    nextAction = 'Nurture'
+  const statusMod = getStatusModifier(record.status)
+  if (statusMod && statusMod.modifier !== 0) {
+    score += statusMod.modifier
+    reasons.push({ label: `📊 Status: ${statusMod.name}`, delta: statusMod.modifier, category: 'status' })
   }
+  
+  // ============================================
+  // 10. CHANNEL READINESS (Data Quality)
+  // ============================================
+  
+  if (hasVerifiedMobile(record.phoneNumbers)) {
+    score += 6
+    reasons.push({ label: '✅ Verified Mobile', delta: 6, category: 'channel' })
+  } else if (flags.hasMobilePhone) {
+    score += 4
+    reasons.push({ label: '📱 Has Mobile', delta: 4, category: 'channel' })
+  } else if (flags.hasCallablePhone) {
+    score += 2
+    reasons.push({ label: '📞 Has Callable Phone', delta: 2, category: 'channel' })
+  }
+  
+  if (flags.hasEmail) {
+    score += 2
+    reasons.push({ label: '📧 Has Email', delta: 2, category: 'channel' })
+  }
+  
+  const daysSinceSkiptrace = daysSince(record.skiptraceDate)
+  if (daysSinceSkiptrace <= 7) {
+    score += 5
+    reasons.push({ label: '🔍 Fresh Skiptrace (<7 days)', delta: 5, category: 'data' })
+  } else if (daysSinceSkiptrace <= 30) {
+    score += 2
+    reasons.push({ label: '🔍 Recent Skiptrace (<30 days)', delta: 2, category: 'data' })
+  }
+  
+  // ============================================
+  // FLOOR SCORE (minimum 0)
+  // ============================================
+  
+  score = Math.max(0, score)
   
   // ============================================
   // CALCULATE CONFIDENCE
@@ -393,25 +570,94 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   
   let confidenceScore = 0
   
-  if (motivations.length > 0) confidenceScore += 25
-  if ((record.recordTags as unknown[])?.length > 0) confidenceScore += 15
-  if (flags.hasMobilePhone) confidenceScore += 25
-  else if (flags.hasValidPhone) confidenceScore += 10
-  if (record.skiptraceDate) confidenceScore += 15
-  if (record.lastContactedAt) confidenceScore += 10
-  if (record.ownerFullName && record.ownerFullName !== 'Unknown') confidenceScore += 10
+  if (hasVerifiedMobile(record.phoneNumbers)) confidenceScore += 35
+  else if (flags.hasMobilePhone) confidenceScore += 25
+  else if (flags.hasCallablePhone) confidenceScore += 15
+  
+  if (flags.hasEmail) confidenceScore += 10
+  if (motivationCount > 0) confidenceScore += 15
+  if (record.skiptraceDate && daysSinceSkiptrace <= 30) confidenceScore += 15
+  if (record.ownerFullName && record.ownerFullName !== 'Unknown' && record.ownerFullName.length > 3) confidenceScore += 10
+  if (record.propertyStreet) confidenceScore += 5
   
   const confidence: Confidence = 
-    confidenceScore >= 75 ? 'High' :
-    confidenceScore >= 50 ? 'Medium' : 'Low'
+    confidenceScore >= 70 ? 'High' :
+    confidenceScore >= 40 ? 'Medium' : 'Low'
   
   // ============================================
-  // TOP REASON (for display)
+  // DETERMINE NEXT ACTION (Fixed Order)
   // ============================================
   
-  // Sort reasons by absolute delta value, pick the most impactful
+  let nextAction: NextAction
+  
+  // 1. Task Override
+  if (overdueTask || taskDueToday) {
+    nextAction = 'Follow Up Today'
+  }
+  // 2. No Phone
+  else if (!flags.hasCallablePhone) {
+    nextAction = 'Get Numbers'
+  }
+  // 3. High Score + Low Confidence = Verify First
+  else if (score >= 70 && confidence === 'Low') {
+    nextAction = 'Verify First'
+  }
+  // 4. High Score + Good Confidence = Call Now
+  else if (score >= 90 && confidence !== 'Low') {
+    nextAction = 'Call Now'
+  }
+  // 5. Medium Score = Call Queue
+  else if (score >= 50) {
+    nextAction = 'Call Queue'
+  }
+  // 6. Low Score = Nurture
+  else {
+    nextAction = 'Nurture'
+  }
+  
+  // ============================================
+  // GENERATE REASON STRING
+  // ============================================
+  
   const sortedReasons = [...reasons].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
   const topReason = sortedReasons[0]?.label || 'No data'
+  
+  const positiveReasons = sortedReasons.filter(r => r.delta > 0).slice(0, 3)
+  const reasonString = positiveReasons.map(r => `${r.label} (+${r.delta})`).join(', ') || 'No positive factors'
+  
+  // ============================================
+  // GENERATE IMPROVEMENT SUGGESTIONS
+  // ============================================
+  
+  const suggestions: ImprovementSuggestion[] = []
+  
+  if (overdueTask) {
+    suggestions.push({ action: 'Complete overdue task', delta: 25 })
+  }
+  if (!flags.hasMobilePhone && flags.hasCallablePhone) {
+    suggestions.push({ action: 'Add mobile phone number', delta: 4 })
+  }
+  if (!flags.hasCallablePhone) {
+    suggestions.push({ action: 'Add phone number', delta: 6 })
+  }
+  if (!flags.hasEmail) {
+    suggestions.push({ action: 'Add email address', delta: 2 })
+  }
+  if (temp === 'COLD') {
+    suggestions.push({ action: 'Upgrade to Warm (+15) or Hot (+35)', delta: 15 })
+  } else if (temp === 'WARM') {
+    suggestions.push({ action: 'Upgrade to Hot', delta: 20 })
+  }
+  if (motivationCount === 0) {
+    suggestions.push({ action: 'Add motivation (e.g., Pre-Foreclosure)', delta: 15 })
+  }
+  if (!record.skiptraceDate || daysSinceSkiptrace > 30) {
+    suggestions.push({ action: 'Run fresh skiptrace', delta: 5 })
+  }
+  
+  const topSuggestions = suggestions
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, 3)
   
   return {
     score,
@@ -419,6 +665,8 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
     confidence,
     reasons,
     topReason,
+    reasonString,
+    suggestions: topSuggestions,
     flags,
   }
 }
@@ -447,20 +695,29 @@ export function sortByPriority<T extends { priority: PriorityResult }>(records: 
     // Then by next action priority
     const actionOrder: { [key in NextAction]: number } = {
       'Call Now': 0,
-      'Follow Up': 1,
-      'Get Numbers': 2,
-      'Nurture': 3,
-      'Not Workable': 4,
+      'Follow Up Today': 1,
+      'Call Queue': 2,
+      'Verify First': 3,
+      'Get Numbers': 4,
+      'Nurture': 5,
+      'Not Workable': 6,
     }
     return actionOrder[a.priority.nextAction] - actionOrder[b.priority.nextAction]
   })
 }
 
 // ============================================
-// BUCKET FILTERING
+// BUCKET FILTERING (v2.2)
 // ============================================
 
-export type Bucket = 'call-now' | 'follow-up' | 'get-numbers' | 'nurture' | 'not-workable'
+export type Bucket = 
+  | 'call-now' 
+  | 'follow-up-today' 
+  | 'call-queue' 
+  | 'verify-first' 
+  | 'get-numbers' 
+  | 'nurture' 
+  | 'not-workable'
 
 export function filterByBucket<T extends { priority: PriorityResult }>(
   records: T[],
@@ -468,7 +725,9 @@ export function filterByBucket<T extends { priority: PriorityResult }>(
 ): T[] {
   const actionMap: { [key in Bucket]: NextAction } = {
     'call-now': 'Call Now',
-    'follow-up': 'Follow Up',
+    'follow-up-today': 'Follow Up Today',
+    'call-queue': 'Call Queue',
+    'verify-first': 'Verify First',
     'get-numbers': 'Get Numbers',
     'nurture': 'Nurture',
     'not-workable': 'Not Workable',
@@ -480,7 +739,9 @@ export function filterByBucket<T extends { priority: PriorityResult }>(
 export function getBucketCounts(records: Array<{ priority: PriorityResult }>): { [key in Bucket]: number } {
   const counts: { [key in Bucket]: number } = {
     'call-now': 0,
-    'follow-up': 0,
+    'follow-up-today': 0,
+    'call-queue': 0,
+    'verify-first': 0,
     'get-numbers': 0,
     'nurture': 0,
     'not-workable': 0,
@@ -489,7 +750,9 @@ export function getBucketCounts(records: Array<{ priority: PriorityResult }>): {
   for (const record of records) {
     switch (record.priority.nextAction) {
       case 'Call Now': counts['call-now']++; break
-      case 'Follow Up': counts['follow-up']++; break
+      case 'Follow Up Today': counts['follow-up-today']++; break
+      case 'Call Queue': counts['call-queue']++; break
+      case 'Verify First': counts['verify-first']++; break
       case 'Get Numbers': counts['get-numbers']++; break
       case 'Nurture': counts['nurture']++; break
       case 'Not Workable': counts['not-workable']++; break
@@ -497,4 +760,12 @@ export function getBucketCounts(records: Array<{ priority: PriorityResult }>): {
   }
   
   return counts
+}
+
+// ============================================
+// UTILITY: Get workable records only
+// ============================================
+
+export function getWorkableRecords<T extends { priority: PriorityResult }>(records: T[]): T[] {
+  return records.filter(r => r.priority.nextAction !== 'Not Workable')
 }
