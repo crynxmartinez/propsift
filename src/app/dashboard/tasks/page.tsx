@@ -21,7 +21,9 @@ import {
   Edit,
   RefreshCw,
   AlertCircle,
-  X
+  X,
+  FileText,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -102,6 +104,7 @@ interface TaskTemplate {
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'NO_DUE_DATE'
 type GroupBy = 'dueDate' | 'priority' | 'assignee' | 'status'
+type MainTab = 'tasks' | 'templates'
 
 const PRIORITY_COLORS: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-800 border-red-200',
@@ -142,6 +145,9 @@ export default function TasksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [mainTab, setMainTab] = useState<MainTab>('tasks')
+  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null)
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [actionMenuTask, setActionMenuTask] = useState<string | null>(null)
   
@@ -239,6 +245,28 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error fetching users:', error)
+    }
+  }
+
+  // Delete template
+  const deleteTemplate = async (templateId: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/task-templates/${templateId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (response.ok) {
+        toast.success('Template deleted')
+        fetchTemplates()
+      } else {
+        toast.error('Failed to delete template')
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error)
+      toast.error('Failed to delete template')
     }
   }
 
@@ -440,6 +468,37 @@ export default function TasksPage() {
         <div className="flex items-center gap-3">
           <CheckSquare className="w-8 h-8 text-primary" />
           <h1 className="text-2xl font-bold">Tasks</h1>
+          {/* Main Tab Switcher */}
+          <div className="flex items-center gap-1 ml-4 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setMainTab('tasks')}
+              className={cn(
+                "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                mainTab === 'tasks'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Tasks
+            </button>
+            <button
+              onClick={() => setMainTab('templates')}
+              className={cn(
+                "px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+                mainTab === 'templates'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              Templates
+              {templates.length > 0 && (
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  {templates.length}
+                </Badge>
+              )}
+            </button>
+          </div>
         </div>
         
         {/* Create Task Dropdown */}
@@ -467,6 +526,154 @@ export default function TasksPage() {
         </DropdownMenu>
       </div>
 
+      {/* Templates Tab Content */}
+      {mainTab === 'templates' && (
+        <div>
+          {/* Templates Header */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-muted-foreground">
+              Create reusable task templates for common workflows
+            </p>
+            <Button onClick={() => {
+              setEditingTemplate(null)
+              setShowEditTemplateModal(true)
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Template
+            </Button>
+          </div>
+
+          {/* Templates List */}
+          {templates.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No templates yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first template to speed up task creation</p>
+              <Button onClick={() => {
+                setEditingTemplate(null)
+                setShowEditTemplateModal(true)
+              }}>
+                Create Template
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {templates.map(template => (
+                <Card key={template.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium">{template.name}</h3>
+                          {template.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {template.category}
+                            </Badge>
+                          )}
+                          <Badge className={cn("text-xs", PRIORITY_COLORS[template.priority])}>
+                            {template.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{template.title}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {template.dueDaysFromNow !== null 
+                              ? template.dueDaysFromNow === 0 
+                                ? 'Due same day' 
+                                : `Due in ${template.dueDaysFromNow} day${template.dueDaysFromNow !== 1 ? 's' : ''}`
+                              : 'No due date'}
+                          </span>
+                          {template.dueTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {template.dueTime}
+                            </span>
+                          )}
+                          {template.recurrence && template.recurrence !== 'NONE' && (
+                            <span className="flex items-center gap-1">
+                              <RefreshCw className="w-3 h-3" />
+                              {template.recurrence}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {template.assignmentType === 'ROUND_ROBIN' ? 'Round Robin' : 'Manual'}
+                          </span>
+                        </div>
+                        {template.description && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            {template.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingTask({
+                              id: '',
+                              title: template.title,
+                              description: template.description,
+                              dueDate: template.dueDaysFromNow !== null 
+                                ? new Date(Date.now() + template.dueDaysFromNow * 24 * 60 * 60 * 1000).toISOString()
+                                : null,
+                              dueTime: template.dueTime,
+                              recurrence: template.recurrence,
+                              recurrenceDays: template.recurrenceDays,
+                              skipWeekends: template.skipWeekends,
+                              status: 'PENDING',
+                              priority: template.priority,
+                              assignmentType: template.assignmentType,
+                              assignedToId: null,
+                              assignedTo: null,
+                              recordId: null,
+                              record: null,
+                              createdById: '',
+                              createdBy: { id: '', name: null, email: '' },
+                              completedAt: null,
+                              createdAt: '',
+                            } as Task)
+                            setShowCreateModal(true)
+                          }}
+                          title="Use template"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingTemplate(template)
+                            setShowEditTemplateModal(true)
+                          }}
+                          title="Edit template"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTemplate(template.id)}
+                          className="text-destructive hover:text-destructive"
+                          title="Delete template"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tasks Tab Content */}
+      {mainTab === 'tasks' && (
+        <>
       {/* Search and Filters */}
       <div className="flex items-center gap-4 mb-6">
         {/* Search */}
@@ -738,6 +945,8 @@ export default function TasksPage() {
           ))}
         </div>
       )}
+        </>
+      )}
 
       {/* Create/Edit Task Modal */}
       {showCreateModal && (
@@ -790,6 +999,22 @@ export default function TasksPage() {
               createdAt: '',
             } as Task)
             setShowCreateModal(true)
+          }}
+        />
+      )}
+
+      {/* Edit Template Modal */}
+      {showEditTemplateModal && (
+        <EditTemplateModal
+          template={editingTemplate}
+          onClose={() => {
+            setShowEditTemplateModal(false)
+            setEditingTemplate(null)
+          }}
+          onSave={() => {
+            setShowEditTemplateModal(false)
+            setEditingTemplate(null)
+            fetchTemplates()
           }}
         />
       )}
@@ -1436,6 +1661,269 @@ function TemplateSelectionModal({
             Cancel
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Edit Template Modal Component
+function EditTemplateModal({
+  template,
+  onClose,
+  onSave,
+}: {
+  template: TaskTemplate | null
+  onClose: () => void
+  onSave: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const isEditing = !!template?.id
+
+  // Form state
+  const [name, setName] = useState(template?.name || '')
+  const [title, setTitle] = useState(template?.title || '')
+  const [description, setDescription] = useState(template?.description || '')
+  const [category, setCategory] = useState(template?.category || '')
+  const [priority, setPriority] = useState(template?.priority || 'MEDIUM')
+  const [dueDaysFromNow, setDueDaysFromNow] = useState<number | ''>(template?.dueDaysFromNow ?? '')
+  const [dueTime, setDueTime] = useState(template?.dueTime || '')
+  const [recurrence, setRecurrence] = useState(template?.recurrence || 'NONE')
+  const [skipWeekends, setSkipWeekends] = useState(template?.skipWeekends || false)
+  const [assignmentType, setAssignmentType] = useState(template?.assignmentType || 'MANUAL')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !title.trim()) {
+      toast.error('Name and title are required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const url = isEditing ? `/api/task-templates/${template.id}` : '/api/task-templates'
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          title,
+          description: description || null,
+          category: category || null,
+          priority,
+          dueDaysFromNow: dueDaysFromNow !== '' ? dueDaysFromNow : null,
+          dueTime: dueTime || null,
+          recurrence: recurrence !== 'NONE' ? recurrence : null,
+          skipWeekends,
+          assignmentType,
+        }),
+      })
+
+      if (response.ok) {
+        toast.success(isEditing ? 'Template updated' : 'Template created')
+        onSave()
+      } else {
+        toast.error('Failed to save template')
+      }
+    } catch (error) {
+      console.error('Error saving template:', error)
+      toast.error('Failed to save template')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-card">
+          <h2 className="text-xl font-semibold">
+            {isEditing ? 'Edit Template' : 'Create Template'}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Template Name */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Template Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Follow Up Call"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">Internal name for this template</p>
+          </div>
+
+          {/* Task Title */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Task Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Call back lead"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">Title shown when task is created</p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional task description..."
+              rows={2}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+          </div>
+
+          {/* Category & Priority Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">No Category</option>
+                <option value="Call">Call</option>
+                <option value="Follow Up">Follow Up</option>
+                <option value="Mail">Mail</option>
+                <option value="SMS">SMS</option>
+                <option value="Offer">Offer</option>
+                <option value="Contract">Contract</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Due Days & Time Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Due Days From Now</label>
+              <input
+                type="number"
+                min="0"
+                value={dueDaysFromNow}
+                onChange={(e) => setDueDaysFromNow(e.target.value ? parseInt(e.target.value) : '')}
+                placeholder="e.g., 2"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground mt-1">0 = same day, 1 = tomorrow</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Due Time</label>
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          {/* Recurrence */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Recurrence</label>
+            <select
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="NONE">No Recurrence</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+          </div>
+
+          {/* Skip Weekends */}
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={skipWeekends}
+              onChange={(e) => setSkipWeekends(e.target.checked)}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm">Skip weekends when calculating due date</span>
+          </label>
+
+          {/* Assignment Type */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Assignment Type</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="assignmentType"
+                  value="MANUAL"
+                  checked={assignmentType === 'MANUAL'}
+                  onChange={(e) => setAssignmentType(e.target.value)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Manual</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="assignmentType"
+                  value="ROUND_ROBIN"
+                  checked={assignmentType === 'ROUND_ROBIN'}
+                  onChange={(e) => setAssignmentType(e.target.value)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Round Robin</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isEditing ? 'Update Template' : 'Create Template'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
