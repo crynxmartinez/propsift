@@ -88,7 +88,7 @@ export async function GET(
 async function triggerAutomationsForChanges(
   recordId: string,
   ownerId: string,
-  existingRecord: { statusId: string | null; temperature: string | null; assignedToId: string | null; recordTags: { tagId: string }[] },
+  existingRecord: { statusId: string | null; temperature: string | null; assignedToId: string | null; callResultId?: string | null; skiptraceDate?: Date | null; recordTags: { tagId: string }[] },
   updateData: Record<string, unknown>,
   addTagIds?: string[],
   removeTagIds?: string[]
@@ -107,6 +107,22 @@ async function triggerAutomationsForChanges(
       const automations = await findMatchingAutomations('temperature_changed', ownerId);
       for (const automation of automations) {
         await executeAutomation(automation.id, recordId, 'temperature_changed');
+      }
+    }
+
+    // Check for call result change trigger
+    if (updateData.callResultId !== undefined && updateData.callResultId !== existingRecord.callResultId) {
+      const automations = await findMatchingAutomations('call_result_changed', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'call_result_changed');
+      }
+    }
+
+    // Check for skiptrace completed trigger
+    if (updateData.skiptraceDate !== undefined && updateData.skiptraceDate && !existingRecord.skiptraceDate) {
+      const automations = await findMatchingAutomations('skiptrace_completed', ownerId);
+      for (const automation of automations) {
+        await executeAutomation(automation.id, recordId, 'skiptrace_completed');
       }
     }
 
