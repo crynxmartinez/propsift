@@ -1,8 +1,39 @@
 # DockInsight v2 — Implementation Plan
 
-## Overview
+## Vision
 
-DockInsight v2 is a complete rebuild of the analytics dashboard with **priority scoring**, **action queues**, and **explainable AI recommendations** to help users focus on the leads that matter most.
+**DockInsight is your Command Center.** It's not just analytics — it's the place where you look and instantly know **what to do next**.
+
+When a wholesaler opens DockInsight, they should:
+1. **See their next action immediately** — No thinking required
+2. **Understand why** — Explainable recommendations
+3. **Take action without leaving** — Call, task, update status
+4. **Trust the system** — Data-driven prioritization
+
+> "Open DockInsight. See who to call. Make the call. Close deals."
+
+---
+
+## Core Philosophy
+
+### Action-First, Not Data-First
+
+❌ **Old approach:** "Here's your data, figure out what to do"
+✅ **DockInsight approach:** "Here's what you should do, here's why"
+
+### The 5-Second Rule
+
+A user should know their next action within 5 seconds of opening DockInsight:
+- **Big, clear "Next Up" card** with the #1 priority lead
+- **One-click actions** — Call, Skip, Snooze
+- **Queue that auto-advances** — Finish one, next appears
+
+### Explainable Intelligence
+
+Every recommendation shows **why**:
+- "🔥 Hot lead + Probate + No contact in 7 days = Call Now"
+- "⏰ Task overdue: Follow up on 123 Main St"
+- "📞 Fresh skiptrace yesterday — best time to reach"
 
 ---
 
@@ -10,16 +41,17 @@ DockInsight v2 is a complete rebuild of the analytics dashboard with **priority 
 
 ### What We Have
 - **React 18** + **Next.js 14** (App Router)
-- **TailwindCSS** for styling
+- **TailwindCSS** + **shadcn/ui** (already installed)
 - **Prisma** + PostgreSQL database
 - **Recharts** for charts (already installed)
 - **Lucide React** for icons
 - **Left sidebar navigation** (existing)
 
-### What We Need to Add
-- **shadcn/ui** — Modern component library (Card, Badge, Button, Select, Tabs, Sheet, etc.)
-- **Framer Motion** — Animations
+### What We Need to Build
 - **Scoring Engine** — Priority calculation logic
+- **Action Queue System** — Smart lead ordering
+- **Quick Action Panel** — Take action without leaving
+- **Contact Tracking** — Last contact, engagement history
 
 ---
 
@@ -30,446 +62,410 @@ DockInsight v2 is a complete rebuild of the analytics dashboard with **priority 
 src/
 ├── app/
 │   ├── dashboard/
-│   │   └── page.tsx                    # Main DockInsight v2 page
+│   │   └── page.tsx                    # Main DockInsight page
 │   └── api/
 │       └── dockinsight/
-│           ├── overview/route.ts       # KPIs, charts, action cards
-│           ├── queue/route.ts          # Call queue with scoring
+│           ├── overview/route.ts       # KPIs and summary
+│           ├── next-up/route.ts        # Single next action
+│           ├── queue/route.ts          # Full action queue
 │           ├── tasks/route.ts          # Task queue
-│           └── record/[id]/route.ts    # Single record with score
+│           └── record/[id]/route.ts    # Record details + score
 ├── components/
-│   ├── ui/                             # shadcn/ui components
-│   │   ├── badge.tsx
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── input.tsx
-│   │   ├── scroll-area.tsx
-│   │   ├── select.tsx
-│   │   ├── separator.tsx
-│   │   ├── sheet.tsx
-│   │   └── tabs.tsx
 │   └── dockinsight/
-│       ├── DockInsightPage.tsx         # Main layout with tabs
-│       ├── KPICard.tsx                 # KPI display card
-│       ├── PlanCard.tsx                # Today's plan action card
-│       ├── QueueCard.tsx               # Call queue table
-│       ├── SmallQueueCard.tsx          # Compact queue (skiptrace, stale)
-│       ├── RecordDrawer.tsx            # Slide-out record details
-│       ├── GlobalFilters.tsx           # Filter bar
+│       ├── NextUpCard.tsx              # THE primary action card
+│       ├── ActionQueue.tsx             # Scrollable queue
+│       ├── QuickActions.tsx            # Call, Skip, Snooze, Task
+│       ├── ScoreExplainer.tsx          # Why this score?
+│       ├── TodaysPlan.tsx              # Action buckets
+│       ├── KPIRow.tsx                  # Key metrics
+│       ├── RecordDrawer.tsx            # Slide-out details
 │       └── charts/
 │           ├── TemperatureChart.tsx
-│           ├── RecordsOverTimeChart.tsx
-│           ├── TopTagsChart.tsx
-│           └── TopMotivationsChart.tsx
+│           ├── ActivityChart.tsx
+│           └── ConversionFunnel.tsx
 └── lib/
     └── scoring.ts                      # Priority scoring engine
 ```
 
 ---
 
-## Phase 1: Setup shadcn/ui
+## The Action System
 
-### Install Dependencies
-```bash
-npm install class-variance-authority clsx tailwind-merge
-npm install @radix-ui/react-dropdown-menu @radix-ui/react-select @radix-ui/react-tabs @radix-ui/react-dialog @radix-ui/react-scroll-area @radix-ui/react-separator
-npm install framer-motion
-```
+### 5 Action Buckets
 
-### Create Utility
-```typescript
-// src/lib/utils.ts
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+Every workable lead falls into exactly ONE bucket:
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-```
+| Bucket | Icon | Description | Trigger |
+|--------|------|-------------|---------|
+| **🔥 Call Now** | Phone | High priority, ready to dial | Score ≥70 + has valid phone |
+| **📋 Follow Up** | ClipboardCheck | Has task due today/overdue | Task due ≤ today |
+| **📞 Get Numbers** | Search | Needs phone data | No valid phone numbers |
+| **⏳ Nurture** | Clock | Keep warm, not urgent | Score <50, workable |
+| **🚫 Not Workable** | Ban | Can't/shouldn't contact | DNC, Dead, Under Contract |
 
-### Add shadcn/ui Components
-Create the following components in `src/components/ui/`:
-- `button.tsx`
-- `card.tsx`
-- `badge.tsx`
-- `input.tsx`
-- `select.tsx`
-- `tabs.tsx`
-- `dropdown-menu.tsx`
-- `sheet.tsx`
-- `scroll-area.tsx`
-- `separator.tsx`
+### Queue Priority Order
+
+Within each bucket, leads are sorted by:
+1. **Score** (highest first)
+2. **Last Contact** (longest ago first)
+3. **Temperature** (Hot > Warm > Cold)
+4. **Task urgency** (Overdue > Due Today > Due Soon)
 
 ---
 
-## Phase 2: Scoring Engine
+## Scoring Algorithm v2
 
 ### Priority Score (0-100)
 
-The scoring algorithm evaluates each record and produces:
-1. **Score** (0-100) — Overall priority
-2. **Next Action** — What to do with this lead
-3. **Confidence** — Data quality indicator
-4. **Reasons** — Explainable factors
+The score answers: **"How urgently should I contact this lead?"**
 
-### Scoring Factors
+### Base Score by Temperature
 
-| Factor | Points | Description |
-|--------|--------|-------------|
-| **Temperature** | +5 to +25 | Hot=25, Warm=15, Cold=5 |
-| **Motivations** | +5 to +10 each | Probate/Pre-Foreclosure=10, Divorce/Tax Lien=8, etc. |
-| **Overdue Task** | +20 | Has overdue task |
-| **Task Due Today** | +10 | Has task due today |
-| **Fresh Skiptrace** | +8 | Skiptraced within 2 days |
-| **Stale Lead** | +7 to +15 | No activity 7+ days (needs attention) |
-| **Never Contacted** | +15 | Never made contact |
-| **Recently Contacted** | -25 | Contacted <24h ago (cooldown) |
-| **High Call Attempts** | -4 to -24 | Fatigue penalty after 3+ calls |
-| **Landline Only** | -4 | Lower quality contact |
+| Temperature | Base Score | Rationale |
+|-------------|------------|-----------|
+| 🔥 Hot | 40 | Already interested |
+| 🌡️ Warm | 25 | Showing signs |
+| ❄️ Cold | 10 | Needs warming up |
 
-### Next Action Classification
+### Motivation Bonuses (Capped at +30)
 
-| Action | Condition |
-|--------|-----------|
-| **Call Now** | Score ≥70, has valid phone |
-| **Call Soon** | Score 50-69 |
-| **Follow Up Today** | Has task due/overdue |
-| **Needs Skiptrace** | No phone numbers |
-| **Fix Data** | Has phones but all invalid |
-| **Nurture** | Score <50 |
-| **Closed** | Dead/Under Contract/DNC |
+| Urgency | Motivations | Bonus |
+|---------|-------------|-------|
+| **🔴 Urgent** | Pre-Foreclosure, Tax Lien, Probate | +12 each |
+| **🟠 High** | Divorce, Tired Landlord, Code Violation | +8 each |
+| **🟡 Medium** | Vacant, Absentee, Inherited | +5 each |
+| **🟢 Low** | High Equity, MLS Expired | +3 each |
 
-### Confidence Level
+### Task Urgency Bonuses
 
-Data quality indicator based on completeness:
-- Has motivations (+25)
-- Has tags (+15)
-- Has mobile phone (+25) or landline (+10)
-- Has skiptrace date (+15)
-- Has activity data (+10)
-- Has owner name (+10)
+| Condition | Bonus | Rationale |
+|-----------|-------|-----------|
+| Task overdue | +25 | Urgent action needed |
+| Task due today | +15 | Time-sensitive |
+| Task due tomorrow | +5 | Plan ahead |
 
-**High** = 75+, **Medium** = 50-74, **Low** = <50
+### Contact Recency Modifiers
 
-### Implementation
+| Last Contact | Modifier | Rationale |
+|--------------|----------|-----------|
+| Never contacted | +20 | Fresh opportunity |
+| 7+ days ago | +15 | Time for follow-up |
+| 3-7 days ago | +5 | Reasonable gap |
+| 1-3 days ago | -10 | Recent, give space |
+| <24 hours ago | -30 | Cooldown period |
 
-```typescript
-// src/lib/scoring.ts
+### Engagement Bonuses
 
-export type NextAction = 
-  | 'Call Now' 
-  | 'Call Soon' 
-  | 'Follow Up Today' 
-  | 'Needs Skiptrace' 
-  | 'Fix Data' 
-  | 'Nurture' 
-  | 'Closed'
+| Condition | Bonus | Rationale |
+|-----------|-------|-----------|
+| Has engaged before (answered, responded) | +15 | Warm relationship |
+| Fresh skiptrace (<3 days) | +10 | Best time to reach |
+| Has mobile phone | +5 | Better contact rate |
 
-export type Confidence = 'High' | 'Medium' | 'Low'
+### Fatigue Penalties
 
-export interface PriorityResult {
-  score: number
-  nextAction: NextAction
-  confidence: Confidence
-  reasons: Array<{ label: string; delta: number }>
-  flags: {
-    hasValidPhone: boolean
-    hasDnc: boolean
-    activePipeline: boolean
-  }
-}
+| Call Attempts | Penalty | Rationale |
+|---------------|---------|-----------|
+| 3-4 attempts | -5 | Getting harder |
+| 5-6 attempts | -10 | Diminishing returns |
+| 7-9 attempts | -15 | Consider other channels |
+| 10+ attempts | -25 | Move to nurture |
 
-export function computePriority(record: RecordWithRelations): PriorityResult {
-  // Implementation...
-}
+### Exclusions (Score = 0, Hidden by Default)
+
+- Status: Dead, DNC, Under Contract, Sold
+- No valid contact method AND no address for mail
+
+### Score Calculation Example
+
+```
+Lead: 123 Main St
+- Temperature: Hot (+40)
+- Motivation: Pre-Foreclosure (+12)
+- Motivation: Tax Lien (+12) → capped, total +24
+- Last Contact: 8 days ago (+15)
+- Task: Overdue follow-up (+25)
+- Call Attempts: 2 (no penalty)
+- Has Mobile: Yes (+5)
+
+Total: 40 + 24 + 15 + 25 + 5 = 109 → Capped at 100
+Next Action: 🔥 Call Now
 ```
 
 ---
 
-## Phase 3: API Routes
-
-### GET /api/dockinsight/overview
-
-Returns dashboard data:
-```typescript
-{
-  kpis: {
-    totalRecords: number
-    hotLeads: number
-    callReady: number
-    tasksDue: number
-    unassignedHot: number
-  },
-  charts: {
-    temperature: { name: string, value: number }[]
-    recordsOverTime: { day: string, value: number }[]
-    topTags: { name: string, value: number }[]
-    topMotivations: { name: string, value: number }[]
-  },
-  actionCards: {
-    callNow: number
-    followUp: number
-    fixData: number
-    staleHot: number
-  }
-}
-```
-
-### GET /api/dockinsight/queue
-
-Returns prioritized records:
-```typescript
-{
-  callNow: RecordWithScore[]      // Top 50, score ≥70
-  callSoon: RecordWithScore[]     // Score 50-69
-  needsSkiptrace: RecordWithScore[]
-  fixData: RecordWithScore[]
-  staleHot: RecordWithScore[]     // Hot + 30+ days inactive
-}
-```
-
-### GET /api/dockinsight/tasks
-
-Returns task queue:
-```typescript
-{
-  overdue: TaskWithRecord[]
-  dueToday: TaskWithRecord[]
-  upcoming: TaskWithRecord[]
-}
-```
-
-### GET /api/dockinsight/record/[id]
-
-Returns single record with full scoring details:
-```typescript
-{
-  record: Record
-  priority: PriorityResult
-  phones: RecordPhoneNumber[]
-  emails: RecordEmail[]
-  tags: Tag[]
-  motivations: Motivation[]
-  recentActivity: RecordActivityLog[]
-}
-```
-
----
-
-## Phase 4: UI Components
-
-### Main Layout (DockInsightPage.tsx)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ [Search] [Date Range ▼] [Temp ▼] [Status ▼] [Assignee ▼]   │
-├─────────────────────────────────────────────────────────────┤
-│ [Overview] [Call Queue] [Tasks] [Pipeline] [Activity] [Team]│
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                   │
-│  │ KPI │ │ KPI │ │ KPI │ │ KPI │ │ KPI │  ← KPI Cards      │
-│  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘                   │
-│                                                             │
-│  ┌─────────────────────────────────────────┐               │
-│  │ Today's Plan                            │               │
-│  │ [Call Now: 25] [Follow Up: 12] [Fix: 8] │  ← Plan Cards │
-│  └─────────────────────────────────────────┘               │
-│                                                             │
-│  ┌─────────────────────────┐  ┌─────────────┐              │
-│  │ Call Now Queue          │  │ Temp Chart  │              │
-│  │ ┌─────────────────────┐ │  ├─────────────┤              │
-│  │ │ 85 │ 123 Main St    │ │  │ Over Time   │              │
-│  │ │ 78 │ 456 Oak Ave    │ │  ├─────────────┤              │
-│  │ │ 72 │ 789 Pine Rd    │ │  │ Top Tags    │  ← Charts    │
-│  │ └─────────────────────┘ │  ├─────────────┤              │
-│  └─────────────────────────┘  │ Motivations │              │
-│                               └─────────────┘              │
-│  ┌───────────────┐ ┌───────────────┐                       │
-│  │ Needs Skip    │ │ Stale Hot     │  ← Small Queues       │
-│  └───────────────┘ └───────────────┘                       │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Record Drawer (Sheet)
-
-Slides in from right when clicking a record:
-- Property address, owner name
-- Priority score (large number)
-- Next action badge
-- Confidence badge
-- Scoring reasons (explainable)
-- Phone numbers with call buttons
-- Tags & motivations
-- Quick actions: Create Task, Change Status, Assign
-- Recent activity preview
-
----
-
-## Phase 5: Database Changes (Optional)
-
-### Add Score to Record Model
-
-If we want to sort/filter by score in the database:
+## Schema Additions
 
 ```prisma
 model Record {
   // ... existing fields
   
-  // DockInsight v2: Priority scoring
-  priorityScore     Int?      // 0-100
-  nextAction        String?   // Call Now, Call Soon, etc.
-  confidence        String?   // High, Medium, Low
-  scoreUpdatedAt    DateTime?
+  // DockInsight v2: Contact Tracking
+  lastContactedAt    DateTime?  // When was last outreach?
+  lastContactType    String?    // CALL, SMS, MAIL, RVM, EMAIL
+  lastContactResult  String?    // ANSWERED, VOICEMAIL, NO_ANSWER, WRONG_NUMBER
+  hasEngaged         Boolean    @default(false)  // Ever had a conversation?
+  
+  // DockInsight v2: Computed (optional, for performance)
+  priorityScore      Int?       // 0-100, computed
+  nextAction         String?    // Call Now, Follow Up, etc.
+  scoreUpdatedAt     DateTime?
+  
+  @@index([lastContactedAt])
+  @@index([priorityScore])
 }
 ```
 
-**Alternative**: Compute score on-the-fly (simpler, always fresh, but slower for large datasets)
+---
 
-**Recommendation**: Start with on-the-fly, add database storage later if performance is an issue.
+## UI Design
+
+### Main Dashboard Layout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  DockInsight                              [My Queue ▼] [⚙️]     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  🔥 NEXT UP                                    Score: 94 │   │
+│  │                                                          │   │
+│  │  123 Main Street, Houston TX 77001                      │   │
+│  │  John Smith • Pre-Foreclosure • Hot                     │   │
+│  │                                                          │   │
+│  │  📞 (713) 555-1234  Mobile                    [CALL]    │   │
+│  │                                                          │   │
+│  │  Why: Hot lead + Pre-Foreclosure + No contact 8 days    │   │
+│  │                                                          │   │
+│  │  [📞 Call] [⏭️ Skip] [⏰ Snooze] [✅ Complete Task]      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐          │
+│  │ 🔥 Call  │ │ 📋 Follow│ │ 📞 Get   │ │ ⏳ Nurture│          │
+│  │   Now    │ │    Up    │ │  Numbers │ │          │          │
+│  │    47    │ │    12    │ │    89    │ │   234    │          │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘          │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Queue (47 leads)                          [Filter ▼]   │   │
+│  │  ┌─────┬────────────────────────────┬──────┬─────────┐  │   │
+│  │  │ 94  │ 123 Main St • John Smith   │ 🔥   │ [Call]  │  │   │
+│  │  │ 89  │ 456 Oak Ave • Jane Doe     │ 🔥   │ [Call]  │  │   │
+│  │  │ 85  │ 789 Pine Rd • Bob Wilson   │ 🌡️   │ [Call]  │  │   │
+│  │  │ 82  │ 321 Elm St • Mary Johnson  │ 🔥   │ [Call]  │  │   │
+│  │  │ ...                                              │  │   │
+│  │  └─────┴────────────────────────────┴──────┴─────────┘  │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─────────────────────┐  ┌─────────────────────────────────┐  │
+│  │ Today's Activity    │  │ Temperature Distribution        │  │
+│  │ • 12 calls made     │  │ [====🔥====][==🌡️==][=❄️=]      │  │
+│  │ • 3 contacts        │  │  Hot: 89  Warm: 156  Cold: 412  │  │
+│  │ • 1 appointment     │  │                                 │  │
+│  └─────────────────────┘  └─────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Quick Actions (Always Visible)
+
+| Action | What it does |
+|--------|--------------|
+| **📞 Call** | Opens dialer, logs attempt, starts timer |
+| **⏭️ Skip** | Move to next lead (logs skip reason) |
+| **⏰ Snooze** | Hide for X hours/days |
+| **✅ Complete** | Mark task done, move to next |
+| **🔥/🌡️/❄️** | Quick temperature change |
+| **📝 Note** | Add quick note |
+| **📋 Task** | Create follow-up task |
+
+### Record Drawer (Click any lead)
+
+Slides in from right with full details:
+- **Score breakdown** — See exactly why this score
+- **Contact history** — All calls, SMS, mail attempts
+- **Phone numbers** — With status (valid, wrong, disconnected)
+- **Owner info** — Name, mailing address
+- **Property details** — Address, beds, baths, value
+- **Tags & Motivations** — Visual badges
+- **Tasks** — Related tasks
+- **Activity log** — Recent changes
+
+---
+
+## API Routes
+
+### GET /api/dockinsight/next-up
+
+Returns the single highest priority lead:
+```typescript
+{
+  record: RecordWithDetails
+  score: number
+  nextAction: 'Call Now' | 'Follow Up' | ...
+  reasons: [
+    { label: 'Hot Lead', delta: +40 },
+    { label: 'Pre-Foreclosure', delta: +12 },
+    { label: 'No contact 8 days', delta: +15 },
+  ]
+  phones: PhoneNumber[]
+  pendingTask: Task | null
+}
+```
+
+### GET /api/dockinsight/queue?bucket=call-now&limit=50
+
+Returns prioritized queue:
+```typescript
+{
+  bucket: 'call-now' | 'follow-up' | 'get-numbers' | 'nurture'
+  total: number
+  records: Array<{
+    id: string
+    address: string
+    ownerName: string
+    temperature: string
+    score: number
+    nextAction: string
+    lastContactedAt: string | null
+    topReason: string
+  }>
+}
+```
+
+### GET /api/dockinsight/overview
+
+Returns dashboard summary:
+```typescript
+{
+  buckets: {
+    callNow: number
+    followUp: number
+    getNumbers: number
+    nurture: number
+  }
+  today: {
+    callsMade: number
+    contacts: number
+    appointments: number
+    tasksCompleted: number
+  }
+  temperature: {
+    hot: number
+    warm: number
+    cold: number
+  }
+  trends: {
+    recordsThisWeek: number
+    recordsLastWeek: number
+    contactRateThisWeek: number
+  }
+}
+```
+
+### POST /api/dockinsight/log-action
+
+Logs user action and advances queue:
+```typescript
+// Request
+{
+  recordId: string
+  action: 'call' | 'skip' | 'snooze' | 'complete'
+  result?: 'answered' | 'voicemail' | 'no_answer' | 'wrong_number'
+  notes?: string
+  snoozeDuration?: number // minutes
+}
+
+// Response
+{
+  success: true
+  nextUp: RecordWithScore // Next lead in queue
+}
+```
 
 ---
 
 ## Implementation Order
 
-### Week 1: Foundation
-1. ✅ Remove old DockInsight code
-2. [ ] Install shadcn/ui dependencies
-3. [ ] Create utility functions (`cn`, etc.)
-4. [ ] Add shadcn/ui components
-5. [ ] Create scoring engine (`src/lib/scoring.ts`)
+### Phase 1: Foundation (Week 1)
+1. [ ] Add schema fields (lastContactedAt, hasEngaged, etc.)
+2. [ ] Create scoring engine (`src/lib/scoring.ts`)
+3. [ ] Create `/api/dockinsight/next-up` route
+4. [ ] Create `/api/dockinsight/queue` route
 
-### Week 2: Backend
-6. [ ] Create `/api/dockinsight/overview` route
-7. [ ] Create `/api/dockinsight/queue` route
-8. [ ] Create `/api/dockinsight/tasks` route
-9. [ ] Create `/api/dockinsight/record/[id]` route
+### Phase 2: Core UI (Week 2)
+5. [ ] Build NextUpCard component
+6. [ ] Build ActionQueue component
+7. [ ] Build QuickActions component
+8. [ ] Build TodaysPlan buckets
 
-### Week 3: Frontend
-10. [ ] Create DockInsightPage layout with tabs
-11. [ ] Build KPI cards
-12. [ ] Build Today's Plan cards
-13. [ ] Build Call Queue table
-14. [ ] Build charts (reuse Recharts)
-15. [ ] Build Record Drawer
+### Phase 3: Details & Actions (Week 3)
+9. [ ] Build RecordDrawer with score breakdown
+10. [ ] Build ScoreExplainer component
+11. [ ] Create `/api/dockinsight/log-action` route
+12. [ ] Implement Skip/Snooze/Complete actions
 
-### Week 4: Polish
-16. [ ] Add animations (Framer Motion)
-17. [ ] Mobile responsiveness
-18. [ ] Performance optimization
-19. [ ] Testing & bug fixes
+### Phase 4: Polish (Week 4)
+13. [ ] Add keyboard shortcuts (N = next, C = call, S = skip)
+14. [ ] Add sound effects for actions (optional)
+15. [ ] Mobile responsiveness
+16. [ ] Performance optimization
+17. [ ] Testing & bug fixes
 
 ---
 
-## Data Flow
+## Keyboard Shortcuts
 
-```
-User opens /dashboard
-        │
-        ▼
-┌───────────────────┐
-│ Fetch /api/       │
-│ dockinsight/      │
-│ overview          │
-└───────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ Server fetches    │
-│ records from DB   │
-│ with relations    │
-└───────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ computePriority() │
-│ for each record   │
-└───────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ Aggregate into    │
-│ KPIs, charts,     │
-│ action cards      │
-└───────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ Return JSON       │
-│ to frontend       │
-└───────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ Render UI with    │
-│ shadcn/ui         │
-│ components        │
-└───────────────────┘
-```
-
----
-
-## Motivation Weights
-
-Used in scoring algorithm:
-
-| Motivation | Weight |
-|------------|--------|
-| Probate | +10 |
-| Pre-Foreclosure | +10 |
-| Divorce | +8 |
-| Tax Lien | +8 |
-| Tired Landlord | +6 |
-| Vacant | +6 |
-| Absentee | +5 |
-| Inherited | +5 |
-| Code Violation | +5 |
-| MLS Expired | +4 |
-| High Equity | +4 |
-
----
-
-## Questions to Decide
-
-1. **Compute score server-side or client-side?**
-   - Server: Faster queries, can sort by score
-   - Client: Simpler, always fresh
-   - **Recommendation**: Server-side for queue, client can re-compute for drawer
-
-2. **Store score in database?**
-   - Yes: Can sort/filter by score, faster queries
-   - No: Always fresh, no schema changes
-   - **Recommendation**: Start without, add later if needed
-
-3. **How often to recalculate?**
-   - On every page load (simplest)
-   - On record change (via webhook/trigger)
-   - Scheduled job (every hour)
-   - **Recommendation**: On page load initially
+| Key | Action |
+|-----|--------|
+| `C` | Call current lead |
+| `N` or `→` | Skip to next |
+| `S` | Snooze current lead |
+| `T` | Create task |
+| `1` | Mark as Hot |
+| `2` | Mark as Warm |
+| `3` | Mark as Cold |
+| `Enter` | Open record drawer |
+| `Esc` | Close drawer |
 
 ---
 
 ## Success Metrics
 
-After v2 launch, track:
-- Time to first call (should decrease)
-- Calls per day (should increase)
-- Contact rate (should increase)
-- User engagement with dashboard (time on page)
+### User Behavior
+- **Time to first action** — Should be <10 seconds
+- **Actions per session** — Should increase
+- **Queue completion rate** — % of daily queue worked
+
+### Business Outcomes
+- **Calls per day** — Should increase 2x
+- **Contact rate** — Should improve with better timing
+- **Deals closed** — Ultimate measure
 
 ---
 
-## Next Steps
+## Future Enhancements
 
-1. **Approve this plan**
-2. **Install shadcn/ui**
-3. **Build scoring engine**
-4. **Create API routes**
-5. **Build UI components**
-6. **Test & deploy**
+### v2.1: Smart Timing
+- Best time to call based on past answer rates
+- Timezone-aware scheduling
+- "Call Window" indicator
+
+### v2.2: Team Features
+- Team leaderboard
+- Round-robin queue distribution
+- Manager oversight view
+
+### v2.3: Integrations
+- Click-to-call with dialer
+- Auto-log from phone system
+- SMS templates
+
+### v2.4: AI Enhancements
+- Predict likelihood to answer
+- Suggest best contact method
+- Auto-categorize call outcomes
 
 ---
 
-*Last updated: January 8, 2026*
+*Last updated: January 9, 2026*
