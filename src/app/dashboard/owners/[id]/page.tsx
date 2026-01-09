@@ -622,7 +622,7 @@ export default function OwnerDetailsPage() {
                       min={1}
                       className="w-12 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
-                    <span className="text-sm text-gray-500">of 1</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">of 1</span>
                   </div>
                 </div>
               )}
@@ -659,7 +659,7 @@ export default function OwnerDetailsPage() {
                           </span>
                           <span className="text-gray-500 dark:text-gray-400">commented</span>
                         </div>
-                        <p className="text-sm text-gray-500 mb-2">{formatDate(comment.createdAt)}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{formatDate(comment.createdAt)}</p>
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                           <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
                         </div>
