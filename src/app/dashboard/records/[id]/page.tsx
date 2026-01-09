@@ -1804,7 +1804,12 @@ export default function PropertyDetailsPage() {
               ) : (
                 <User className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               )}
-              <span className="font-medium text-gray-900 dark:text-gray-100">{record.ownerFullName}</span>
+              <Link 
+                href={`/dashboard/owners/${record.id}`}
+                className="font-medium text-gray-900 dark:text-gray-100 hover:text-primary hover:underline transition-colors"
+              >
+                {record.ownerFullName}
+              </Link>
               <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">
                 {record.isCompany ? 'Company' : 'Person'}
               </span>
