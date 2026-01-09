@@ -216,6 +216,15 @@ model Record {
   tagCount           Int                 @default(0)
   motivationCount    Int                 @default(0)
   
+  // DockInsight v2: Contact Tracking
+  lastContactedAt    DateTime?           // When was last outreach?
+  lastContactType    String?             // CALL, SMS, MAIL, RVM, EMAIL
+  lastContactResult  String?             // ANSWERED, VOICEMAIL, NO_ANSWER, WRONG_NUMBER
+  hasEngaged         Boolean             @default(false)  // Ever had a conversation?
+  
+  // DockInsight v2: Snooze feature
+  snoozedUntil       DateTime?           // Hide from queue until this time
+  
   customFieldValues  CustomFieldValue[]
   notifications      Notification[]
   assignedTo         User?               @relation(fields: [assignedToId], references: [id])
@@ -236,6 +245,11 @@ model Record {
   @@index([createdById, temperature])
   @@index([createdById, statusId])
   @@index([createdById, assignedToId])
+  
+  // DockInsight v2: Contact tracking indexes
+  @@index([createdById, lastContactedAt])
+  @@index([createdById, hasEngaged])
+  @@index([snoozedUntil])
 }
 
 model RecordTag {
