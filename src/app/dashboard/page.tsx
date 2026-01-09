@@ -104,6 +104,13 @@ interface OverviewData {
   }
 }
 
+interface SessionStats {
+  callsMade: number
+  skipped: number
+  snoozed: number
+  completed: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -115,17 +122,27 @@ export default function DashboardPage() {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [drawerData, setDrawerData] = useState<NextUpData | null>(null)
   const [drawerLoading, setDrawerLoading] = useState(false)
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
+    callsMade: 0,
+    skipped: 0,
+    snoozed: 0,
+    completed: 0,
+  })
+  const [workedThisSession, setWorkedThisSession] = useState(0)
 
   const getToken = useCallback(() => {
     return localStorage.getItem('token')
   }, [])
 
-  const fetchNextUp = useCallback(async () => {
+  const fetchNextUp = useCallback(async (bucket?: string) => {
     const token = getToken()
     if (!token) return
 
     try {
-      const res = await fetch('/api/dockinsight/next-up', {
+      const url = bucket 
+        ? `/api/dockinsight/next-up?bucket=${bucket}`
+        : '/api/dockinsight/next-up'
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -174,7 +191,7 @@ export default function DashboardPage() {
   const fetchAll = useCallback(async () => {
     setIsRefreshing(true)
     await Promise.all([
-      fetchNextUp(),
+      fetchNextUp(activeBucket),
       fetchQueue(activeBucket),
       fetchOverview(),
     ])
@@ -194,7 +211,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchQueue(activeBucket)
-  }, [activeBucket, fetchQueue])
+    fetchNextUp(activeBucket)
+  }, [activeBucket, fetchQueue, fetchNextUp])
 
   const handleBucketClick = (bucket: string) => {
     setActiveBucket(bucket)
@@ -231,6 +249,8 @@ export default function DashboardPage() {
     // Log the call
     const success = await logAction(recordId, 'call', { result: 'no_answer' })
     if (success) {
+      setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
+      setWorkedThisSession(prev => prev + 1)
       toast.success('Call logged')
     }
   }
@@ -238,6 +258,8 @@ export default function DashboardPage() {
   const handleSkip = async (recordId: string) => {
     const success = await logAction(recordId, 'skip')
     if (success) {
+      setSessionStats(prev => ({ ...prev, skipped: prev.skipped + 1 }))
+      setWorkedThisSession(prev => prev + 1)
       toast.success('Skipped to next lead')
     }
   }
@@ -245,6 +267,8 @@ export default function DashboardPage() {
   const handleSnooze = async (recordId: string) => {
     const success = await logAction(recordId, 'snooze', { snoozeDuration: 60 })
     if (success) {
+      setSessionStats(prev => ({ ...prev, snoozed: prev.snoozed + 1 }))
+      setWorkedThisSession(prev => prev + 1)
       toast.success('Snoozed for 1 hour')
     }
   }
@@ -252,6 +276,7 @@ export default function DashboardPage() {
   const handleComplete = async (recordId: string, taskId: string) => {
     const success = await logAction(recordId, 'complete', { taskId })
     if (success) {
+      setSessionStats(prev => ({ ...prev, completed: prev.completed + 1 }))
       toast.success('Task completed')
     }
   }
@@ -274,53 +299,78 @@ export default function DashboardPage() {
     setSelectedRecordId(recordId)
     setDrawerLoading(true)
     
-    // For now, use the next-up data if it matches, otherwise fetch from queue
+    // If it's the next-up record, use that data
     if (nextUpData?.record?.id === recordId) {
       setDrawerData(nextUpData)
       setDrawerLoading(false)
-    } else {
-      // Find in queue data
-      const queueRecord = queueData?.records.find(r => r.id === recordId)
-      if (queueRecord) {
-        // Create a partial drawer data from queue record
+      return
+    }
+    
+    // Otherwise, fetch full record details from API
+    const token = getToken()
+    if (!token) {
+      setDrawerLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/dockinsight/record/${recordId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
         setDrawerData({
-          record: {
-            id: queueRecord.id,
-            ownerFullName: queueRecord.ownerFullName,
-            ownerFirstName: null,
-            ownerLastName: null,
-            propertyStreet: queueRecord.propertyStreet,
-            propertyCity: queueRecord.propertyCity,
-            propertyState: queueRecord.propertyState,
-            propertyZip: null,
-            temperature: queueRecord.temperature,
-            callAttempts: 0,
-            lastContactedAt: null,
-            hasEngaged: false,
-          },
-          score: queueRecord.score,
-          nextAction: queueRecord.nextAction,
-          confidence: 'Medium',
-          reasons: [{ label: queueRecord.topReason, delta: 0, category: 'data' }],
-          topReason: queueRecord.topReason,
-          flags: {
-            hasValidPhone: queueRecord.phoneCount > 0,
-            hasMobilePhone: queueRecord.hasMobile,
-            hasTask: false,
-            hasOverdueTask: queueRecord.hasOverdueTask,
-            isDnc: false,
-            isClosed: false,
-            isSnoozed: false,
-            neverContacted: false,
-          },
-          phones: [],
-          motivations: queueRecord.topMotivation ? [{ id: '1', name: queueRecord.topMotivation }] : [],
-          tags: [],
-          pendingTask: null,
-          queuePosition: queueRecord.queuePosition,
+          ...data,
+          queuePosition: queueData?.records.find(r => r.id === recordId)?.queuePosition || 1,
           totalInQueue: queueData?.total || 0,
         })
+      } else {
+        // Fallback to queue data if API fails
+        const queueRecord = queueData?.records.find(r => r.id === recordId)
+        if (queueRecord) {
+          setDrawerData({
+            record: {
+              id: queueRecord.id,
+              ownerFullName: queueRecord.ownerFullName,
+              ownerFirstName: null,
+              ownerLastName: null,
+              propertyStreet: queueRecord.propertyStreet,
+              propertyCity: queueRecord.propertyCity,
+              propertyState: queueRecord.propertyState,
+              propertyZip: null,
+              temperature: queueRecord.temperature,
+              callAttempts: 0,
+              lastContactedAt: null,
+              hasEngaged: false,
+            },
+            score: queueRecord.score,
+            nextAction: queueRecord.nextAction,
+            confidence: 'Medium',
+            reasons: [{ label: queueRecord.topReason, delta: 0, category: 'data' }],
+            topReason: queueRecord.topReason,
+            flags: {
+              hasValidPhone: queueRecord.phoneCount > 0,
+              hasMobilePhone: queueRecord.hasMobile,
+              hasTask: false,
+              hasOverdueTask: queueRecord.hasOverdueTask,
+              isDnc: false,
+              isClosed: false,
+              isSnoozed: false,
+              neverContacted: false,
+            },
+            phones: [],
+            motivations: queueRecord.topMotivation ? [{ id: '1', name: queueRecord.topMotivation }] : [],
+            tags: [],
+            pendingTask: null,
+            queuePosition: queueRecord.queuePosition,
+            totalInQueue: queueData?.total || 0,
+          })
+        }
       }
+    } catch (error) {
+      console.error('Error fetching record details:', error)
+    } finally {
       setDrawerLoading(false)
     }
   }
@@ -478,6 +528,8 @@ export default function DashboardPage() {
         onSnooze={handleSnooze}
         onComplete={handleComplete}
         onRecordClick={handleRecordClick}
+        activeBucket={activeBucket}
+        workedThisSession={workedThisSession}
       />
 
       {/* Today's Plan Buckets */}
@@ -513,6 +565,39 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="space-y-4">
+          {/* Session Stats */}
+          {workedThisSession > 0 && (
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">This Session</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Calls Made</span>
+                  <span className="font-bold text-green-700 dark:text-green-300">{sessionStats.callsMade}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Skipped</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.skipped}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Snoozed</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.snoozed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Tasks Done</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.completed}</span>
+                </div>
+                <div className="pt-2 border-t border-green-200 dark:border-green-800">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-green-700 dark:text-green-300">Total Worked</span>
+                    <span className="font-bold text-green-800 dark:text-green-200">{workedThisSession}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Today's Activity</CardTitle>
@@ -520,7 +605,7 @@ export default function DashboardPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Calls Made</span>
-                <span className="font-medium text-foreground">{overviewData?.today.callsMade || 0}</span>
+                <span className="font-medium text-foreground">{(overviewData?.today.callsMade || 0) + sessionStats.callsMade}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Contacts</span>
@@ -528,7 +613,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tasks Completed</span>
-                <span className="font-medium text-foreground">{overviewData?.today.tasksCompleted || 0}</span>
+                <span className="font-medium text-foreground">{(overviewData?.today.tasksCompleted || 0) + sessionStats.completed}</span>
               </div>
             </CardContent>
           </Card>

@@ -93,6 +93,8 @@ interface NextUpCardProps {
   onSnooze: (recordId: string) => void
   onComplete: (recordId: string, taskId: string) => void
   onRecordClick: (recordId: string) => void
+  activeBucket?: string
+  workedThisSession?: number
 }
 
 export function NextUpCard({ 
@@ -102,7 +104,9 @@ export function NextUpCard({
   onSkip, 
   onSnooze, 
   onComplete,
-  onRecordClick 
+  onRecordClick,
+  activeBucket,
+  workedThisSession = 0,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
@@ -167,6 +171,14 @@ export function NextUpCard({
     .filter(Boolean)
     .join(', ')
 
+  const bucketLabel = {
+    'call-now': 'Call Now',
+    'follow-up': 'Follow Up',
+    'get-numbers': 'Get Numbers',
+    'nurture': 'Nurture',
+    'not-workable': 'Not Workable',
+  }[activeBucket || 'call-now'] || 'Queue'
+
   return (
     <Card className="border-2 border-primary/30 bg-card shadow-lg">
       <CardHeader className="pb-3">
@@ -176,10 +188,21 @@ export function NextUpCard({
               🔥 NEXT UP
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {totalInQueue} in queue
+              {bucketLabel} • {totalInQueue} remaining
             </span>
+            {workedThisSession > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {workedThisSession} worked
+              </Badge>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {/* Progress indicator */}
+            <div className="text-right">
+              <div className="text-sm font-medium text-muted-foreground">
+                #{data.queuePosition} of {totalInQueue + workedThisSession}
+              </div>
+            </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-foreground">{score}</div>
               <div className="text-xs text-muted-foreground">Score</div>

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
-import { computePriority, sortByPriority, RecordWithRelations, PriorityResult } from '@/lib/scoring'
+import { computePriority, sortByPriority, filterByBucket, RecordWithRelations, PriorityResult, Bucket } from '@/lib/scoring'
 import { headers } from 'next/headers'
 
 // Type for record with included relations
@@ -57,7 +57,7 @@ interface RecordWithIncludes {
   } | null
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const headersList = headers()
     const authHeader = headersList.get('authorization')
@@ -75,8 +75,11 @@ export async function GET() {
 
     const ownerId = authUser.ownerId
 
+    // Get bucket filter from query params
+    const { searchParams } = new URL(request.url)
+    const bucket = searchParams.get('bucket') as Bucket | null
+
     // Fetch all workable records with relations
-    // Note: snoozedUntil filter will work after schema migration is applied
     const records = await prisma.record.findMany({
       where: {
         createdById: ownerId,
@@ -130,11 +133,28 @@ export async function GET() {
       return NextResponse.json({
         record: null,
         message: 'No workable records found',
+        bucket: bucket || 'all',
+        totalInQueue: 0,
+      })
+    }
+
+    // Filter by bucket if specified
+    let filteredRecords = workableRecords
+    if (bucket) {
+      filteredRecords = filterByBucket(workableRecords, bucket)
+    }
+
+    if (filteredRecords.length === 0) {
+      return NextResponse.json({
+        record: null,
+        message: `No records in ${bucket} bucket`,
+        bucket: bucket || 'all',
+        totalInQueue: 0,
       })
     }
 
     // Sort by priority and get the top one
-    const sorted = sortByPriority(workableRecords)
+    const sorted = sortByPriority(filteredRecords)
     const topRecord = sorted[0]
 
     // Get pending task for this record
@@ -194,7 +214,8 @@ export async function GET() {
         priority: pendingTask.priority,
       } : null,
       queuePosition: 1,
-      totalInQueue: workableRecords.filter(r => r.priority.nextAction === topRecord.priority.nextAction).length,
+      totalInQueue: filteredRecords.length,
+      bucket: bucket || 'all',
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
