@@ -1251,6 +1251,178 @@ export default function NodeConfigPanel({
           </p>
         )
 
+      case 'update_call_result':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Set Call Result To <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={(config.callResultId as string) || ''}
+                onChange={(e) => updateConfig('callResultId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select call result...</option>
+                {callResults.map((cr) => (
+                  <option key={cr.id} value={cr.id}>{cr.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'increment_call_attempts':
+        return (
+          <p className="text-sm text-gray-500">
+            This action will add 1 to the record&apos;s call attempts count. No additional configuration needed.
+          </p>
+        )
+
+      case 'snooze_record':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Snooze Duration <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={(config.snoozeDays as number) || 1}
+                  onChange={(e) => updateConfig('snoozeDays', parseInt(e.target.value) || 1)}
+                  min={1}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <span className="px-3 py-2 text-gray-600">days</span>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'unsnooze_record':
+        return (
+          <p className="text-sm text-gray-500">
+            This action will remove the snooze from the record. No additional configuration needed.
+          </p>
+        )
+
+      case 'mark_phone_bad':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mark As <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={(config.phoneStatus as string) || 'WRONG'}
+                onChange={(e) => updateConfig('phoneStatus', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="WRONG">Wrong Number</option>
+                <option value="DNC">Do Not Call (DNC)</option>
+                <option value="DEAD">Dead/Disconnected</option>
+              </select>
+            </div>
+            <p className="text-xs text-gray-500">
+              This will mark the most recently called phone number with this status.
+            </p>
+          </div>
+        )
+
+      case 'mark_phone_good':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mark As <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={(config.phoneStatus as string) || 'CORRECT'}
+                onChange={(e) => updateConfig('phoneStatus', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="CORRECT">Correct</option>
+                <option value="PRIMARY">Primary</option>
+              </select>
+            </div>
+            <p className="text-xs text-gray-500">
+              This will mark the most recently called phone number with this status.
+            </p>
+          </div>
+        )
+
+      case 'remove_from_board':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Board <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={(config.boardId as string) || ''}
+                onChange={(e) => updateConfig('boardId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select board...</option>
+                <option value="all">All Boards</option>
+                {boards.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'create_task_from_template':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Task Template <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={(config.templateId as string) || ''}
+                onChange={(e) => updateConfig('templateId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select template...</option>
+                {taskTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign To
+              </label>
+              <select
+                value={(config.assignedToId as string) || ''}
+                onChange={(e) => updateConfig('assignedToId', e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Use template default</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'delete_pending_tasks':
+        return (
+          <p className="text-sm text-gray-500">
+            This action will delete all pending (not completed) tasks associated with this record. No additional configuration needed.
+          </p>
+        )
+
       default:
         return (
           <p className="text-sm text-gray-500">

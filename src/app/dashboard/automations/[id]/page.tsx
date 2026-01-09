@@ -187,10 +187,24 @@ const actionCategories = [
     items: [
       { type: 'update_status', label: 'Update Status', description: 'Change record status' },
       { type: 'update_temperature', label: 'Update Temperature', description: 'Change temperature' },
+      { type: 'update_call_result', label: 'Update Call Result', description: 'Set call result on record' },
+      { type: 'increment_call_attempts', label: 'Increment Call Attempts', description: 'Add 1 to call attempts' },
       { type: 'add_tag', label: 'Add Tag', description: 'Add a tag to record' },
       { type: 'remove_tag', label: 'Remove Tag', description: 'Remove a tag' },
+      { type: 'add_motivation', label: 'Add Motivation', description: 'Add motivation to record' },
+      { type: 'remove_motivation', label: 'Remove Motivation', description: 'Remove motivation' },
       { type: 'assign_user', label: 'Assign to User', description: 'Assign record to user' },
       { type: 'mark_complete', label: 'Mark Complete', description: 'Set record as complete' },
+      { type: 'snooze_record', label: 'Snooze Record', description: 'Snooze for X days' },
+      { type: 'unsnooze_record', label: 'Unsnooze Record', description: 'Remove snooze' },
+    ]
+  },
+  {
+    name: 'Phone',
+    icon: Phone,
+    items: [
+      { type: 'mark_phone_bad', label: 'Mark Phone Bad', description: 'Mark phone as wrong/DNC/dead' },
+      { type: 'mark_phone_good', label: 'Mark Phone Good', description: 'Mark phone as correct/primary' },
     ]
   },
   {
@@ -199,6 +213,7 @@ const actionCategories = [
     items: [
       { type: 'add_to_board', label: 'Add to Board', description: 'Add record to board column' },
       { type: 'move_to_column', label: 'Move to Column', description: 'Move to different column' },
+      { type: 'remove_from_board', label: 'Remove from Board', description: 'Remove record from board' },
     ]
   },
   {
@@ -206,7 +221,9 @@ const actionCategories = [
     icon: CheckSquare,
     items: [
       { type: 'create_task', label: 'Create Task', description: 'Create a new task' },
+      { type: 'create_task_from_template', label: 'Create from Template', description: 'Create task from template' },
       { type: 'complete_task', label: 'Complete Task', description: 'Mark task complete' },
+      { type: 'delete_pending_tasks', label: 'Delete Pending Tasks', description: 'Delete all pending tasks' },
     ]
   },
   {
