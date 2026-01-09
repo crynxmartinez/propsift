@@ -110,6 +110,12 @@ interface SessionStats {
   completed: number
 }
 
+interface CallResultOption {
+  id: string
+  name: string
+  color: string
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -131,7 +137,8 @@ export default function DashboardPage() {
   
   // Post-call state: tracks when we just made a call and should show NEXT button
   const [calledRecordId, setCalledRecordId] = useState<string | null>(null)
-  const [callResult, setCallResult] = useState<string>('no_answer')
+  const [callResultId, setCallResultId] = useState<string | null>(null)
+  const [callResultOptions, setCallResultOptions] = useState<CallResultOption[]>([])
 
   const getToken = useCallback(() => {
     return localStorage.getItem('token')
@@ -201,6 +208,23 @@ export default function DashboardPage() {
     setIsRefreshing(false)
   }, [fetchNextUp, fetchQueue, fetchOverview, activeBucket])
 
+  const fetchCallResults = useCallback(async () => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch('/api/call-results', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCallResultOptions(data.filter((cr: CallResultOption & { isActive: boolean }) => cr.isActive))
+      }
+    } catch (error) {
+      console.error('Error fetching call results:', error)
+    }
+  }, [getToken])
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -209,8 +233,8 @@ export default function DashboardPage() {
     }
     
     setLoading(true)
-    fetchAll().finally(() => setLoading(false))
-  }, [router, fetchAll])
+    Promise.all([fetchAll(), fetchCallResults()]).finally(() => setLoading(false))
+  }, [router, fetchAll, fetchCallResults])
 
   useEffect(() => {
     fetchQueue(activeBucket)
@@ -267,7 +291,7 @@ export default function DashboardPage() {
         setWorkedThisSession(prev => prev + 1)
         // Set called state to show post-call panel with NEXT button
         setCalledRecordId(recordId)
-        setCallResult('no_answer')
+        setCallResultId(null)
         toast.success('Call logged - update result and click NEXT when ready')
       }
     } catch (error) {
@@ -277,41 +301,35 @@ export default function DashboardPage() {
   
   // Handle moving to next record after post-call actions
   const handleNext = async () => {
-    if (calledRecordId) {
-      // Update the call result if changed from default
-      if (callResult !== 'no_answer') {
-        const token = getToken()
-        if (token) {
-          try {
-            await fetch('/api/dockinsight/log-action', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ 
-                recordId: calledRecordId, 
-                action: 'update_call_result', 
-                result: callResult 
-              }),
-            })
-          } catch (error) {
-            console.error('Error updating call result:', error)
-          }
+    if (calledRecordId && callResultId) {
+      // Update the record's callResultId
+      const token = getToken()
+      if (token) {
+        try {
+          await fetch(`/api/records/${calledRecordId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ callResultId }),
+          })
+        } catch (error) {
+          console.error('Error updating call result:', error)
         }
       }
     }
     
     // Clear called state and fetch next record
     setCalledRecordId(null)
-    setCallResult('no_answer')
+    setCallResultId(null)
     await fetchAll()
     toast.success('Moving to next lead')
   }
   
   // Handle updating call result (for post-call panel)
-  const handleCallResultChange = (result: string) => {
-    setCallResult(result)
+  const handleCallResultChange = (resultId: string) => {
+    setCallResultId(resultId)
   }
 
   const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
@@ -594,7 +612,8 @@ export default function DashboardPage() {
         activeBucket={activeBucket}
         workedThisSession={workedThisSession}
         calledRecordId={calledRecordId}
-        callResult={callResult}
+        callResultId={callResultId}
+        callResultOptions={callResultOptions}
         onCallResultChange={handleCallResultChange}
         onNext={handleNext}
       />

@@ -117,6 +117,12 @@ export interface NextUpData {
   contactLogs?: ContactLog[]
 }
 
+interface CallResultOption {
+  id: string
+  name: string
+  color: string
+}
+
 interface NextUpCardProps {
   data: NextUpData | null
   isLoading: boolean
@@ -130,8 +136,9 @@ interface NextUpCardProps {
   workedThisSession?: number
   // Post-call panel props
   calledRecordId?: string | null
-  callResult?: string
-  onCallResultChange?: (result: string) => void
+  callResultId?: string | null
+  callResultOptions?: CallResultOption[]
+  onCallResultChange?: (resultId: string) => void
   onNext?: () => void
 }
 
@@ -147,7 +154,8 @@ export function NextUpCard({
   activeBucket,
   workedThisSession = 0,
   calledRecordId,
-  callResult = 'no_answer',
+  callResultId,
+  callResultOptions = [],
   onCallResultChange,
   onNext,
 }: NextUpCardProps) {
@@ -787,25 +795,19 @@ export function NextUpCard({
               <span className="text-sm font-medium text-green-700 dark:text-green-400">Call Made - Select Result:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'answered', label: 'Answered', color: 'bg-green-600' },
-                { value: 'voicemail', label: 'Voicemail', color: 'bg-yellow-600' },
-                { value: 'no_answer', label: 'No Answer', color: 'bg-gray-600' },
-                { value: 'busy', label: 'Busy', color: 'bg-orange-600' },
-                { value: 'wrong_number', label: 'Wrong #', color: 'bg-red-600' },
-                { value: 'disconnected', label: 'Disconnected', color: 'bg-red-800' },
-              ].map((option) => (
+              {callResultOptions.map((option) => (
                 <button
-                  key={option.value}
-                  onClick={() => onCallResultChange?.(option.value)}
+                  key={option.id}
+                  onClick={() => onCallResultChange?.(option.id)}
                   className={cn(
                     "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
-                    callResult === option.value
-                      ? `${option.color} text-white`
+                    callResultId === option.id
+                      ? "text-white"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
                   )}
+                  style={callResultId === option.id ? { backgroundColor: option.color } : {}}
                 >
-                  {option.label}
+                  {option.name}
                 </button>
               ))}
             </div>
