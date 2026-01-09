@@ -241,14 +241,40 @@ export default function DashboardPage() {
     return false
   }
 
-  const handleCall = async (recordId: string, phoneNumber: string) => {
+  const handleCall = async (recordId: string, phoneNumber: string, phoneId?: string) => {
     window.open(`tel:${phoneNumber}`, '_self')
     
-    const success = await logAction(recordId, 'call', { result: 'no_answer' })
+    const success = await logAction(recordId, 'call', { result: 'no_answer', phoneId })
     if (success) {
       setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
       setWorkedThisSession(prev => prev + 1)
       toast.success('Call logged')
+    }
+  }
+
+  const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch(`/api/records/${recordId}/phones/${phoneId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          statuses: [status] 
+        }),
+      })
+      
+      if (res.ok) {
+        toast.success(`Phone marked as ${status}`)
+        await fetchAll()
+      }
+    } catch (error) {
+      console.error('Error updating phone status:', error)
+      toast.error('Failed to update phone status')
     }
   }
 
@@ -503,6 +529,7 @@ export default function DashboardPage() {
         onSnooze={handleSnooze}
         onComplete={handleComplete}
         onRecordClick={handleRecordClick}
+        onPhoneStatus={handlePhoneStatus}
         activeBucket={activeBucket}
         workedThisSession={workedThisSession}
       />

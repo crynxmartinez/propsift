@@ -19,7 +19,16 @@ import {
   ChevronDown,
   ChevronUp,
   Lightbulb,
-  Zap
+  Zap,
+  PhoneCall,
+  PhoneOff,
+  PhoneMissed,
+  MessageSquare,
+  History,
+  ExternalLink,
+  XCircle,
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -69,6 +78,14 @@ interface PendingTask {
   priority: string
 }
 
+interface ContactLog {
+  id: string
+  type: string
+  result: string
+  notes?: string
+  createdAt: string
+}
+
 export interface NextUpData {
   record: NextUpRecord | null
   score: number
@@ -97,16 +114,18 @@ export interface NextUpData {
   queuePosition: number
   totalInQueue: number
   message?: string
+  contactLogs?: ContactLog[]
 }
 
 interface NextUpCardProps {
   data: NextUpData | null
   isLoading: boolean
-  onCall: (recordId: string, phoneNumber: string) => void
+  onCall: (recordId: string, phoneNumber: string, phoneId: string) => void
   onSkip: (recordId: string) => void
   onSnooze: (recordId: string) => void
   onComplete: (recordId: string, taskId: string) => void
   onRecordClick: (recordId: string) => void
+  onPhoneStatus: (recordId: string, phoneId: string, status: string) => void
   activeBucket?: string
   workedThisSession?: number
 }
@@ -119,12 +138,16 @@ export function NextUpCard({
   onSnooze, 
   onComplete,
   onRecordClick,
+  onPhoneStatus,
   activeBucket,
   workedThisSession = 0,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reasonsExpanded, setReasonsExpanded] = useState(false)
   const [suggestionsExpanded, setSuggestionsExpanded] = useState(false)
+  const [phonesExpanded, setPhonesExpanded] = useState(false)
+  const [historyExpanded, setHistoryExpanded] = useState(false)
+  const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -299,35 +322,164 @@ export function NextUpCard({
           </div>
         </div>
 
-        {/* Phone Number */}
-        {primaryPhone && (
-          <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <div className="font-medium text-foreground">
-                  {formatPhoneNumber(primaryPhone.number)}
+        {/* Phone Numbers - Collapsible */}
+        {phones.length > 0 && (
+          <div className="bg-muted/50 rounded-lg overflow-hidden">
+            {/* Primary Phone Header */}
+            <div className="flex items-center justify-between p-3">
+              <button
+                className="flex items-center gap-3 flex-1 text-left"
+                onClick={() => setPhonesExpanded(!phonesExpanded)}
+              >
+                <Phone className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <div className="font-medium text-foreground">
+                    {formatPhoneNumber(primaryPhone?.number || phones[0].number)}
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    {primaryPhone?.type || phones[0].type || 'Phone'}
+                    {phones.length > 1 && (
+                      <span className="text-primary">
+                        • {phones.length} numbers {phonesExpanded ? '▲' : '▼'}
+                      </span>
+                    )}
+                    {(primaryPhone?.statuses || phones[0].statuses)?.length > 0 && (
+                      <span className="ml-1">
+                        {(primaryPhone?.statuses || phones[0].statuses).map((s, i) => (
+                          <Badge key={i} variant="outline" className="text-[10px] px-1 py-0 ml-1">
+                            {s}
+                          </Badge>
+                        ))}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {primaryPhone.type || 'Phone'}
-                  {phones.length > 1 && ` • +${phones.length - 1} more`}
-                </div>
+              </button>
+              <div className="flex items-center gap-1">
+                {/* Status buttons for primary phone */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'verified')}
+                  title="Mark Verified"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'wrong')}
+                  title="Mark Wrong Number"
+                >
+                  <XCircle className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30"
+                  onClick={() => onPhoneStatus(record.id, primaryPhone?.id || phones[0].id, 'no_answer')}
+                  title="No Answer"
+                >
+                  <PhoneMissed className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-green-600 hover:bg-green-700 text-white ml-2"
+                  onClick={() => handleAction('call', () => onCall(record.id, primaryPhone?.number || phones[0].number, primaryPhone?.id || phones[0].id))}
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading === 'call' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'CALL'
+                  )}
+                </Button>
               </div>
             </div>
-            <Button 
-              size="sm" 
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleAction('call', () => onCall(record.id, primaryPhone.number))}
-              disabled={actionLoading !== null}
-            >
-              {actionLoading === 'call' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                'CALL'
-              )}
-            </Button>
+            
+            {/* Expanded Phone List */}
+            {phonesExpanded && phones.length > 1 && (
+              <div className="border-t border-border/50">
+                {phones.slice(1).map((phone) => (
+                  <div key={phone.id} className="flex items-center justify-between p-3 border-b border-border/30 last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium text-sm text-foreground">
+                          {formatPhoneNumber(phone.number)}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          {phone.type || 'Phone'}
+                          {phone.statuses?.length > 0 && (
+                            <span className="ml-1">
+                              {phone.statuses.map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px] px-1 py-0 ml-1">
+                                  {s}
+                                </Badge>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'verified')}
+                        title="Mark Verified"
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'wrong')}
+                        title="Mark Wrong Number"
+                      >
+                        <XCircle className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30"
+                        onClick={() => onPhoneStatus(record.id, phone.id, 'no_answer')}
+                        title="No Answer"
+                      >
+                        <PhoneMissed className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="text-green-600 border-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 ml-1"
+                        onClick={() => handleAction(`call-${phone.id}`, () => onCall(record.id, phone.number, phone.id))}
+                        disabled={actionLoading !== null}
+                      >
+                        {actionLoading === `call-${phone.id}` ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Phone className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
+        
+        {/* Call Attempts Counter */}
+        <div className="flex items-center justify-between text-sm px-1">
+          <span className="text-muted-foreground">Call Attempts</span>
+          <Badge variant="secondary" className="text-xs">
+            {record.callAttempts} attempts
+          </Badge>
+        </div>
 
         {/* Why this lead - Expandable */}
         <div className="bg-muted/30 rounded-lg overflow-hidden">
@@ -434,6 +586,68 @@ export function NextUpCard({
           </div>
         )}
 
+        {/* Contact History - Collapsible */}
+        <div className="bg-muted/30 rounded-lg overflow-hidden">
+          <button
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors"
+            onClick={() => setHistoryExpanded(!historyExpanded)}
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Contact History</span>
+              {record.lastContactedAt && (
+                <span className="text-xs text-muted-foreground">
+                  • Last: {new Date(record.lastContactedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            {historyExpanded ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+          {historyExpanded && (
+            <div className="px-3 pb-3 pt-0 space-y-2">
+              {data.contactLogs && data.contactLogs.length > 0 ? (
+                data.contactLogs.slice(0, 5).map((log) => (
+                  <div key={log.id} className="flex items-center justify-between text-sm border-l-2 border-muted pl-2">
+                    <div className="flex items-center gap-2">
+                      {log.type === 'call' && <PhoneCall className="w-3 h-3 text-green-600" />}
+                      {log.type === 'sms' && <MessageSquare className="w-3 h-3 text-blue-600" />}
+                      {!['call', 'sms'].includes(log.type) && <History className="w-3 h-3 text-muted-foreground" />}
+                      <span className="text-muted-foreground capitalize">{log.type}</span>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        {log.result}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  {record.callAttempts > 0 ? (
+                    <span>{record.callAttempts} call attempts recorded</span>
+                  ) : (
+                    <span>No contact history yet</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* View Full Record Link */}
+        <a 
+          href={`/dashboard/records/${record.id}`}
+          className="flex items-center justify-center gap-2 text-sm text-primary hover:underline py-2"
+        >
+          <ExternalLink className="w-4 h-4" />
+          View Full Record
+        </a>
+
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
           <Button 
@@ -477,7 +691,7 @@ export function NextUpCard({
           {primaryPhone && (
             <Button 
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleAction('call', () => onCall(record.id, primaryPhone.number))}
+              onClick={() => handleAction('call', () => onCall(record.id, primaryPhone.number, primaryPhone.id))}
               disabled={actionLoading !== null}
             >
               {actionLoading === 'call' ? (
