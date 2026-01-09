@@ -138,24 +138,19 @@ export async function GET(request: Request) {
       })
     }
 
-    // Filter by bucket if specified
+    // Filter by bucket if specified - DO NOT fall back to other buckets
     let filteredRecords = workableRecords
     let actualBucket = bucket || 'all'
     
     if (bucket) {
       filteredRecords = filterByBucket(workableRecords, bucket)
-      
-      // If no records in requested bucket, fall back to showing top from all workable
-      if (filteredRecords.length === 0) {
-        filteredRecords = workableRecords
-        actualBucket = 'all'
-      }
+      // Do NOT fall back - if bucket is empty, show empty state
     }
 
     if (filteredRecords.length === 0) {
       return NextResponse.json({
         record: null,
-        message: 'No workable records found',
+        message: bucket ? `No records in ${bucket} queue` : 'No workable records found',
         bucket: actualBucket,
         totalInQueue: 0,
       })
