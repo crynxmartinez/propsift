@@ -1,0 +1,32 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Logo -->
+  <rect x="100" y="240" width="80" height="80" rx="15" fill="url(#logoGrad)"/>
+  <text x="140" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="45" font-weight="700" fill="white" text-anchor="middle">P</text>
+  
+  <!-- Brand Name -->
+  <text x="200" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="#111827">PropSift</text>
+  
+  <!-- Tagline -->
+  <text x="100" y="380" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="#4b5563">CRM for Real Estate Wholesalers</text>
+  
+  <!-- Features -->
+  <text x="100" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#6b7280">Lead Management • Analytics • Automations • Team Collaboration</text>
+  
+  <!-- CTA -->
+  <rect x="100" y="500" width="280" height="56" rx="8" fill="#2563eb"/>
+  <text x="240" y="537" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white" text-anchor="middle">Start Free Trial →</text>
+</svg>

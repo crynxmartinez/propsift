@@ -30,8 +30,12 @@ import {
 } from 'lucide-react'
 
 export const metadata = {
-  title: 'Features - PropSift',
-  description: 'Explore all the powerful features PropSift offers for real estate wholesalers.',
+  title: 'Features',
+  description: 'Explore PropSift\'s powerful features: lead management, DockInsight analytics, Kanban boards, workflow automations, and team collaboration for real estate wholesalers.',
+  openGraph: {
+    title: 'Features | PropSift',
+    description: 'Explore PropSift\'s powerful features: lead management, DockInsight analytics, Kanban boards, workflow automations, and team collaboration.',
+  },
 }
 
 export default function FeaturesPage() {

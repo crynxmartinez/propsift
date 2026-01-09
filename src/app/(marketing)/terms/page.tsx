@@ -1,8 +1,12 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Terms of Service - PropSift',
-  description: 'PropSift Terms of Service - The rules and guidelines for using our platform.',
+  title: 'Terms of Service',
+  description: 'PropSift terms of service. Read our user agreement and service terms.',
+  openGraph: {
+    title: 'Terms of Service | PropSift',
+    description: 'PropSift terms of service. Read our user agreement and service terms.',
+  },
 }
 
 export default function TermsPage() {

@@ -10,8 +10,12 @@ import {
 } from 'lucide-react'
 
 export const metadata = {
-  title: 'About - PropSift',
-  description: 'Learn about PropSift and our mission to help real estate wholesalers close more deals.',
+  title: 'About',
+  description: 'Built by wholesalers, for wholesalers. Learn about PropSift\'s mission to help real estate investors organize leads and close more deals.',
+  openGraph: {
+    title: 'About | PropSift',
+    description: 'Built by wholesalers, for wholesalers. Learn about PropSift\'s mission to help real estate investors close more deals.',
+  },
 }
 
 export default function AboutPage() {

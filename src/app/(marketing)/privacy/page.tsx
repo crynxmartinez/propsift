@@ -1,8 +1,12 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Privacy Policy - PropSift',
-  description: 'PropSift Privacy Policy - How we collect, use, and protect your data.',
+  title: 'Privacy Policy',
+  description: 'PropSift privacy policy. Learn how we collect, use, and protect your personal information.',
+  openGraph: {
+    title: 'Privacy Policy | PropSift',
+    description: 'PropSift privacy policy. Learn how we collect, use, and protect your personal information.',
+  },
 }
 
 export default function PrivacyPage() {
