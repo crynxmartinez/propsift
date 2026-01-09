@@ -25,12 +25,13 @@ interface NextUpData {
   } | null
   score: number
   nextAction: string
-  confidence: string
+  confidence: 'High' | 'Medium' | 'Low'
   reasons: Array<{ label: string; delta: number; category: string }>
   topReason: string
   flags: {
     hasValidPhone: boolean
     hasMobilePhone: boolean
+    hasCallablePhone: boolean
     hasTask: boolean
     hasOverdueTask: boolean
     isDnc: boolean
@@ -44,6 +45,7 @@ interface NextUpData {
   pendingTask: { id: string; title: string; dueDate: string | null; status: string; priority: string } | null
   queuePosition: number
   totalInQueue: number
+  suggestions?: Array<{ action: string; delta: number }>
   message?: string
 }
 
@@ -352,6 +354,7 @@ export default function DashboardPage() {
             flags: {
               hasValidPhone: queueRecord.phoneCount > 0,
               hasMobilePhone: queueRecord.hasMobile,
+              hasCallablePhone: queueRecord.phoneCount > 0,
               hasTask: false,
               hasOverdueTask: queueRecord.hasOverdueTask,
               isDnc: false,
@@ -536,10 +539,11 @@ export default function DashboardPage() {
       <TodaysPlan
         buckets={{
           callNow: bucketCounts.callNow,
-          followUp: bucketCounts.followUp,
+          followUpToday: bucketCounts.followUp || 0,
+          callQueue: 0,
+          verifyFirst: 0,
           getNumbers: bucketCounts.getNumbers,
           nurture: bucketCounts.nurture,
-          notWorkable: bucketCounts.notWorkable,
         }}
         activeBucket={activeBucket}
         onBucketClick={handleBucketClick}

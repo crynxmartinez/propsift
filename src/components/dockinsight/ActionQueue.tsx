@@ -68,8 +68,10 @@ export function ActionQueue({
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400'
-    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400'
+    if (score >= 110) return 'text-amber-500 dark:text-amber-400'
+    if (score >= 90) return 'text-orange-500 dark:text-orange-400'
+    if (score >= 70) return 'text-green-600 dark:text-green-400'
+    if (score >= 50) return 'text-yellow-600 dark:text-yellow-400'
     return 'text-muted-foreground'
   }
 

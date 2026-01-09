@@ -62,16 +62,22 @@ interface ScoreReason {
   category: string
 }
 
+interface ImprovementSuggestion {
+  action: string
+  delta: number
+}
+
 interface NextUpData {
   record: NextUpRecord | null
   score: number
   nextAction: string
-  confidence: string
+  confidence: 'High' | 'Medium' | 'Low'
   reasons: ScoreReason[]
   topReason: string
   flags: {
     hasValidPhone: boolean
     hasMobilePhone: boolean
+    hasCallablePhone: boolean
     hasTask: boolean
     hasOverdueTask: boolean
     isDnc: boolean
@@ -84,6 +90,7 @@ interface NextUpData {
   pendingTask: PendingTask | null
   queuePosition: number
   totalInQueue: number
+  suggestions?: ImprovementSuggestion[]
   message?: string
 }
 
@@ -176,11 +183,26 @@ export function NextUpCard({
 
   const bucketLabel = {
     'call-now': 'Call Now',
-    'follow-up': 'Follow Up',
+    'follow-up-today': 'Follow Up Today',
+    'call-queue': 'Call Queue',
+    'verify-first': 'Verify First',
     'get-numbers': 'Get Numbers',
     'nurture': 'Nurture',
-    'not-workable': 'Not Workable',
   }[activeBucket || 'call-now'] || 'Queue'
+
+  const confidenceBadge = {
+    'High': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'Medium': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    'Low': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  }[data.confidence] || 'bg-gray-100 text-gray-700'
+
+  const getScoreColor = (s: number) => {
+    if (s >= 110) return 'text-amber-500 dark:text-amber-400'
+    if (s >= 90) return 'text-orange-500 dark:text-orange-400'
+    if (s >= 70) return 'text-green-600 dark:text-green-400'
+    if (s >= 50) return 'text-yellow-600 dark:text-yellow-400'
+    return 'text-muted-foreground'
+  }
 
   return (
     <Card className="border-2 border-primary/30 bg-card shadow-lg">
@@ -206,8 +228,13 @@ export function NextUpCard({
                 #{data.queuePosition} of {totalInQueue + workedThisSession}
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <Badge className={cn('text-xs', confidenceBadge)}>
+                {data.confidence}
+              </Badge>
+            </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-foreground">{score}</div>
+              <div className={cn('text-3xl font-bold', getScoreColor(score))}>{score}</div>
               <div className="text-xs text-muted-foreground">Score</div>
             </div>
           </div>
@@ -364,11 +391,11 @@ export function NextUpCard({
             variant="outline" 
             className={cn(
               "flex-1",
-              score >= 90 && "opacity-50 cursor-not-allowed"
+              score >= 110 && "opacity-50 cursor-not-allowed"
             )}
             onClick={() => handleAction('skip', () => onSkip(record.id))}
-            disabled={actionLoading !== null || score >= 90}
-            title={score >= 90 ? "Can't skip high priority leads (90+)" : undefined}
+            disabled={actionLoading !== null || score >= 110}
+            title={score >= 110 ? "Can't skip high priority leads (110+)" : undefined}
           >
             {actionLoading === 'skip' ? (
               <Loader2 className="w-4 h-4 animate-spin" />

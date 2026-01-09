@@ -23,10 +23,11 @@ interface ScoreExplainerProps {
 
 export function ScoreExplainer({ score, reasons, confidence, compact = false }: ScoreExplainerProps) {
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400'
-    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400'
-    if (score >= 40) return 'text-orange-600 dark:text-orange-400'
-    return 'text-red-600 dark:text-red-400'
+    if (score >= 110) return 'text-amber-500 dark:text-amber-400'
+    if (score >= 90) return 'text-orange-500 dark:text-orange-400'
+    if (score >= 70) return 'text-green-600 dark:text-green-400'
+    if (score >= 50) return 'text-yellow-600 dark:text-yellow-400'
+    return 'text-muted-foreground'
   }
 
   const getConfidenceBadge = (confidence: string) => {
@@ -44,10 +45,15 @@ export function ScoreExplainer({ score, reasons, confidence, compact = false }: 
     switch (category) {
       case 'temperature': return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
       case 'motivation': return 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+      case 'synergy': return 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800'
       case 'task': return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
       case 'contact': return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
       case 'engagement': return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
       case 'fatigue': return 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
+      case 'status': return 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'
+      case 'channel': return 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800'
+      case 'age': return 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800'
+      case 'data': return 'bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800'
       default: return 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
     }
   }
@@ -111,7 +117,7 @@ export function ScoreExplainer({ score, reasons, confidence, compact = false }: 
       {/* Legend */}
       <div className="pt-2 border-t border-border">
         <div className="text-xs text-muted-foreground">
-          Score ranges: 80+ (High Priority) • 60-79 (Medium) • 40-59 (Low) • &lt;40 (Nurture)
+          Score ranges: 110+ (Must Call) • 90-109 (Urgent) • 70-89 (High) • 50-69 (Medium) • &lt;50 (Nurture)
         </div>
       </div>
     </div>
