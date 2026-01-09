@@ -1339,17 +1339,19 @@ function CreateTaskModal({
 
             <div className="space-y-4">
               {/* No Due Date Toggle */}
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                 <input
                   type="checkbox"
                   checked={noDueDate}
                   onChange={(e) => setNoDueDate(e.target.checked)}
                   className="w-4 h-4 rounded"
                 />
-                <span className="text-sm">No due date</span>
+                <span className="text-sm font-medium">No Due Date</span>
+                <span className="text-xs text-muted-foreground">(notify after X days instead)</span>
               </label>
 
-              {!noDueDate ? (
+              {/* Due Date & Time - shown when NOT noDueDate */}
+              {!noDueDate && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
@@ -1359,87 +1361,70 @@ function CreateTaskModal({
                       type="date"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Due Time (optional)
+                      Due Time
                     </label>
                     <input
                       type="time"
                       value={dueTime}
                       onChange={(e) => setDueTime(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Notify After */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Notify after
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="e.g. 7"
-                        value={notifyAfter}
-                        onChange={(e) => setNotifyAfter(e.target.value ? parseInt(e.target.value) : '')}
-                        className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <select
-                        value={notifyAfterUnit}
-                        onChange={(e) => setNotifyAfterUnit(e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="minutes">Minutes</option>
-                        <option value="days">Days</option>
-                        <option value="months">Months</option>
-                        <option value="years">Years</option>
-                      </select>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Leave empty for no notification</p>
-                  </div>
+              )}
 
-                  {/* Repeat Count */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Recurrence
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={repeatCount === '' ? 'one-time' : 'repeat'}
-                        onChange={(e) => {
-                          if (e.target.value === 'one-time') {
-                            setRepeatCount('')
-                          } else {
-                            setRepeatCount(1)
-                          }
-                        }}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="one-time">One time</option>
-                        <option value="repeat">Repeat</option>
-                      </select>
-                      {repeatCount !== '' && (
-                        <>
-                          <input
-                            type="number"
-                            min="1"
-                            value={repeatCount}
-                            onChange={(e) => setRepeatCount(e.target.value ? parseInt(e.target.value) : 1)}
-                            className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-muted-foreground">times</span>
-                        </>
-                      )}
-                    </div>
+              {/* Notify After - shown when noDueDate is true */}
+              {noDueDate && (
+                <div className="p-3 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
+                  <label className="block text-sm font-medium mb-2">Notify After</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={notifyAfter}
+                      onChange={(e) => setNotifyAfter(e.target.value ? parseInt(e.target.value) : '')}
+                      placeholder="e.g., 3"
+                      className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <select
+                      value={notifyAfterUnit}
+                      onChange={(e) => setNotifyAfterUnit(e.target.value)}
+                      className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="days">Days</option>
+                      <option value="hours">Hours</option>
+                      <option value="weeks">Weeks</option>
+                    </select>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Task will appear in queue after this time from creation
+                  </p>
                 </div>
               )}
+
+              {/* Repeat Count */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Repeat Count (optional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={repeatCount}
+                    onChange={(e) => setRepeatCount(e.target.value ? parseInt(e.target.value) : '')}
+                    placeholder="e.g., 3"
+                    className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <span className="text-sm text-muted-foreground">times</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  How many times to repeat this task (leave empty for no repeat)
+                </p>
+              </div>
             </div>
           </div>
 
