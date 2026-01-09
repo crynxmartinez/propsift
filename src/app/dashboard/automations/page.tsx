@@ -726,14 +726,14 @@ export default function AutomationsPage() {
             <div>
               <Label>Folder (optional)</Label>
               <Select
-                value={automationFolderId || ''}
-                onValueChange={(value) => setAutomationFolderId(value || null)}
+                value={automationFolderId || 'none'}
+                onValueChange={(value) => setAutomationFolderId(value === 'none' ? null : value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="No folder" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No folder</SelectItem>
+                  <SelectItem value="none">No folder</SelectItem>
                   {folders.map((folder) => (
                     <SelectItem key={folder.id} value={folder.id}>
                       {folder.name}
