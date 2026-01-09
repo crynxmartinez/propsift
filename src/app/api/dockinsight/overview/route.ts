@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
+import { verifyToken } from '@/lib/auth'
 import { computePriority, getBucketCounts, RecordWithRelations } from '@/lib/scoring'
 import { headers } from 'next/headers'
 
@@ -8,10 +9,16 @@ export async function GET() {
   try {
     const headersList = headers()
     const authHeader = headersList.get('authorization')
+    const token = authHeader?.replace('Bearer ', '') || ''
     
-    const authUser = await getAuthUser(authHeader || '')
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+    
+    const authUser = await getAuthUser(decoded.userId)
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     const ownerId = authUser.ownerId

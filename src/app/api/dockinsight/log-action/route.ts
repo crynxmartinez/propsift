@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
+import { verifyToken } from '@/lib/auth'
 import { headers } from 'next/headers'
 
 interface LogActionRequest {
@@ -17,10 +18,16 @@ export async function POST(request: Request) {
   try {
     const headersList = headers()
     const authHeader = headersList.get('authorization')
+    const token = authHeader?.replace('Bearer ', '') || ''
     
-    const authUser = await getAuthUser(authHeader || '')
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+    
+    const authUser = await getAuthUser(decoded.userId)
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
     const body: LogActionRequest = await request.json()
