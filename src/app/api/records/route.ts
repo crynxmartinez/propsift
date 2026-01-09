@@ -415,6 +415,7 @@ export async function POST(request: NextRequest) {
       assignedToId,
       motivationIds,
       tagIds,
+      skiptraceDate,
     } = body;
 
     // Validate required field
@@ -471,6 +472,7 @@ export async function POST(request: NextRequest) {
         assignedToId: assignedToId || null,
         createdById: authUser.ownerId, // Use ownerId for team data sharing
         isComplete,
+        skiptraceDate: skiptraceDate ? new Date(skiptraceDate) : null,
         // Create phone number entry if provided
         phoneNumbers: phone ? {
           create: {

@@ -73,6 +73,7 @@ interface RecordData {
   directMailAttempts: number
   smsAttempts: number
   rvmAttempts: number
+  skiptraceDate: string | null
   isComplete: boolean
   statusId: string | null
   status: {
@@ -274,7 +275,7 @@ export default function PropertyDetailsPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'phone' | 'email' | null; id: string | null }>({ type: null, id: null })
   
   // Edit field modal
-  const [editFieldModal, setEditFieldModal] = useState<{ field: string; label: string; value: string; type: 'text' | 'number' | 'currency' } | null>(null)
+  const [editFieldModal, setEditFieldModal] = useState<{ field: string; label: string; value: string; type: 'text' | 'number' | 'currency' | 'date' } | null>(null)
   
   // Add custom field modal
   const [showAddFieldModal, setShowAddFieldModal] = useState(false)
@@ -533,9 +534,11 @@ export default function PropertyDetailsPage() {
     if (!editFieldModal) return
     setSavingField(true)
     try {
-      let value: string | number | null = editFieldModal.value
+      let value: string | number | Date | null = editFieldModal.value
       if (editFieldModal.type === 'number' || editFieldModal.type === 'currency') {
         value = editFieldModal.value ? parseFloat(editFieldModal.value.replace(/[^0-9.-]/g, '')) : null
+      } else if (editFieldModal.type === 'date') {
+        value = editFieldModal.value ? new Date(editFieldModal.value).toISOString() : null
       }
       await updateRecord({ [editFieldModal.field]: value })
       setEditFieldModal(null)
@@ -1304,6 +1307,18 @@ export default function PropertyDetailsPage() {
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{record.yearBuilt ?? '—'}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Year</p>
                     </div>
+                    <div className="relative group text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <button 
+                        onClick={() => setEditFieldModal({ field: 'skiptraceDate', label: 'Skiptrace Date', value: record.skiptraceDate ? record.skiptraceDate.split('T')[0] : '', type: 'date' })}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded"
+                      >
+                        <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                      </button>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {record.skiptraceDate ? new Date(record.skiptraceDate).toLocaleDateString() : '—'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Skiptrace</p>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-4">
@@ -2071,7 +2086,7 @@ export default function PropertyDetailsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{editFieldModal.label}</label>
               <input
-                type={editFieldModal.type === 'currency' || editFieldModal.type === 'number' ? 'text' : 'text'}
+                type={editFieldModal.type === 'date' ? 'date' : 'text'}
                 value={editFieldModal.value}
                 onChange={(e) => setEditFieldModal({ ...editFieldModal, value: e.target.value })}
                 placeholder={`Enter ${editFieldModal.label.toLowerCase()}`}

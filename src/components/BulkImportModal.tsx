@@ -130,6 +130,7 @@ const SYSTEM_FIELDS = [
   { key: 'notes', label: 'Notes', group: 'other' },
   { key: 'description', label: 'Description', group: 'other' },
   { key: 'temperature', label: 'Temperature', group: 'other' },
+  { key: 'skiptraceDate', label: 'Skiptrace Date', group: 'other' },
 ]
 
 const GROUP_LABELS: Record<string, string> = {

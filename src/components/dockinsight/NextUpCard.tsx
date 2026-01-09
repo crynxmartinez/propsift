@@ -128,6 +128,11 @@ interface NextUpCardProps {
   onPhoneStatus: (recordId: string, phoneId: string, status: string) => void
   activeBucket?: string
   workedThisSession?: number
+  // Post-call panel props
+  calledRecordId?: string | null
+  callResult?: string
+  onCallResultChange?: (result: string) => void
+  onNext?: () => void
 }
 
 export function NextUpCard({ 
@@ -141,6 +146,10 @@ export function NextUpCard({
   onPhoneStatus,
   activeBucket,
   workedThisSession = 0,
+  calledRecordId,
+  callResult = 'no_answer',
+  onCallResultChange,
+  onNext,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reasonsExpanded, setReasonsExpanded] = useState(false)
@@ -736,7 +745,23 @@ export function NextUpCard({
               </>
             )}
           </Button>
-          {primaryPhone && (
+          {primaryPhone && calledRecordId === record.id ? (
+            /* Post-Call Panel: Show NEXT button and call result selector */
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => onNext?.()}
+              disabled={actionLoading !== null}
+            >
+              {actionLoading === 'next' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <SkipForward className="w-4 h-4 mr-2" />
+                  Next Lead
+                </>
+              )}
+            </Button>
+          ) : primaryPhone ? (
             <Button 
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               onClick={() => handleAction('call', () => onCall(record.id, primaryPhone.number, primaryPhone.id))}
@@ -751,8 +776,44 @@ export function NextUpCard({
                 </>
               )}
             </Button>
-          )}
+          ) : null}
         </div>
+        
+        {/* Post-Call Result Panel */}
+        {calledRecordId === record.id && (
+          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">Call Made - Select Result:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'answered', label: 'Answered', color: 'bg-green-600' },
+                { value: 'voicemail', label: 'Voicemail', color: 'bg-yellow-600' },
+                { value: 'no_answer', label: 'No Answer', color: 'bg-gray-600' },
+                { value: 'busy', label: 'Busy', color: 'bg-orange-600' },
+                { value: 'wrong_number', label: 'Wrong #', color: 'bg-red-600' },
+                { value: 'disconnected', label: 'Disconnected', color: 'bg-red-800' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => onCallResultChange?.(option.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
+                    callResult === option.value
+                      ? `${option.color} text-white`
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Update phone statuses above, then click &quot;Next Lead&quot; when ready.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

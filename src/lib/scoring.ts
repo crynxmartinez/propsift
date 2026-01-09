@@ -92,6 +92,9 @@ export interface RecordWithRelations {
   propertyZip?: string | null
   temperature?: string | null
   callAttempts: number
+  directMailAttempts?: number
+  smsAttempts?: number
+  rvmAttempts?: number
   skiptraceDate?: Date | null
   createdAt: Date
   updatedAt: Date
@@ -100,12 +103,21 @@ export interface RecordWithRelations {
   lastContactResult?: string | null
   hasEngaged?: boolean
   snoozedUntil?: Date | null
+  isComplete?: boolean
+  isCompany?: boolean
+  assignedToId?: string | null
+  estimatedValue?: number | null
+  yearBuilt?: number | null
+  phoneCount?: number
+  emailCount?: number
   email?: string | null
+  notes?: string | null
   phoneNumbers?: RecordPhoneNumber[]
   recordMotivations?: Array<{ motivation: Motivation }>
-  recordTags?: RecordTag[]
+  recordTags?: Array<{ tag: { id: string; name: string } }>
   tasks?: Task[]
   status?: Status | null
+  comments?: Array<{ id: string; createdAt: Date }>
 }
 
 // ============================================
@@ -161,6 +173,26 @@ const EXCLUDED_STATUSES = [
   'wrong number',
   'closed',
 ]
+
+// v2.3: Last Contact Result Scoring
+const CONTACT_RESULT_SCORES: { [key: string]: number } = {
+  'ANSWERED': 10,        // They picked up before - great sign!
+  'VOICEMAIL': 5,        // Left message - they know about us
+  'NO_ANSWER': 0,        // Neutral
+  'BUSY': 0,             // Neutral
+  'WRONG_NUMBER': -15,   // Bad data - deprioritize
+  'DISCONNECTED': -20,   // Dead number - deprioritize
+}
+
+// v2.3: Tag-based Scoring
+const TAG_SCORES: { [key: string]: number } = {
+  'vip': 10,
+  'callback requested': 15,
+  'hot lead': 10,
+  'priority': 8,
+  'low priority': -10,
+  'do not contact': -50,
+}
 
 // ============================================
 // HELPER FUNCTIONS
@@ -354,6 +386,20 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
     }
   }
   
+  // v2.3: Block completed records from queue
+  if (record.isComplete) {
+    return {
+      score: 0,
+      nextAction: 'Not Workable',
+      confidence: 'High',
+      reasons: [{ label: '✅ Completed', delta: 0, category: 'data' }],
+      topReason: 'Completed',
+      reasonString: 'Record marked as complete',
+      suggestions: [],
+      flags,
+    }
+  }
+  
   // ============================================
   // 1. TEMPERATURE (Base Score)
   // ============================================
@@ -472,6 +518,23 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   }
   
   // ============================================
+  // 5b. LAST CONTACT RESULT (v2.3)
+  // ============================================
+  
+  if (record.lastContactResult) {
+    const resultScore = CONTACT_RESULT_SCORES[record.lastContactResult.toUpperCase()] || 0
+    if (resultScore !== 0) {
+      score += resultScore
+      const resultLabel = record.lastContactResult.toUpperCase()
+      if (resultScore > 0) {
+        reasons.push({ label: `📞 Last Result: ${resultLabel}`, delta: resultScore, category: 'contact' })
+      } else {
+        reasons.push({ label: `⚠️ Last Result: ${resultLabel}`, delta: resultScore, category: 'contact' })
+      }
+    }
+  }
+  
+  // ============================================
   // 6. ENGAGEMENT
   // ============================================
   
@@ -505,6 +568,35 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   }
   
   // ============================================
+  // 7b. MULTI-CHANNEL ATTEMPTS (v2.3)
+  // ============================================
+  
+  const smsAttempts = record.smsAttempts || 0
+  const directMailAttempts = record.directMailAttempts || 0
+  const rvmAttempts = record.rvmAttempts || 0
+  const totalAttempts = attempts + smsAttempts + directMailAttempts + rvmAttempts
+  
+  // Bonus for multi-channel outreach (they've seen us through multiple channels)
+  if (directMailAttempts > 0 && !hadEngagement) {
+    score += 2
+    reasons.push({ label: '📬 Direct Mail Sent', delta: 2, category: 'channel' })
+  }
+  
+  if (rvmAttempts > 0 && !hadEngagement) {
+    score += 1
+    reasons.push({ label: '🔊 RVM Sent', delta: 1, category: 'channel' })
+  }
+  
+  // Over-contacted penalty (too many attempts across all channels)
+  if (totalAttempts >= 15 && !hadEngagement) {
+    score -= 15
+    reasons.push({ label: '🚫 Over-Contacted (15+ attempts)', delta: -15, category: 'fatigue' })
+  } else if (totalAttempts >= 10 && !hadEngagement) {
+    score -= 8
+    reasons.push({ label: '⚠️ Heavy Outreach (10+ attempts)', delta: -8, category: 'fatigue' })
+  }
+  
+  // ============================================
   // 8. LEAD AGE + SMART RESCUE
   // ============================================
   
@@ -527,6 +619,10 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   if (statusMod && statusMod.modifier !== 0) {
     score += statusMod.modifier
     reasons.push({ label: `📊 Status: ${statusMod.name}`, delta: statusMod.modifier, category: 'status' })
+  } else if (!record.status) {
+    // v2.3: Fresh import with no status gets a small boost
+    score += 3
+    reasons.push({ label: '🆕 Fresh Import (No Status)', delta: 3, category: 'status' })
   }
   
   // ============================================
@@ -556,6 +652,91 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
   } else if (daysSinceSkiptrace <= 30) {
     score += 2
     reasons.push({ label: '🔍 Recent Skiptrace (<30 days)', delta: 2, category: 'data' })
+  }
+  
+  // ============================================
+  // 11. PROPERTY VALUE (v2.3)
+  // ============================================
+  
+  const estimatedValue = record.estimatedValue ? Number(record.estimatedValue) : 0
+  if (estimatedValue >= 1000000) {
+    score += 8
+    reasons.push({ label: '💎 Premium Property ($1M+)', delta: 8, category: 'data' })
+  } else if (estimatedValue >= 500000) {
+    score += 5
+    reasons.push({ label: '💰 High Value Property ($500K+)', delta: 5, category: 'data' })
+  } else if (estimatedValue >= 250000) {
+    score += 2
+    reasons.push({ label: '🏠 Mid Value Property ($250K+)', delta: 2, category: 'data' })
+  }
+  
+  // ============================================
+  // 12. PROPERTY AGE (v2.3)
+  // ============================================
+  
+  const currentYear = new Date().getFullYear()
+  const yearBuilt = record.yearBuilt || 0
+  const propertyAge = yearBuilt > 0 ? currentYear - yearBuilt : 0
+  
+  if (propertyAge >= 70) {
+    score += 5
+    reasons.push({ label: '🏚️ Very Old Property (70+ years)', delta: 5, category: 'data' })
+  } else if (propertyAge >= 50) {
+    score += 3
+    reasons.push({ label: '🏡 Older Property (50+ years)', delta: 3, category: 'data' })
+  }
+  
+  // ============================================
+  // 13. DATA COMPLETENESS (v2.3)
+  // ============================================
+  
+  const phoneCount = record.phoneCount || record.phoneNumbers?.length || 0
+  if (phoneCount >= 3) {
+    score += 3
+    reasons.push({ label: '📱 Multiple Phone Options (3+)', delta: 3, category: 'data' })
+  }
+  
+  // Has notes = previously worked lead
+  if (record.notes && record.notes.trim().length > 0) {
+    score += 2
+    reasons.push({ label: '📝 Has Notes', delta: 2, category: 'data' })
+  }
+  
+  // Has recent comments = active conversation
+  const comments = record.comments || []
+  const recentComments = comments.filter(c => daysSince(c.createdAt) <= 7)
+  if (recentComments.length > 0) {
+    score += 5
+    reasons.push({ label: '💬 Recent Comments (7 days)', delta: 5, category: 'engagement' })
+  } else if (comments.length > 0) {
+    score += 2
+    reasons.push({ label: '💬 Has Comments', delta: 2, category: 'engagement' })
+  }
+  
+  // Assigned lead gets priority
+  if (record.assignedToId) {
+    score += 3
+    reasons.push({ label: '👤 Assigned Lead', delta: 3, category: 'data' })
+  }
+  
+  // ============================================
+  // 14. TAG-BASED SCORING (v2.3)
+  // ============================================
+  
+  const tags = record.recordTags || []
+  for (const rt of tags) {
+    const tagName = rt.tag?.name?.toLowerCase() || ''
+    for (const [key, tagScore] of Object.entries(TAG_SCORES)) {
+      if (tagName.includes(key)) {
+        score += tagScore
+        if (tagScore > 0) {
+          reasons.push({ label: `🏷️ Tag: ${rt.tag.name}`, delta: tagScore, category: 'data' })
+        } else {
+          reasons.push({ label: `⚠️ Tag: ${rt.tag.name}`, delta: tagScore, category: 'data' })
+        }
+        break
+      }
+    }
   }
   
   // ============================================

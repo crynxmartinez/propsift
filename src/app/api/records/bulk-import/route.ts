@@ -130,6 +130,16 @@ export async function POST(request: NextRequest) {
         const notes = getValue(row, 'notes') || null;
         const description = getValue(row, 'description') || null;
         const temperature = getValue(row, 'temperature') || null;
+        
+        // Parse skiptraceDate (v2.3)
+        const skiptraceDateStr = getValue(row, 'skiptraceDate');
+        let skiptraceDate: Date | null = null;
+        if (skiptraceDateStr) {
+          const parsed = new Date(skiptraceDateStr);
+          if (!isNaN(parsed.getTime())) {
+            skiptraceDate = parsed;
+          }
+        }
 
         // Extract custom fields
         const customFieldValues: Record<string, string> = {};
@@ -231,6 +241,7 @@ export async function POST(request: NextRequest) {
                 notes: appendedNotes,
                 description: description || existingRecord.description,
                 temperature: temperature || existingRecord.temperature,
+                skiptraceDate: skiptraceDate || existingRecord.skiptraceDate,
                 isComplete,
               },
             });
@@ -331,6 +342,7 @@ export async function POST(request: NextRequest) {
                 notes,
                 description,
                 temperature,
+                skiptraceDate,
                 isComplete,
               },
             });
@@ -466,6 +478,7 @@ export async function POST(request: NextRequest) {
           }
           if (description) updateData.description = description;
           if (temperature) updateData.temperature = temperature;
+          if (skiptraceDate) updateData.skiptraceDate = skiptraceDate;
 
           // Recalculate completeness with merged data
           const mergedData = {

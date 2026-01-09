@@ -128,6 +128,10 @@ export default function DashboardPage() {
     completed: 0,
   })
   const [workedThisSession, setWorkedThisSession] = useState(0)
+  
+  // Post-call state: tracks when we just made a call and should show NEXT button
+  const [calledRecordId, setCalledRecordId] = useState<string | null>(null)
+  const [callResult, setCallResult] = useState<string>('no_answer')
 
   const getToken = useCallback(() => {
     return localStorage.getItem('token')
@@ -244,12 +248,70 @@ export default function DashboardPage() {
   const handleCall = async (recordId: string, phoneNumber: string, phoneId?: string) => {
     window.open(`tel:${phoneNumber}`, '_self')
     
-    const success = await logAction(recordId, 'call', { result: 'no_answer', phoneId })
-    if (success) {
-      setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
-      setWorkedThisSession(prev => prev + 1)
-      toast.success('Call logged')
+    // Log the call but DON'T fetch next record - stay on current record
+    const token = getToken()
+    if (!token) return
+    
+    try {
+      const res = await fetch('/api/dockinsight/log-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recordId, action: 'call', result: 'no_answer', phoneId }),
+      })
+      
+      if (res.ok) {
+        setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
+        setWorkedThisSession(prev => prev + 1)
+        // Set called state to show post-call panel with NEXT button
+        setCalledRecordId(recordId)
+        setCallResult('no_answer')
+        toast.success('Call logged - update result and click NEXT when ready')
+      }
+    } catch (error) {
+      console.error('Error logging call:', error)
     }
+  }
+  
+  // Handle moving to next record after post-call actions
+  const handleNext = async () => {
+    if (calledRecordId) {
+      // Update the call result if changed from default
+      if (callResult !== 'no_answer') {
+        const token = getToken()
+        if (token) {
+          try {
+            await fetch('/api/dockinsight/log-action', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ 
+                recordId: calledRecordId, 
+                action: 'update_call_result', 
+                result: callResult 
+              }),
+            })
+          } catch (error) {
+            console.error('Error updating call result:', error)
+          }
+        }
+      }
+    }
+    
+    // Clear called state and fetch next record
+    setCalledRecordId(null)
+    setCallResult('no_answer')
+    await fetchAll()
+    toast.success('Moving to next lead')
+  }
+  
+  // Handle updating call result (for post-call panel)
+  const handleCallResultChange = (result: string) => {
+    setCallResult(result)
   }
 
   const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
@@ -531,6 +593,10 @@ export default function DashboardPage() {
         onPhoneStatus={handlePhoneStatus}
         activeBucket={activeBucket}
         workedThisSession={workedThisSession}
+        calledRecordId={calledRecordId}
+        callResult={callResult}
+        onCallResultChange={handleCallResultChange}
+        onNext={handleNext}
       />
 
       {/* Bucket Selector */}

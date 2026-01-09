@@ -89,6 +89,7 @@ interface FormData {
   tagIds: string[]
   assignedToId: string
   notes: string
+  skiptraceDate: string
 }
 
 const initialFormData: FormData = {
@@ -112,6 +113,7 @@ const initialFormData: FormData = {
   tagIds: [],
   assignedToId: '',
   notes: '',
+  skiptraceDate: '',
 }
 
 export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddPropertyModalProps) {
@@ -316,6 +318,7 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
         assignedToId: formData.assignedToId === 'current' ? null : formData.assignedToId || null,
         motivationIds: formData.motivationIds,
         tagIds: formData.tagIds,
+        skiptraceDate: formData.skiptraceDate || null,
       }
 
       const token = localStorage.getItem('token')
@@ -666,8 +669,8 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
           {/* Step 3: Assignment & Notes */}
           {step === 3 && (
             <div className="space-y-4">
-              {/* Status & Assign To Row */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Status, Assign To & Skiptrace Date Row */}
+              <div className="grid grid-cols-3 gap-4">
                 {/* Status */}
                 <div>
                   <Label>Status</Label>
@@ -701,6 +704,17 @@ export default function AddPropertyModal({ isOpen, onClose, onSuccess }: AddProp
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Skiptrace Date */}
+                <div>
+                  <Label>Skiptrace Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.skiptraceDate}
+                    onChange={(e) => updateFormData('skiptraceDate', e.target.value)}
+                    className="mt-1"
+                  />
                 </div>
               </div>
 
