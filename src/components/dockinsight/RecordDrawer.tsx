@@ -426,7 +426,7 @@ export function RecordDrawer({
                 {/* View Full Record Link */}
                 <div className="pt-4">
                   <Button variant="outline" className="w-full" asChild>
-                    <a href={`/dashboard/records?id=${record.id}`} target="_blank">
+                    <a href={`/dashboard/records/${record.id}`} target="_blank">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View Full Record
                     </a>

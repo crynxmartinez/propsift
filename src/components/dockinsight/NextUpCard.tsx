@@ -15,7 +15,9 @@ import {
   MapPin,
   User,
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -109,6 +111,7 @@ export function NextUpCard({
   workedThisSession = 0,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [reasonsExpanded, setReasonsExpanded] = useState(false)
 
   if (isLoading) {
     return (
@@ -285,14 +288,47 @@ export function NextUpCard({
           </div>
         )}
 
-        {/* Why this lead */}
-        <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">
-          <span className="font-medium text-foreground">Why: </span>
-          {topReason}
-          {reasons.length > 1 && (
-            <span className="text-muted-foreground">
-              {' '}+ {reasons.length - 1} more factors
-            </span>
+        {/* Why this lead - Expandable */}
+        <div className="bg-muted/30 rounded-lg overflow-hidden">
+          <button
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors"
+            onClick={() => setReasonsExpanded(!reasonsExpanded)}
+          >
+            <div className="text-sm">
+              <span className="font-medium text-foreground">Why: </span>
+              <span className="text-muted-foreground">{topReason}</span>
+              {reasons.length > 1 && !reasonsExpanded && (
+                <span className="text-muted-foreground">
+                  {' '}+ {reasons.length - 1} more
+                </span>
+              )}
+            </div>
+            {reasons.length > 1 && (
+              reasonsExpanded ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              )
+            )}
+          </button>
+          {reasonsExpanded && reasons.length > 0 && (
+            <div className="px-3 pb-3 pt-0 space-y-1.5">
+              {reasons.map((reason, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between text-sm pl-2 border-l-2 border-primary/30"
+                >
+                  <span className="text-muted-foreground">{reason.label}</span>
+                  <span className={cn(
+                    'font-medium text-xs',
+                    reason.delta > 0 ? 'text-green-600 dark:text-green-400' : 
+                    reason.delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                  )}>
+                    {reason.delta > 0 ? '+' : ''}{reason.delta}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -326,9 +362,13 @@ export function NextUpCard({
         <div className="flex gap-2 pt-2">
           <Button 
             variant="outline" 
-            className="flex-1"
+            className={cn(
+              "flex-1",
+              score >= 90 && "opacity-50 cursor-not-allowed"
+            )}
             onClick={() => handleAction('skip', () => onSkip(record.id))}
-            disabled={actionLoading !== null}
+            disabled={actionLoading !== null || score >= 90}
+            title={score >= 90 ? "Can't skip high priority leads (90+)" : undefined}
           >
             {actionLoading === 'skip' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -341,9 +381,13 @@ export function NextUpCard({
           </Button>
           <Button 
             variant="outline" 
-            className="flex-1"
+            className={cn(
+              "flex-1",
+              score >= 90 && "opacity-50 cursor-not-allowed"
+            )}
             onClick={() => handleAction('snooze', () => onSnooze(record.id))}
-            disabled={actionLoading !== null}
+            disabled={actionLoading !== null || score >= 90}
+            title={score >= 90 ? "Can't snooze high priority leads (90+)" : undefined}
           >
             {actionLoading === 'snooze' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
