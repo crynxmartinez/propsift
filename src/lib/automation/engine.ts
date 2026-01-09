@@ -496,9 +496,192 @@ async function executeAction(node: WorkflowNode, context: ExecutionContext) {
       console.log(`Wait action: ${config.duration} ${config.unit}`)
       break
 
+    case 'update_call_result':
+      if (config.callResultId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (prisma.record as any).update({
+          where: { id: recordId },
+          data: { callResultId: config.callResultId as string },
+        })
+        await logAutomationActivity(recordId, automationId, type, `Call result updated`, config.callResultId as string)
+      }
+      break
+
+    case 'increment_call_attempts':
+      await prisma.record.update({
+        where: { id: recordId },
+        data: { callAttempts: { increment: 1 } },
+      })
+      await logAutomationActivity(recordId, automationId, type, 'Call attempts incremented by 1')
+      break
+
+    case 'add_motivation':
+      if (config.motivationId) {
+        const motivation = await prisma.motivation.findUnique({ where: { id: config.motivationId as string } })
+        await prisma.recordMotivation.upsert({
+          where: {
+            recordId_motivationId: {
+              recordId,
+              motivationId: config.motivationId as string,
+            },
+          },
+          create: {
+            recordId,
+            motivationId: config.motivationId as string,
+          },
+          update: {},
+        })
+        await logAutomationActivity(recordId, automationId, type, `Motivation "${motivation?.name || 'Unknown'}" added`, motivation?.name || 'Unknown')
+      }
+      break
+
+    case 'remove_motivation':
+      if (config.motivationId) {
+        const motivation = await prisma.motivation.findUnique({ where: { id: config.motivationId as string } })
+        await prisma.recordMotivation.deleteMany({
+          where: {
+            recordId,
+            motivationId: config.motivationId as string,
+          },
+        })
+        await logAutomationActivity(recordId, automationId, type, `Motivation "${motivation?.name || 'Unknown'}" removed`, motivation?.name || 'Unknown')
+      }
+      break
+
+    case 'snooze_record':
+      if (config.snoozeDays) {
+        const snoozeUntil = new Date()
+        snoozeUntil.setDate(snoozeUntil.getDate() + (config.snoozeDays as number))
+        await prisma.record.update({
+          where: { id: recordId },
+          data: { snoozedUntil: snoozeUntil },
+        })
+        await logAutomationActivity(recordId, automationId, type, `Record snoozed for ${config.snoozeDays} days`)
+      }
+      break
+
+    case 'unsnooze_record':
+      await prisma.record.update({
+        where: { id: recordId },
+        data: { snoozedUntil: null },
+      })
+      await logAutomationActivity(recordId, automationId, type, 'Record unsnoozed')
+      break
+
+    case 'mark_phone_bad':
+    case 'mark_phone_good':
+      // Get the most recent phone number for this record
+      const recentPhone = await prisma.recordPhoneNumber.findFirst({
+        where: { recordId },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (recentPhone && config.phoneStatus) {
+        const currentStatuses = recentPhone.statuses || []
+        const newStatus = config.phoneStatus as string
+        // Add the status if not already present
+        if (!currentStatuses.includes(newStatus)) {
+          await prisma.recordPhoneNumber.update({
+            where: { id: recentPhone.id },
+            data: { statuses: [...currentStatuses, newStatus] },
+          })
+        }
+        await logAutomationActivity(recordId, automationId, type, `Phone marked as ${newStatus}`)
+      }
+      break
+
+    case 'remove_from_board':
+      if (config.boardId === 'all') {
+        // Remove from all boards
+        await prisma.recordBoardPosition.deleteMany({
+          where: { recordId },
+        })
+        await logAutomationActivity(recordId, automationId, type, 'Removed from all boards')
+      } else if (config.boardId) {
+        // Remove from specific board
+        const columns = await prisma.boardColumn.findMany({
+          where: { boardId: config.boardId as string },
+          select: { id: true },
+        })
+        const columnIds = columns.map(c => c.id)
+        await prisma.recordBoardPosition.deleteMany({
+          where: { 
+            recordId,
+            columnId: { in: columnIds },
+          },
+        })
+        await logAutomationActivity(recordId, automationId, type, 'Removed from board')
+      }
+      break
+
+    case 'create_task_from_template':
+      if (config.templateId) {
+        const template = await prisma.taskTemplate.findUnique({
+          where: { id: config.templateId as string },
+        })
+        if (template) {
+          const recordForTask = await prisma.record.findUnique({
+            where: { id: recordId },
+            select: { createdById: true },
+          })
+          if (recordForTask?.createdById) {
+            // Calculate due date based on template
+            let taskDueDate: Date | null = null
+            if (template.dueDaysFromNow !== null) {
+              taskDueDate = new Date()
+              taskDueDate.setDate(taskDueDate.getDate() + template.dueDaysFromNow)
+            }
+
+            await prisma.task.create({
+              data: {
+                title: template.title,
+                description: template.description,
+                priority: template.priority,
+                dueDate: taskDueDate,
+                dueTime: template.dueTime,
+                recurrence: template.recurrence,
+                recurrenceDays: template.recurrenceDays,
+                skipWeekends: template.skipWeekends,
+                assignmentType: template.assignmentType,
+                assignedToId: (config.assignedToId as string) || null,
+                recordId,
+                templateId: template.id,
+                createdById: recordForTask.createdById,
+              },
+            })
+            await logAutomationActivity(recordId, automationId, type, `Task "${template.title}" created from template "${template.name}"`, template.title)
+          }
+        }
+      }
+      break
+
+    case 'delete_pending_tasks':
+      const deletedTasks = await prisma.task.deleteMany({
+        where: {
+          recordId,
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
+        },
+      })
+      await logAutomationActivity(recordId, automationId, type, `Deleted ${deletedTasks.count} pending tasks`)
+      break
+
     default:
       console.log(`Unknown action type: ${type}`)
   }
+}
+
+// Extended record type for condition evaluation
+interface ExtendedRecord {
+  statusId: string | null
+  temperature: string | null
+  isComplete: boolean
+  assignedToId: string | null
+  callResultId?: string | null
+  callAttempts: number
+  createdAt: Date
+  recordTags: Array<{ tagId: string }>
+  recordMotivations: Array<{ motivationId: string }>
+  phoneNumbers: Array<{ id: string; statuses: string[] }>
+  activityLogs?: Array<{ action: string; createdAt: Date; newValue: string | null }>
 }
 
 // Evaluate branch conditions (for multi-branch conditions)
@@ -514,6 +697,14 @@ async function evaluateBranchConditions(
       status: true,
       recordTags: { include: { tag: true } },
       recordMotivations: { include: { motivation: true } },
+      phoneNumbers: true,
+      activityLogs: {
+        where: {
+          action: { in: ['call', 'sms', 'rvm', 'direct_mail', 'email'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
     },
   })
 
@@ -523,7 +714,7 @@ async function evaluateBranchConditions(
   let isFirstCondition = true
 
   for (const condition of conditions) {
-    const conditionResult = evaluateSingleCondition(record, condition.field, condition.operator, condition.value)
+    const conditionResult = evaluateSingleCondition(record as ExtendedRecord, condition.field, condition.operator, condition.value)
     
     if (isFirstCondition) {
       result = conditionResult
@@ -541,16 +732,22 @@ async function evaluateBranchConditions(
   return result
 }
 
+// Helper for numeric comparisons
+function compareNumeric(actual: number, operator: string, expected: number): boolean {
+  switch (operator) {
+    case 'equals': return actual === expected
+    case 'not_equals': return actual !== expected
+    case 'greater_than': return actual > expected
+    case 'less_than': return actual < expected
+    case 'greater_or_equal': return actual >= expected
+    case 'less_or_equal': return actual <= expected
+    default: return false
+  }
+}
+
 // Evaluate a single condition against a record
 function evaluateSingleCondition(
-  record: {
-    statusId: string | null
-    temperature: string | null
-    isComplete: boolean
-    assignedToId: string | null
-    recordTags: Array<{ tagId: string }>
-    recordMotivations: Array<{ motivationId: string }>
-  },
+  record: ExtendedRecord,
   field: string,
   operator: string,
   value: string
@@ -559,11 +756,15 @@ function evaluateSingleCondition(
     case 'status':
       if (operator === 'equals') return record.statusId === value
       if (operator === 'not_equals') return record.statusId !== value
+      if (operator === 'is_empty') return record.statusId === null
+      if (operator === 'is_not_empty') return record.statusId !== null
       break
 
     case 'temperature':
       if (operator === 'equals') return record.temperature === value
       if (operator === 'not_equals') return record.temperature !== value
+      if (operator === 'is_empty') return record.temperature === null
+      if (operator === 'is_not_empty') return record.temperature !== null
       break
 
     case 'isComplete':
@@ -591,6 +792,81 @@ function evaluateSingleCondition(
       if (value === 'any') return record.assignedToId !== null
       if (value === 'none') return record.assignedToId === null
       return record.assignedToId === value
+
+    // NEW: Call Result
+    case 'callResult':
+      if (operator === 'equals') return record.callResultId === value
+      if (operator === 'not_equals') return record.callResultId !== value
+      if (operator === 'is_empty') return record.callResultId === null
+      if (operator === 'is_not_empty') return record.callResultId !== null
+      break
+
+    // NEW: Call Attempts (numeric)
+    case 'callAttempts':
+      return compareNumeric(record.callAttempts, operator, parseInt(value) || 0)
+
+    // NEW: Motivation Count (numeric)
+    case 'motivationCount':
+      return compareNumeric(record.recordMotivations.length, operator, parseInt(value) || 0)
+
+    // NEW: Phone Count (numeric)
+    case 'phoneCount':
+      return compareNumeric(record.phoneNumbers.length, operator, parseInt(value) || 0)
+
+    // NEW: Has Phone Numbers (boolean)
+    case 'hasPhoneNumbers':
+      return (record.phoneNumbers.length > 0) === (value === 'true')
+
+    // NEW: Has Valid Phone (boolean) - phone without WRONG, DNC, DEAD status
+    case 'hasValidPhone':
+      const hasValid = record.phoneNumbers.some(p => {
+        const badStatuses = ['WRONG', 'DNC', 'DEAD']
+        return !p.statuses.some(s => badStatuses.includes(s))
+      })
+      return hasValid === (value === 'true')
+
+    // NEW: Phone Status
+    case 'phoneStatus':
+      if (operator === 'equals') {
+        return record.phoneNumbers.some(p => p.statuses.includes(value))
+      }
+      if (operator === 'not_equals') {
+        return !record.phoneNumbers.some(p => p.statuses.includes(value))
+      }
+      break
+
+    // NEW: Last Contact Type
+    case 'lastContactType':
+      const lastLog = record.activityLogs?.[0]
+      if (!lastLog) {
+        if (operator === 'is_empty') return true
+        if (operator === 'is_not_empty') return false
+        return false
+      }
+      const contactType = lastLog.action.toUpperCase()
+      if (operator === 'equals') return contactType === value
+      if (operator === 'not_equals') return contactType !== value
+      break
+
+    // NEW: Last Contact Result
+    case 'lastContactResult':
+      // This would need to be stored in the activity log or record
+      // For now, use callResultId as a proxy
+      if (operator === 'equals') return record.callResultId === value
+      if (operator === 'not_equals') return record.callResultId !== value
+      break
+
+    // NEW: Days Since Last Contact (numeric)
+    case 'daysSinceLastContact':
+      const lastContact = record.activityLogs?.[0]
+      if (!lastContact) return compareNumeric(9999, operator, parseInt(value) || 0) // No contact = very long time
+      const daysSinceContact = Math.floor((Date.now() - new Date(lastContact.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      return compareNumeric(daysSinceContact, operator, parseInt(value) || 0)
+
+    // NEW: Days Since Created (numeric)
+    case 'daysSinceCreated':
+      const daysSinceCreated = Math.floor((Date.now() - new Date(record.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      return compareNumeric(daysSinceCreated, operator, parseInt(value) || 0)
 
     default:
       console.log(`Unknown condition field: ${field}`)
