@@ -471,7 +471,7 @@ export function RecordDrawer({
                 {/* View Full Record */}
                 <div className="pt-4">
                   <a 
-                    href={`/records/${record.id}`}
+                    href={`/dashboard/records/${record.id}`}
                     className="flex items-center justify-center gap-2 text-sm text-primary hover:underline"
                   >
                     <ExternalLink className="w-4 h-4" />
