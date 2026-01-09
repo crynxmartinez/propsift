@@ -40,6 +40,7 @@ export async function GET(
       },
       include: {
         status: true,
+        callResult: true,
         assignedTo: {
           select: {
             id: true,
@@ -218,6 +219,7 @@ export async function PUT(
       smsAttempts,
       rvmAttempts,
       statusId,
+      callResultId,
       assignedToId,
       skiptraceDate,
       motivationIds,
@@ -396,6 +398,10 @@ export async function PUT(
       trackChange('statusId', existingRecord.statusId, statusId || null);
       updateData.statusId = statusId || null;
     }
+    if (callResultId !== undefined) {
+      trackChange('callResultId', existingRecord.callResultId, callResultId || null);
+      updateData.callResultId = callResultId || null;
+    }
     if (assignedToId !== undefined) {
       trackChange('assignedToId', existingRecord.assignedToId, assignedToId || null);
       updateData.assignedToId = assignedToId || null;
@@ -432,6 +438,7 @@ export async function PUT(
       data: updateData,
       include: {
         status: true,
+        callResult: true,
         assignedTo: {
           select: {
             id: true,

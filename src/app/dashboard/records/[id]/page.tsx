@@ -81,6 +81,12 @@ interface RecordData {
     name: string
     color: string
   } | null
+  callResultId: string | null
+  callResult: {
+    id: string
+    name: string
+    color: string
+  } | null
   assignedToId: string | null
   assignedTo: {
     id: string
@@ -166,6 +172,12 @@ interface StatusItem {
   color: string
 }
 
+interface CallResultItem {
+  id: string
+  name: string
+  color: string
+}
+
 interface MotivationItem {
   id: string
   name: string
@@ -233,12 +245,14 @@ export default function PropertyDetailsPage() {
   // Dropdowns
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showCallResultDropdown, setShowCallResultDropdown] = useState(false)
   const [showAddPhoneModal, setShowAddPhoneModal] = useState(false)
   const [showAddEmailModal, setShowAddEmailModal] = useState(false)
   
   // Data
   const [users, setUsers] = useState<UserItem[]>([])
   const [statuses, setStatuses] = useState<StatusItem[]>([])
+  const [callResults, setCallResults] = useState<CallResultItem[]>([])
   const [motivations, setMotivations] = useState<MotivationItem[]>([])
   const [tags, setTags] = useState<TagItem[]>([])
   const [comments, setComments] = useState<Comment[]>([])
@@ -474,9 +488,10 @@ export default function PropertyDetailsPage() {
     try {
       const token = localStorage.getItem('token')
       const headers = { Authorization: `Bearer ${token}` }
-      const [usersRes, statusesRes, motivationsRes, tagsRes] = await Promise.all([
+      const [usersRes, statusesRes, callResultsRes, motivationsRes, tagsRes] = await Promise.all([
         fetch('/api/users', { headers }),
         fetch('/api/statuses', { headers }),
+        fetch('/api/call-results', { headers }),
         fetch('/api/motivations', { headers }),
         fetch('/api/tags', { headers }),
       ])
@@ -488,6 +503,10 @@ export default function PropertyDetailsPage() {
       if (statusesRes.ok) {
         const data = await statusesRes.json()
         setStatuses(Array.isArray(data) ? data : [])
+      }
+      if (callResultsRes.ok) {
+        const data = await callResultsRes.json()
+        setCallResults(Array.isArray(data) ? data : [])
       }
       if (motivationsRes.ok) {
         const data = await motivationsRes.json()
@@ -1021,6 +1040,47 @@ export default function PropertyDetailsPage() {
                       style={{ backgroundColor: status.color }}
                     />
                     {status.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Call Result Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCallResultDropdown(!showCallResultDropdown)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800"
+              style={record.callResult ? { backgroundColor: record.callResult.color + '20', borderColor: record.callResult.color } : {}}
+            >
+              {record.callResult ? (
+                <span className="text-sm font-medium" style={{ color: record.callResult.color }}>
+                  {record.callResult.name}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500 dark:text-gray-400">Call Result</span>
+              )}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {showCallResultDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
+                <button
+                  onClick={() => { updateRecord({ callResultId: null }); setShowCallResultDropdown(false) }}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                >
+                  No Call Result
+                </button>
+                {callResults.map((callResult) => (
+                  <button
+                    key={callResult.id}
+                    onClick={() => { updateRecord({ callResultId: callResult.id }); setShowCallResultDropdown(false) }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:bg-gray-800 flex items-center gap-2"
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: callResult.color }}
+                    />
+                    {callResult.name}
                   </button>
                 ))}
               </div>
