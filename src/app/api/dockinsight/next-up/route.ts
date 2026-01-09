@@ -191,6 +191,8 @@ export async function GET(request: Request) {
       confidence: topRecord.priority.confidence,
       reasons: topRecord.priority.reasons,
       topReason: topRecord.priority.topReason,
+      reasonString: topRecord.priority.reasonString,
+      suggestions: topRecord.priority.suggestions,
       flags: topRecord.priority.flags,
       phones: record.phoneNumbers.map(p => ({
         id: p.id,

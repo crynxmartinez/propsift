@@ -90,6 +90,7 @@ export async function GET(request: Request) {
       score: r.priority.score,
       nextAction: r.priority.nextAction,
       topReason: r.priority.topReason,
+      reasonString: r.priority.reasonString,
       confidence: r.priority.confidence,
       lastContactedAt: (r as unknown as { lastContactedAt?: Date | null }).lastContactedAt || null,
       hasEngaged: (r as unknown as { hasEngaged?: boolean }).hasEngaged || false,
