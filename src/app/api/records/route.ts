@@ -228,6 +228,7 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'all'; // all, complete, incomplete
     const filtersParam = searchParams.get('filters');
     const search = searchParams.get('search') || '';
+    const searchType = searchParams.get('searchType') || 'all';
 
     // Validate limit
     const validLimits = [10, 20, 50, 100];
@@ -260,16 +261,43 @@ export async function GET(request: NextRequest) {
 
     // Apply search filter - use AND to combine with existing OR clause
     if (search && search.length >= 2) {
-      const searchCondition = {
-        OR: [
+      let searchConditions: Record<string, unknown>[] = [];
+      
+      if (searchType === 'name' || searchType === 'all') {
+        searchConditions.push(
           { ownerFullName: { contains: search, mode: 'insensitive' } },
+          { ownerFirstName: { contains: search, mode: 'insensitive' } },
+          { ownerLastName: { contains: search, mode: 'insensitive' } }
+        );
+      }
+      
+      if (searchType === 'property' || searchType === 'all') {
+        searchConditions.push(
           { propertyStreet: { contains: search, mode: 'insensitive' } },
           { propertyCity: { contains: search, mode: 'insensitive' } },
+          { propertyState: { contains: search, mode: 'insensitive' } },
+          { propertyZip: { contains: search, mode: 'insensitive' } }
+        );
+      }
+      
+      if (searchType === 'mailing' || searchType === 'all') {
+        searchConditions.push(
           { mailingStreet: { contains: search, mode: 'insensitive' } },
+          { mailingCity: { contains: search, mode: 'insensitive' } },
+          { mailingState: { contains: search, mode: 'insensitive' } },
+          { mailingZip: { contains: search, mode: 'insensitive' } }
+        );
+      }
+      
+      // Also search phone/email for 'all' type
+      if (searchType === 'all') {
+        searchConditions.push(
           { phone: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-        ]
-      };
+          { email: { contains: search, mode: 'insensitive' } }
+        );
+      }
+      
+      const searchCondition = { OR: searchConditions };
       whereClause = {
         AND: [
           whereClause,

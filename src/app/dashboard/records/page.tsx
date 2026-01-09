@@ -121,6 +121,7 @@ export default function RecordsPage() {
   const [showLimitDropdown, setShowLimitDropdown] = useState(false)
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchType, setSearchType] = useState<'all' | 'name' | 'property' | 'mailing'>('all')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showBulkImportModal, setShowBulkImportModal] = useState(false)
   const [showFilterPanel, setShowFilterPanel] = useState(false)
@@ -155,6 +156,12 @@ export default function RecordsPage() {
         filter: filter,
       })
       
+      // Add search query
+      if (searchQuery.trim().length >= 2) {
+        params.set('search', searchQuery.trim())
+        params.set('searchType', searchType)
+      }
+      
       // Add active filters to query
       if (activeFilters.length > 0) {
         params.set('filters', JSON.stringify(activeFilters))
@@ -187,7 +194,7 @@ export default function RecordsPage() {
 
   useEffect(() => {
     fetchRecords()
-  }, [page, limit, filter, activeFilters])
+  }, [page, limit, filter, activeFilters, searchQuery, searchType])
 
   useEffect(() => {
     setPage(1)
@@ -433,16 +440,28 @@ export default function RecordsPage() {
 
         {/* Right: Search + Add Button */}
         <div className="flex items-center gap-3">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              type="text"
-              placeholder="Search for records..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 pl-10"
-            />
+          {/* Search Bar with Type Selector */}
+          <div className="flex items-center">
+            <select
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value as 'all' | 'name' | 'property' | 'mailing')}
+              className="h-10 px-3 border border-r-0 border-border rounded-l-md bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">All</option>
+              <option value="name">Name</option>
+              <option value="property">Property</option>
+              <option value="mailing">Mailing</option>
+            </select>
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder={searchType === 'all' ? 'Search records...' : `Search by ${searchType}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-56 pl-10 rounded-l-none"
+              />
+            </div>
           </div>
 
           {/* Add New Property Button */}
