@@ -15,7 +15,8 @@ import {
   LayoutGrid,
   Workflow,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  PhoneCall
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,7 @@ const menuItems = [
   { name: 'Tags', href: '/dashboard/tags', icon: Tag },
   { name: 'Motivations', href: '/dashboard/motivations', icon: Zap },
   { name: 'Statuses', href: '/dashboard/statuses', icon: CircleDot },
+  { name: 'Call Results', href: '/dashboard/call-results', icon: PhoneCall },
   { name: 'System', href: '/dashboard/activity', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Feedback', href: '/dashboard/feedback', icon: MessageSquare },
