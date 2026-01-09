@@ -453,6 +453,10 @@ model TaskTemplate {
   priority        String   @default("MEDIUM")
   dueDaysFromNow  Int?
   dueTime         String?
+  noDueDate       Boolean  @default(false)
+  notifyAfter     Int?
+  notifyAfterUnit String?
+  repeatCount     Int?
   recurrence      String?
   recurrenceDays  String[] @default([])
   skipWeekends    Boolean  @default(false)

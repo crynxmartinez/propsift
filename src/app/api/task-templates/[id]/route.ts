@@ -70,6 +70,10 @@ export async function PUT(
       priority,
       dueDaysFromNow,
       dueTime,
+      noDueDate,
+      notifyAfter,
+      notifyAfterUnit,
+      repeatCount,
       recurrence,
       recurrenceDays,
       skipWeekends,
@@ -99,6 +103,10 @@ export async function PUT(
     if (priority !== undefined) updateData.priority = priority;
     if (dueDaysFromNow !== undefined) updateData.dueDaysFromNow = dueDaysFromNow;
     if (dueTime !== undefined) updateData.dueTime = dueTime || null;
+    if (noDueDate !== undefined) updateData.noDueDate = noDueDate;
+    if (notifyAfter !== undefined) updateData.notifyAfter = notifyAfter;
+    if (notifyAfterUnit !== undefined) updateData.notifyAfterUnit = notifyAfterUnit || null;
+    if (repeatCount !== undefined) updateData.repeatCount = repeatCount;
     if (recurrence !== undefined) updateData.recurrence = recurrence || null;
     if (recurrenceDays !== undefined) updateData.recurrenceDays = recurrenceDays || [];
     if (skipWeekends !== undefined) updateData.skipWeekends = skipWeekends;

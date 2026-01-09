@@ -95,6 +95,10 @@ interface TaskTemplate {
   priority: string
   dueDaysFromNow: number | null
   dueTime: string | null
+  noDueDate: boolean
+  notifyAfter: number | null
+  notifyAfterUnit: string | null
+  repeatCount: number | null
   recurrence: string | null
   recurrenceDays: string[]
   skipWeekends: boolean
@@ -1685,8 +1689,12 @@ function EditTemplateModal({
   const [description, setDescription] = useState(template?.description || '')
   const [category, setCategory] = useState(template?.category || '')
   const [priority, setPriority] = useState(template?.priority || 'MEDIUM')
+  const [noDueDate, setNoDueDate] = useState(template?.noDueDate || false)
   const [dueDaysFromNow, setDueDaysFromNow] = useState<number | ''>(template?.dueDaysFromNow ?? '')
   const [dueTime, setDueTime] = useState(template?.dueTime || '')
+  const [notifyAfter, setNotifyAfter] = useState<number | ''>(template?.notifyAfter ?? '')
+  const [notifyAfterUnit, setNotifyAfterUnit] = useState(template?.notifyAfterUnit || 'days')
+  const [repeatCount, setRepeatCount] = useState<number | ''>(template?.repeatCount ?? '')
   const [recurrence, setRecurrence] = useState(template?.recurrence || 'NONE')
   const [skipWeekends, setSkipWeekends] = useState(template?.skipWeekends || false)
   const [assignmentType, setAssignmentType] = useState(template?.assignmentType || 'MANUAL')
@@ -1716,8 +1724,12 @@ function EditTemplateModal({
           description: description || null,
           category: category || null,
           priority,
-          dueDaysFromNow: dueDaysFromNow !== '' ? dueDaysFromNow : null,
-          dueTime: dueTime || null,
+          noDueDate,
+          dueDaysFromNow: noDueDate ? null : (dueDaysFromNow !== '' ? dueDaysFromNow : null),
+          dueTime: noDueDate ? null : (dueTime || null),
+          notifyAfter: noDueDate && notifyAfter !== '' ? notifyAfter : null,
+          notifyAfterUnit: noDueDate && notifyAfter !== '' ? notifyAfterUnit : null,
+          repeatCount: repeatCount !== '' ? repeatCount : null,
           recurrence: recurrence !== 'NONE' ? recurrence : null,
           skipWeekends,
           assignmentType,
@@ -1825,29 +1837,91 @@ function EditTemplateModal({
             </div>
           </div>
 
-          {/* Due Days & Time Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Due Days From Now</label>
+          {/* No Due Date Toggle */}
+          <label className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+            <input
+              type="checkbox"
+              checked={noDueDate}
+              onChange={(e) => setNoDueDate(e.target.checked)}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm font-medium">No Due Date</span>
+            <span className="text-xs text-muted-foreground">(notify after X days instead)</span>
+          </label>
+
+          {/* Due Days & Time Row - shown when NOT noDueDate */}
+          {!noDueDate && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Due Days From Now</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={dueDaysFromNow}
+                  onChange={(e) => setDueDaysFromNow(e.target.value ? parseInt(e.target.value) : '')}
+                  placeholder="e.g., 2"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">0 = same day, 1 = tomorrow</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Due Time</label>
+                <input
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Notify After - shown when noDueDate is true */}
+          {noDueDate && (
+            <div className="p-3 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
+              <label className="block text-sm font-medium mb-2">Notify After</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={notifyAfter}
+                  onChange={(e) => setNotifyAfter(e.target.value ? parseInt(e.target.value) : '')}
+                  placeholder="e.g., 3"
+                  className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <select
+                  value={notifyAfterUnit}
+                  onChange={(e) => setNotifyAfterUnit(e.target.value)}
+                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="days">Days</option>
+                  <option value="hours">Hours</option>
+                  <option value="weeks">Weeks</option>
+                </select>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Task will appear in queue after this time from creation
+              </p>
+            </div>
+          )}
+
+          {/* Repeat Count */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Repeat Count (optional)</label>
+            <div className="flex items-center gap-2">
               <input
                 type="number"
-                min="0"
-                value={dueDaysFromNow}
-                onChange={(e) => setDueDaysFromNow(e.target.value ? parseInt(e.target.value) : '')}
-                placeholder="e.g., 2"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                min="1"
+                value={repeatCount}
+                onChange={(e) => setRepeatCount(e.target.value ? parseInt(e.target.value) : '')}
+                placeholder="e.g., 3"
+                className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-muted-foreground mt-1">0 = same day, 1 = tomorrow</p>
+              <span className="text-sm text-muted-foreground">times</span>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Due Time</label>
-              <input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              How many times to repeat this task (leave empty for no repeat)
+            </p>
           </div>
 
           {/* Recurrence */}
