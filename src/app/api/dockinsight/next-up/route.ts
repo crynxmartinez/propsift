@@ -140,15 +140,23 @@ export async function GET(request: Request) {
 
     // Filter by bucket if specified
     let filteredRecords = workableRecords
+    let actualBucket = bucket || 'all'
+    
     if (bucket) {
       filteredRecords = filterByBucket(workableRecords, bucket)
+      
+      // If no records in requested bucket, fall back to showing top from all workable
+      if (filteredRecords.length === 0) {
+        filteredRecords = workableRecords
+        actualBucket = 'all'
+      }
     }
 
     if (filteredRecords.length === 0) {
       return NextResponse.json({
         record: null,
-        message: `No records in ${bucket} bucket`,
-        bucket: bucket || 'all',
+        message: 'No workable records found',
+        bucket: actualBucket,
         totalInQueue: 0,
       })
     }
@@ -217,7 +225,7 @@ export async function GET(request: Request) {
       } : null,
       queuePosition: 1,
       totalInQueue: filteredRecords.length,
-      bucket: bucket || 'all',
+      bucket: actualBucket,
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
