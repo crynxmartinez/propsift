@@ -505,46 +505,52 @@ export default function TasksPage() {
           </div>
         </div>
         
-        {/* Create Task Dropdown */}
-        <DropdownMenu open={showCreateDropdown} onOpenChange={setShowCreateDropdown}>
-          <DropdownMenuTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Task
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => {
-              setEditingTask(null)
-              setShowCreateModal(true)
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Task
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowTemplateModal(true)}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              From Template
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Create Task Dropdown - only show on Tasks tab */}
+        {mainTab === 'tasks' && (
+          <DropdownMenu open={showCreateDropdown} onOpenChange={setShowCreateDropdown}>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Task
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setEditingTask(null)
+                setShowCreateModal(true)
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Task
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowTemplateModal(true)}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                From Template
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Create Template Button - only show on Templates tab */}
+        {mainTab === 'templates' && (
+          <Button onClick={() => {
+            setEditingTemplate(null)
+            setShowEditTemplateModal(true)
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Template
+          </Button>
+        )}
       </div>
 
       {/* Templates Tab Content */}
       {mainTab === 'templates' && (
         <div>
           {/* Templates Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6">
             <p className="text-muted-foreground">
               Create reusable task templates for common workflows
             </p>
-            <Button onClick={() => {
-              setEditingTemplate(null)
-              setShowEditTemplateModal(true)
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Template
-            </Button>
           </div>
 
           {/* Templates List */}
