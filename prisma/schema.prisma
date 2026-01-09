@@ -53,6 +53,7 @@ model User {
   createdTags          Tag[]                 @relation("TagCreator")
   createdMotivations   Motivation[]          @relation("MotivationCreator")
   createdStatuses      Status[]              @relation("StatusCreator")
+  createdCallResults   CallResult[]          @relation("CallResultCreator")
   createdCustomFields  CustomFieldDefinition[] @relation("CustomFieldCreator")
   createdTaskTemplates TaskTemplate[]        @relation("TaskTemplateCreator")
   createdFilterFolders FilterFolder[]        @relation("FilterFolderCreator")
@@ -157,6 +158,23 @@ model Status {
   @@unique([name, createdById])
 }
 
+model CallResult {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#6B7280")
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User?    @relation("CallResultCreator", fields: [createdById], references: [id])
+  records     Record[]
+
+  @@unique([name, createdById])
+  @@index([createdById])
+}
+
 model PropertyStatus {
   id         String   @id @default(cuid())
   propertyId String
@@ -204,6 +222,7 @@ model Record {
   isContact          Boolean             @default(false)
   isComplete         Boolean             @default(false)
   statusId           String?
+  callResultId       String?
   assignedToId       String?
   createdById        String?
   skiptraceDate      DateTime?
@@ -230,6 +249,7 @@ model Record {
   assignedTo         User?               @relation(fields: [assignedToId], references: [id])
   createdBy          User?               @relation("RecordCreator", fields: [createdById], references: [id])
   status             Status?             @relation(fields: [statusId], references: [id])
+  callResult         CallResult?         @relation(fields: [callResultId], references: [id])
   activityLogs       RecordActivityLog[]
   comments           RecordComment[]
   emails             RecordEmail[]
@@ -244,6 +264,7 @@ model Record {
   @@index([createdById, createdAt])
   @@index([createdById, temperature])
   @@index([createdById, statusId])
+  @@index([createdById, callResultId])
   @@index([createdById, assignedToId])
   
   // DockInsight v2: Contact tracking indexes
