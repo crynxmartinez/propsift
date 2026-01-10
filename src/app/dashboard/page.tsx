@@ -366,12 +366,37 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSnooze = async (recordId: string) => {
-    const success = await logAction(recordId, 'snooze', { snoozeDuration: 60 })
+  const handleSnooze = async (recordId: string, duration: string) => {
+    // Convert duration to minutes
+    const durationMap: Record<string, number> = {
+      '1h': 60,
+      'tomorrow': 1440, // 24 hours
+      '3d': 4320, // 3 days
+      '1w': 10080, // 7 days
+    }
+    const snoozeDuration = durationMap[duration] || 60
+    const success = await logAction(recordId, 'snooze', { snoozeDuration })
     if (success) {
       setSessionStats(prev => ({ ...prev, snoozed: prev.snoozed + 1 }))
       setWorkedThisSession(prev => prev + 1)
-      toast.success('Snoozed for 1 hour')
+      const durationLabel = duration === '1h' ? '1 hour' : duration === 'tomorrow' ? 'tomorrow' : duration === '3d' ? '3 days' : '1 week'
+      toast.success(`Snoozed for ${durationLabel}`)
+    }
+  }
+
+  const handlePause = async (recordId: string) => {
+    const success = await logAction(recordId, 'pause', { reason: 'Manual pause' })
+    if (success) {
+      toast.success('Cadence paused')
+      await fetchAll()
+    }
+  }
+
+  const handleResume = async (recordId: string) => {
+    const success = await logAction(recordId, 'resume')
+    if (success) {
+      toast.success('Cadence resumed')
+      await fetchAll()
     }
   }
 
@@ -495,7 +520,7 @@ export default function DashboardPage() {
           break
         case 's':
           e.preventDefault()
-          handleSnooze(recordId)
+          handleSnooze(recordId, '1h') // Default to 1 hour for keyboard shortcut
           break
         case 't':
           if (nextUpData.pendingTask) {
@@ -606,6 +631,8 @@ export default function DashboardPage() {
         onCall={handleCall}
         onSkip={handleSkip}
         onSnooze={handleSnooze}
+        onPause={handlePause}
+        onResume={handleResume}
         onComplete={handleComplete}
         onRecordClick={handleRecordClick}
         onPhoneStatus={handlePhoneStatus}

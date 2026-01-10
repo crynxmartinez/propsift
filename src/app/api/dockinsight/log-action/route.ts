@@ -6,12 +6,13 @@ import { headers } from 'next/headers'
 
 interface LogActionRequest {
   recordId: string
-  action: 'call' | 'skip' | 'snooze' | 'complete' | 'temperature'
+  action: 'call' | 'skip' | 'snooze' | 'complete' | 'temperature' | 'pause' | 'resume'
   result?: 'answered' | 'voicemail' | 'no_answer' | 'wrong_number' | 'busy' | 'disconnected'
   notes?: string
   snoozeDuration?: number // minutes
   taskId?: string
   newTemperature?: 'HOT' | 'WARM' | 'COLD'
+  reason?: string // For pause action
 }
 
 export async function POST(request: Request) {
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
         const snoozedUntil = new Date(now.getTime() + snoozeMinutes * 60 * 1000)
         updateData = {
           snoozedUntil,
+          cadenceState: 'SNOOZED',
         }
         activityAction = 'snoozed'
         activityNewValue = `Snoozed until ${snoozedUntil.toISOString()}`
@@ -126,6 +128,26 @@ export async function POST(request: Request) {
           activityField = 'temperature'
           activityNewValue = newTemperature
         }
+        break
+
+      case 'pause':
+        // Pause cadence
+        updateData = {
+          cadenceState: 'PAUSED',
+          pausedReason: body.reason || 'Manual pause',
+        }
+        activityAction = 'cadence_paused'
+        activityNewValue = body.reason || 'Manual pause'
+        break
+
+      case 'resume':
+        // Resume cadence
+        updateData = {
+          cadenceState: 'ACTIVE',
+          pausedReason: null,
+        }
+        activityAction = 'cadence_resumed'
+        activityNewValue = 'Cadence resumed'
         break
     }
 

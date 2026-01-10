@@ -28,8 +28,17 @@ import {
   Check,
   X,
   Ban,
-  Skull
+  Skull,
+  Pause,
+  Play,
+  Calendar
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 interface ScoreReason {
@@ -107,6 +116,7 @@ export interface NextUpData {
     isSnoozed: boolean
     neverContacted: boolean
     smartRescue: boolean
+    isPaused?: boolean
   }
   phones: PhoneNumber[]
   motivations: Motivation[]
@@ -115,6 +125,13 @@ export interface NextUpData {
   totalInQueue: number
   message?: string
   contactLogs?: ContactLog[]
+  // LCE v2.3.1 fields
+  cadenceState?: string
+  cadenceType?: string
+  cadenceStep?: number
+  totalSteps?: number
+  nextActionType?: string
+  nextActionDue?: string
 }
 
 interface CallResultOption {
@@ -128,7 +145,9 @@ interface NextUpCardProps {
   isLoading: boolean
   onCall: (recordId: string, phoneNumber: string, phoneId: string) => void
   onSkip: (recordId: string) => void
-  onSnooze: (recordId: string) => void
+  onSnooze: (recordId: string, duration: string) => void
+  onPause: (recordId: string) => void
+  onResume: (recordId: string) => void
   onComplete: (recordId: string, taskId: string) => void
   onRecordClick: (recordId: string) => void
   onPhoneStatus: (recordId: string, phoneId: string, status: string) => void
@@ -148,6 +167,8 @@ export function NextUpCard({
   onCall, 
   onSkip, 
   onSnooze, 
+  onPause,
+  onResume,
   onComplete,
   onRecordClick,
   onPhoneStatus,
@@ -285,6 +306,56 @@ export function NextUpCard({
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* LCE Cadence Progress Bar */}
+        {data.cadenceStep && data.totalSteps && data.cadenceType && (
+          <div className="bg-muted/50 rounded-lg p-3 -mt-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {data.cadenceState === 'PAUSED' ? (
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs">
+                    <Pause className="w-3 h-3 mr-1" />
+                    PAUSED
+                  </Badge>
+                ) : data.cadenceState === 'SNOOZED' ? (
+                  <Badge variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs">
+                    <Clock className="w-3 h-3 mr-1" />
+                    SNOOZED
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
+                    <Play className="w-3 h-3 mr-1" />
+                    ACTIVE
+                  </Badge>
+                )}
+                <span className="text-sm font-medium text-foreground">
+                  {data.cadenceType} Cadence
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Step {data.cadenceStep} of {data.totalSteps}
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div 
+                className={cn(
+                  "h-2 rounded-full transition-all",
+                  data.cadenceType === 'HOT' ? 'bg-red-500' :
+                  data.cadenceType === 'WARM' ? 'bg-orange-500' :
+                  data.cadenceType === 'COLD' ? 'bg-blue-500' :
+                  'bg-primary'
+                )}
+                style={{ width: `${(data.cadenceStep / data.totalSteps) * 100}%` }}
+              />
+            </div>
+            {data.nextActionDue && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                Next: {data.nextActionType || 'CALL'} due {new Date(data.nextActionDue).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Property & Owner Info */}
         <div 
           className="cursor-pointer hover:bg-muted/50 rounded-lg p-3 -mx-3 transition-colors"
@@ -715,6 +786,40 @@ export function NextUpCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
+          {/* Pause/Resume Button */}
+          {data.cadenceState === 'PAUSED' || flags.isPaused ? (
+            <Button 
+              variant="outline" 
+              className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400"
+              onClick={() => handleAction('resume', () => onResume(record.id))}
+              disabled={actionLoading !== null}
+            >
+              {actionLoading === 'resume' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Resume
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              className="bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-400"
+              onClick={() => handleAction('pause', () => onPause(record.id))}
+              disabled={actionLoading !== null}
+            >
+              {actionLoading === 'pause' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Pause className="w-4 h-4 mr-2" />
+                  Pause
+                </>
+              )}
+            </Button>
+          )}
           <Button 
             variant="outline" 
             className={cn(
@@ -734,25 +839,48 @@ export function NextUpCard({
               </>
             )}
           </Button>
-          <Button 
-            variant="outline" 
-            className={cn(
-              "flex-1",
-              !canSnooze && "opacity-50 cursor-not-allowed"
-            )}
-            onClick={() => handleAction('snooze', () => onSnooze(record.id))}
-            disabled={actionLoading !== null || !canSnooze}
-            title={!canSnooze ? "Can't snooze high priority leads (90+)" : undefined}
-          >
-            {actionLoading === 'snooze' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
+          {/* Snooze Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "flex-1",
+                  !canSnooze && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={actionLoading !== null || !canSnooze}
+                title={!canSnooze ? "Can't snooze high priority leads (90+)" : undefined}
+              >
+                {actionLoading === 'snooze' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Snooze
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '1h'))}>
                 <Clock className="w-4 h-4 mr-2" />
-                Snooze
-              </>
-            )}
-          </Button>
+                1 hour
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, 'tomorrow'))}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Tomorrow
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '3d'))}>
+                <Calendar className="w-4 h-4 mr-2" />
+                3 days
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '1w'))}>
+                <Calendar className="w-4 h-4 mr-2" />
+                1 week
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {primaryPhone && calledRecordId === record.id ? (
             /* Post-Call Panel: Show NEXT button and call result selector */
             <Button 

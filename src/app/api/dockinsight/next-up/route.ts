@@ -25,6 +25,13 @@ interface RecordWithIncludes {
   lastContactResult?: string | null
   hasEngaged?: boolean
   snoozedUntil?: Date | null
+  // LCE v2.3.1 fields
+  cadenceState?: string
+  cadenceType?: string | null
+  cadenceStep?: number
+  nextActionType?: string | null
+  nextActionDue?: Date | null
+  pausedReason?: string | null
   phoneNumbers: Array<{
     id: string
     number: string
@@ -55,6 +62,16 @@ interface RecordWithIncludes {
     name: string
     color: string
   } | null
+}
+
+// LCE Cadence step counts
+const CADENCE_TOTAL_STEPS: Record<string, number> = {
+  HOT: 7,
+  WARM: 5,
+  COLD: 3,
+  ICE: 2,
+  GENTLE: 3,
+  ANNUAL: 1,
 }
 
 export async function GET(request: Request) {
@@ -221,6 +238,13 @@ export async function GET(request: Request) {
       queuePosition: 1,
       totalInQueue: filteredRecords.length,
       bucket: actualBucket,
+      // LCE v2.3.1 cadence data
+      cadenceState: record.cadenceState || 'NOT_ENROLLED',
+      cadenceType: record.cadenceType || null,
+      cadenceStep: record.cadenceStep || 0,
+      totalSteps: record.cadenceType ? CADENCE_TOTAL_STEPS[record.cadenceType] || 5 : 0,
+      nextActionType: record.nextActionType || null,
+      nextActionDue: record.nextActionDue || null,
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
