@@ -1,0 +1,204 @@
+'use client'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { 
+  Phone, 
+  Flame,
+  Thermometer,
+  Snowflake,
+  ChevronRight,
+  Loader2,
+  AlertCircle
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+export interface QueueRecord {
+  id: string
+  ownerFullName: string
+  propertyStreet: string | null
+  propertyCity: string | null
+  propertyState: string | null
+  temperature: string | null
+  score: number
+  nextAction: string
+  topReason: string
+  reasonString: string
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW'
+  phoneCount: number
+  hasMobile: boolean
+  motivationCount: number
+  topMotivation: string | null
+  hasOverdueTask: boolean
+  queuePosition: number
+}
+
+interface QueueListPanelProps {
+  records: QueueRecord[]
+  total: number
+  isLoading: boolean
+  selectedRecordId?: string | null
+  onRecordClick: (recordId: string) => void
+  onCall: (recordId: string) => void
+  onLoadMore?: () => void
+  hasMore?: boolean
+}
+
+export function QueueListPanel({ 
+  records, 
+  total, 
+  isLoading, 
+  selectedRecordId,
+  onRecordClick, 
+  onCall,
+  onLoadMore,
+  hasMore 
+}: QueueListPanelProps) {
+  const temperatureIcon = (temp: string | null) => {
+    switch (temp?.toUpperCase()) {
+      case 'HOT': return <Flame className="w-3 h-3 text-red-500" />
+      case 'WARM': return <Thermometer className="w-3 h-3 text-orange-500" />
+      case 'ICE': return <Snowflake className="w-3 h-3 text-slate-400" />
+      default: return <Snowflake className="w-3 h-3 text-blue-500" />
+    }
+  }
+
+  const temperatureColor = (temp: string | null) => {
+    switch (temp?.toUpperCase()) {
+      case 'HOT': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      case 'WARM': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      case 'ICE': return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
+      default: return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 110) return 'text-amber-500 dark:text-amber-400'
+    if (score >= 90) return 'text-orange-500 dark:text-orange-400'
+    if (score >= 70) return 'text-green-600 dark:text-green-400'
+    if (score >= 50) return 'text-yellow-600 dark:text-yellow-400'
+    return 'text-muted-foreground'
+  }
+
+  const getConfidenceColor = (confidence: string) => {
+    switch (confidence) {
+      case 'HIGH': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+      default: return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    }
+  }
+
+  if (isLoading && records.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Queue</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Queue</CardTitle>
+          <span className="text-sm text-muted-foreground">{total} leads</span>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[500px]">
+          <div className="divide-y divide-border">
+            {records.map((record) => (
+              <div
+                key={record.id}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors",
+                  selectedRecordId === record.id && "bg-primary/5 border-l-2 border-l-primary"
+                )}
+                onClick={() => onRecordClick(record.id)}
+              >
+                {/* Score */}
+                <div className="text-center w-12">
+                  <div className={cn('text-xl font-bold', getScoreColor(record.score))}>
+                    {record.score}
+                  </div>
+                  <Badge className={cn('text-[10px] px-1', getConfidenceColor(record.confidence))}>
+                    {record.confidence[0]}
+                  </Badge>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground truncate">
+                      {record.propertyStreet || 'No address'}
+                    </span>
+                    <Badge className={cn('text-xs px-1.5 py-0', temperatureColor(record.temperature))}>
+                      {temperatureIcon(record.temperature)}
+                    </Badge>
+                    {record.hasOverdueTask && (
+                      <AlertCircle className="w-3 h-3 text-red-500" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {record.ownerFullName}
+                    {record.topMotivation && (
+                      <span className="text-purple-600 dark:text-purple-400"> • {record.topMotivation}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  {record.phoneCount > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onCall(record.id)
+                      }}
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Load More */}
+          {hasMore && (
+            <div className="p-4 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLoadMore}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Load More
+              </Button>
+            </div>
+          )}
+
+          {records.length === 0 && !isLoading && (
+            <div className="py-8 text-center text-muted-foreground">
+              No records in this queue
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  )
+}

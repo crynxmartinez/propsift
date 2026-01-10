@@ -76,32 +76,38 @@ export async function GET(request: Request) {
     // Apply pagination
     const paginatedRecords = sortedRecords.slice(offset, offset + limit)
 
-    // Format response
-    const formattedRecords = paginatedRecords.map((r, index) => ({
-      id: r.id,
-      ownerFullName: r.ownerFullName,
-      ownerFirstName: r.ownerFirstName,
-      ownerLastName: r.ownerLastName,
-      propertyStreet: r.propertyStreet,
-      propertyCity: r.propertyCity,
-      propertyState: r.propertyState,
-      propertyZip: r.propertyZip,
-      temperature: r.temperature,
-      score: r.priority.score,
-      nextAction: r.priority.nextAction,
-      topReason: r.priority.topReason,
-      reasonString: r.priority.reasonString,
-      confidence: r.priority.confidence,
-      lastContactedAt: (r as unknown as { lastContactedAt?: Date | null }).lastContactedAt || null,
-      hasEngaged: (r as unknown as { hasEngaged?: boolean }).hasEngaged || false,
-      callAttempts: r.callAttempts,
-      phoneCount: r.phoneNumbers.length,
-      hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
-      motivationCount: r.recordMotivations.length,
-      topMotivation: r.recordMotivations[0]?.motivation.name || null,
-      hasOverdueTask: r.priority.flags.hasOverdueTask,
-      queuePosition: offset + index + 1,
-    }))
+    // Map confidence to expected format
+    const confidenceMap: Record<string, 'HIGH' | 'MEDIUM' | 'LOW'> = {
+      'High': 'HIGH',
+      'Medium': 'MEDIUM', 
+      'Low': 'LOW',
+    }
+
+    // Format response for QueueListPanel component
+    const formattedRecords = paginatedRecords.map((r, index) => {
+      const tempBand = (r.temperature?.toUpperCase() || 'COLD') as string
+      const temperature = ['HOT', 'WARM', 'COLD', 'ICE'].includes(tempBand) ? tempBand : 'COLD'
+      
+      return {
+        id: r.id,
+        ownerFullName: r.ownerFullName,
+        propertyStreet: r.propertyStreet,
+        propertyCity: r.propertyCity,
+        propertyState: r.propertyState,
+        temperature,
+        score: r.priority.score,
+        nextAction: r.priority.nextAction,
+        topReason: r.priority.topReason,
+        reasonString: r.priority.reasonString,
+        confidence: confidenceMap[r.priority.confidence] || 'MEDIUM',
+        phoneCount: r.phoneNumbers.length,
+        hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
+        motivationCount: r.recordMotivations.length,
+        topMotivation: r.recordMotivations[0]?.motivation.name || null,
+        hasOverdueTask: r.priority.flags.hasOverdueTask,
+        queuePosition: offset + index + 1,
+      }
+    })
 
     return NextResponse.json({
       bucket,
@@ -109,7 +115,7 @@ export async function GET(request: Request) {
       offset,
       limit,
       records: formattedRecords,
-      bucketCounts,
+      hasMore: offset + limit < filteredRecords.length,
     })
   } catch (error) {
     console.error('Error fetching queue:', error)

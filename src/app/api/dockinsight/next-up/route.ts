@@ -168,7 +168,36 @@ export async function GET(request: Request) {
     // Cast to include new fields (will be available after migration)
     const record = topRecord as unknown as RecordWithIncludes
 
-    // Format response
+    // Calculate bucket counts for BucketSelector
+    const bucketCounts = {
+      callNow: filterByBucket(workableRecords, 'call-now').length,
+      followUp: filterByBucket(workableRecords, 'follow-up-today').length,
+      queue: filterByBucket(workableRecords, 'call-queue').length,
+      tasks: workableRecords.filter(r => r.tasks && r.tasks.length > 0).length,
+      newLeads: filterByBucket(workableRecords, 'nurture').length,
+      getNumbers: filterByBucket(workableRecords, 'get-numbers').length,
+    }
+
+    // Map temperature to band
+    const tempBand = (record.temperature?.toUpperCase() || 'COLD') as 'HOT' | 'WARM' | 'COLD' | 'ICE'
+    const temperatureBand = ['HOT', 'WARM', 'COLD', 'ICE'].includes(tempBand) ? tempBand : 'COLD'
+
+    // Map confidence
+    const confidenceMap: Record<string, 'HIGH' | 'MEDIUM' | 'LOW'> = {
+      'High': 'HIGH',
+      'Medium': 'MEDIUM', 
+      'Low': 'LOW',
+    }
+    const confidenceLevel = confidenceMap[topRecord.priority.confidence] || 'MEDIUM'
+
+    // Build score components from reasons
+    const scoreComponents = topRecord.priority.reasons.map(r => ({
+      name: r.label,
+      value: r.delta,
+      maxValue: 20,
+    }))
+
+    // Format response for NextUpCard component
     return NextResponse.json({
       record: {
         id: record.id,
@@ -182,45 +211,52 @@ export async function GET(request: Request) {
         temperature: record.temperature,
         callAttempts: record.callAttempts,
         lastContactedAt: record.lastContactedAt || null,
-        lastContactType: record.lastContactType || null,
-        lastContactResult: record.lastContactResult || null,
         hasEngaged: record.hasEngaged || false,
-        skiptraceDate: record.skiptraceDate,
-        createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
       },
       score: topRecord.priority.score,
-      nextAction: topRecord.priority.nextAction,
-      confidence: topRecord.priority.confidence,
-      reasons: topRecord.priority.reasons,
-      topReason: topRecord.priority.topReason,
+      confidenceLevel,
+      scoreComponents,
       reasonString: topRecord.priority.reasonString,
-      suggestions: topRecord.priority.suggestions,
-      flags: topRecord.priority.flags,
+      temperatureBand,
+      cadenceStep: 1,
+      totalSteps: 5,
+      cadenceName: temperatureBand,
+      nextActionType: topRecord.priority.nextAction,
+      queueSection: actualBucket,
+      queueReason: topRecord.priority.topReason,
       phones: record.phoneNumbers.map(p => ({
         id: p.id,
         number: p.number,
         type: p.type,
-        statuses: p.statuses,
+        statuses: p.statuses || [],
       })),
       motivations: record.recordMotivations.map(rm => ({
         id: rm.motivation.id,
         name: rm.motivation.name,
       })),
-      tags: record.recordTags.map(rt => ({
-        id: rt.tag.id,
-        name: rt.tag.name,
-      })),
       pendingTask: pendingTask ? {
         id: pendingTask.id,
         title: pendingTask.title,
         dueDate: pendingTask.dueDate,
-        status: pendingTask.status,
         priority: pendingTask.priority,
       } : null,
-      queuePosition: 1,
       totalInQueue: filteredRecords.length,
-      bucket: actualBucket,
+      contactLogs: [],
+      flags: {
+        hasValidPhone: topRecord.priority.flags.hasValidPhone,
+        hasMobilePhone: topRecord.priority.flags.hasMobilePhone,
+        hasCallablePhone: topRecord.priority.flags.hasCallablePhone,
+        hasEmail: topRecord.priority.flags.hasEmail,
+        hasTask: topRecord.priority.flags.hasTask,
+        hasOverdueTask: topRecord.priority.flags.hasOverdueTask,
+        isDnc: topRecord.priority.flags.isDnc,
+        isClosed: topRecord.priority.flags.isClosed,
+        isSnoozed: topRecord.priority.flags.isSnoozed,
+        neverContacted: topRecord.priority.flags.neverContacted,
+        hasCallback: false,
+        isPaused: false,
+      },
+      bucketCounts,
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
