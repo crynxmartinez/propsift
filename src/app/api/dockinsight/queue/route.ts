@@ -76,28 +76,32 @@ export async function GET(request: Request) {
     // Apply pagination
     const paginatedRecords = sortedRecords.slice(offset, offset + limit)
 
-    // Format response for archived QueueList component
-    const formattedRecords = paginatedRecords.map((r, index) => {
-      return {
-        id: r.id,
-        ownerFullName: r.ownerFullName,
-        propertyStreet: r.propertyStreet,
-        propertyCity: r.propertyCity,
-        propertyState: r.propertyState,
-        temperature: r.temperature,
-        score: r.priority.score,
-        nextAction: r.priority.nextAction,
-        topReason: r.priority.topReason,
-        reasonString: r.priority.reasonString,
-        confidence: r.priority.confidence,
-        phoneCount: r.phoneNumbers.length,
-        hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
-        motivationCount: r.recordMotivations.length,
-        topMotivation: r.recordMotivations[0]?.motivation.name || null,
-        hasOverdueTask: r.priority.flags.hasOverdueTask,
-        queuePosition: offset + index + 1,
-      }
-    })
+    // Format response
+    const formattedRecords = paginatedRecords.map((r, index) => ({
+      id: r.id,
+      ownerFullName: r.ownerFullName,
+      ownerFirstName: r.ownerFirstName,
+      ownerLastName: r.ownerLastName,
+      propertyStreet: r.propertyStreet,
+      propertyCity: r.propertyCity,
+      propertyState: r.propertyState,
+      propertyZip: r.propertyZip,
+      temperature: r.temperature,
+      score: r.priority.score,
+      nextAction: r.priority.nextAction,
+      topReason: r.priority.topReason,
+      reasonString: r.priority.reasonString,
+      confidence: r.priority.confidence,
+      lastContactedAt: (r as unknown as { lastContactedAt?: Date | null }).lastContactedAt || null,
+      hasEngaged: (r as unknown as { hasEngaged?: boolean }).hasEngaged || false,
+      callAttempts: r.callAttempts,
+      phoneCount: r.phoneNumbers.length,
+      hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
+      motivationCount: r.recordMotivations.length,
+      topMotivation: r.recordMotivations[0]?.motivation.name || null,
+      hasOverdueTask: r.priority.flags.hasOverdueTask,
+      queuePosition: offset + index + 1,
+    }))
 
     return NextResponse.json({
       bucket,
@@ -105,7 +109,7 @@ export async function GET(request: Request) {
       offset,
       limit,
       records: formattedRecords,
-      hasMore: offset + limit < filteredRecords.length,
+      bucketCounts,
     })
   } catch (error) {
     console.error('Error fetching queue:', error)

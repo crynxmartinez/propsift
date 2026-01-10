@@ -2,19 +2,113 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { BarChart3, Loader2, RefreshCw } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { 
   BucketSelector, 
   NextUpCard, 
   QueueList, 
-  CallResultModal,
+  RecordDrawer,
   type BucketCounts,
   type NextUpData,
   type QueueRecord
 } from '@/components/dockinsight'
 import { toast } from 'sonner'
+
+interface QueueData {
+  bucket: string
+  total: number
+  records: QueueRecord[]
+  bucketCounts: {
+    'call-now': number
+    'follow-up-today': number
+    'call-queue': number
+    'verify-first': number
+    'get-numbers': number
+    'nurture': number
+    'not-workable': number
+  }
+}
+
+interface OverviewData {
+  buckets: BucketCounts & { notWorkable: number }
+  kpis: {
+    totalRecords: number
+    hotLeads: number
+    callReady: number
+    tasksDue: number
+    unassignedHot: number
+  }
+  today: {
+    callsMade: number
+    contacts: number
+    appointments: number
+    tasksCompleted: number
+  }
+  temperature: {
+    hot: number
+    warm: number
+    cold: number
+  }
+}
+
+interface DrawerData {
+  record: {
+    id: string
+    ownerFullName: string
+    ownerFirstName: string | null
+    ownerLastName: string | null
+    propertyStreet: string | null
+    propertyCity: string | null
+    propertyState: string | null
+    propertyZip: string | null
+    mailingStreet: string | null
+    mailingCity: string | null
+    mailingState: string | null
+    mailingZip: string | null
+    temperature: string | null
+    callAttempts: number
+    lastContactedAt: string | null
+    lastContactType: string | null
+    lastContactResult: string | null
+    hasEngaged: boolean
+    skiptraceDate: string | null
+    createdAt: string
+    updatedAt: string
+  }
+  score: number
+  nextAction: string
+  confidence: 'High' | 'Medium' | 'Low'
+  reasons: Array<{ label: string; delta: number; category: string }>
+  topReason: string
+  reasonString: string
+  suggestions: Array<{ action: string; delta: number }>
+  flags: {
+    hasValidPhone: boolean
+    hasMobilePhone: boolean
+    hasCallablePhone: boolean
+    hasEmail: boolean
+    hasTask: boolean
+    hasOverdueTask: boolean
+    isDnc: boolean
+    isClosed: boolean
+    isSnoozed: boolean
+    neverContacted: boolean
+    smartRescue: boolean
+  }
+  phones: Array<{ id: string; number: string; type: string; statuses: string[] }>
+  motivations: Array<{ id: string; name: string }>
+  tags: Array<{ id: string; name: string }>
+  pendingTask: { id: string; title: string; dueDate: string | null; status: string; priority: string } | null
+}
+
+interface SessionStats {
+  callsMade: number
+  skipped: number
+  snoozed: number
+  completed: number
+}
 
 interface CallResultOption {
   id: string
@@ -26,67 +120,93 @@ export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [nextUpData, setNextUpData] = useState<NextUpData | null>(null)
-  const [queueRecords, setQueueRecords] = useState<QueueRecord[]>([])
-  const [queueTotal, setQueueTotal] = useState(0)
-  const [queueHasMore, setQueueHasMore] = useState(false)
-  const [bucketCounts, setBucketCounts] = useState<BucketCounts>({
-    callNow: 0,
-    followUpToday: 0,
-    callQueue: 0,
-    verifyFirst: 0,
-    getNumbers: 0,
-    nurture: 0,
-  })
+  const [queueData, setQueueData] = useState<QueueData | null>(null)
+  const [overviewData, setOverviewData] = useState<OverviewData | null>(null)
   const [activeBucket, setActiveBucket] = useState('call-now')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [showCallModal, setShowCallModal] = useState(false)
-  const [callingPhone, setCallingPhone] = useState<{ id: string; number: string } | null>(null)
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
+  const [drawerData, setDrawerData] = useState<DrawerData | null>(null)
+  const [drawerLoading, setDrawerLoading] = useState(false)
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
+    callsMade: 0,
+    skipped: 0,
+    snoozed: 0,
+    completed: 0,
+  })
+  const [workedThisSession, setWorkedThisSession] = useState(0)
+  
+  // Post-call state: tracks when we just made a call and should show NEXT button
   const [calledRecordId, setCalledRecordId] = useState<string | null>(null)
   const [callResultId, setCallResultId] = useState<string | null>(null)
   const [callResultOptions, setCallResultOptions] = useState<CallResultOption[]>([])
-  const [sessionStats, setSessionStats] = useState({ calls: 0, skipped: 0, snoozed: 0 })
 
-  const getToken = useCallback(() => localStorage.getItem('token'), [])
+  const getToken = useCallback(() => {
+    return localStorage.getItem('token')
+  }, [])
 
   const fetchNextUp = useCallback(async (bucket?: string) => {
     const token = getToken()
     if (!token) return
 
     try {
-      const url = bucket ? `/api/dockinsight/next-up?bucket=${bucket}` : '/api/dockinsight/next-up'
+      const url = bucket 
+        ? `/api/dockinsight/next-up?bucket=${bucket}`
+        : '/api/dockinsight/next-up'
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const data = await res.json()
-        setNextUpData(data.record ? data : null)
-        if (data.bucketCounts) {
-          setBucketCounts(data.bucketCounts)
-        }
+        setNextUpData(data)
       }
     } catch (error) {
       console.error('Error fetching next-up:', error)
     }
   }, [getToken])
 
-  const fetchQueue = useCallback(async (bucket?: string) => {
+  const fetchQueue = useCallback(async (bucket: string) => {
     const token = getToken()
     if (!token) return
 
     try {
-      const url = bucket ? `/api/dockinsight/queue?bucket=${bucket}` : '/api/dockinsight/queue'
-      const res = await fetch(url, {
+      const res = await fetch(`/api/dockinsight/queue?bucket=${bucket}&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const data = await res.json()
-        setQueueRecords(data.records || [])
-        setQueueTotal(data.total || 0)
+        setQueueData(data)
       }
     } catch (error) {
       console.error('Error fetching queue:', error)
     }
   }, [getToken])
+
+  const fetchOverview = useCallback(async () => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch('/api/dockinsight/overview', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOverviewData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching overview:', error)
+    }
+  }, [getToken])
+
+  const fetchAll = useCallback(async () => {
+    setIsRefreshing(true)
+    await Promise.all([
+      fetchNextUp(activeBucket),
+      fetchQueue(activeBucket),
+      fetchOverview(),
+    ])
+    setIsRefreshing(false)
+  }, [fetchNextUp, fetchQueue, fetchOverview, activeBucket])
 
   const fetchCallResults = useCallback(async () => {
     const token = getToken()
@@ -98,22 +218,12 @@ export default function DashboardPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setCallResultOptions(data.map((r: { id: string; name: string; color: string }) => ({
-          id: r.id,
-          name: r.name,
-          color: r.color || '#6b7280',
-        })))
+        setCallResultOptions(data.filter((cr: CallResultOption & { isActive: boolean }) => cr.isActive))
       }
     } catch (error) {
       console.error('Error fetching call results:', error)
     }
   }, [getToken])
-
-  const fetchAll = useCallback(async (bucket?: string) => {
-    setIsRefreshing(true)
-    await Promise.all([fetchNextUp(bucket), fetchQueue(bucket), fetchCallResults()])
-    setIsRefreshing(false)
-  }, [fetchNextUp, fetchQueue, fetchCallResults])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -123,8 +233,17 @@ export default function DashboardPage() {
     }
     
     setLoading(true)
-    fetchAll(activeBucket).finally(() => setLoading(false))
-  }, [router, fetchAll, activeBucket])
+    Promise.all([fetchAll(), fetchCallResults()]).finally(() => setLoading(false))
+  }, [router, fetchAll, fetchCallResults])
+
+  useEffect(() => {
+    fetchQueue(activeBucket)
+    fetchNextUp(activeBucket)
+  }, [activeBucket, fetchQueue, fetchNextUp])
+
+  const handleBucketClick = (bucket: string) => {
+    setActiveBucket(bucket)
+  }
 
   const logAction = async (recordId: string, action: string, data: Record<string, unknown> = {}) => {
     const token = getToken()
@@ -141,7 +260,7 @@ export default function DashboardPage() {
       })
       
       if (res.ok) {
-        await fetchAll(activeBucket)
+        await fetchAll()
         return true
       }
     } catch (error) {
@@ -150,120 +269,354 @@ export default function DashboardPage() {
     return false
   }
 
-  const handleBucketClick = (bucket: string) => {
-    setActiveBucket(bucket)
-    fetchAll(bucket)
-  }
-
-  const handleCall = (recordId: string, phoneNumber: string, phoneId: string) => {
-    // Open phone dialer
+  const handleCall = async (recordId: string, phoneNumber: string, phoneId?: string) => {
     window.open(`tel:${phoneNumber}`, '_self')
     
-    // Track the called record for post-call panel
-    setCalledRecordId(recordId)
-    setCallingPhone({ id: phoneId, number: phoneNumber })
-    setCallResultId(null)
-    setSessionStats(prev => ({ ...prev, calls: prev.calls + 1 }))
-  }
-
-  const handleCallResultChange = (resultId: string) => {
-    setCallResultId(resultId)
-    if (nextUpData?.record && callingPhone) {
-      // Log the call with the selected result
-      logAction(nextUpData.record.id, 'call', {
-        callResultId: resultId,
-        phoneId: callingPhone.id,
+    // Log the call but DON'T fetch next record - stay on current record
+    const token = getToken()
+    if (!token) return
+    
+    try {
+      const res = await fetch('/api/dockinsight/log-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recordId, action: 'call', result: 'no_answer', phoneId }),
       })
+      
+      if (res.ok) {
+        setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
+        setWorkedThisSession(prev => prev + 1)
+        // Set called state to show post-call panel with NEXT button
+        setCalledRecordId(recordId)
+        setCallResultId(null)
+        toast.success('Call logged - update result and click NEXT when ready')
+      }
+    } catch (error) {
+      console.error('Error logging call:', error)
     }
   }
-
+  
+  // Handle moving to next record after post-call actions
   const handleNext = async () => {
+    if (calledRecordId && callResultId) {
+      // Update the record's callResultId
+      const token = getToken()
+      if (token) {
+        try {
+          await fetch(`/api/records/${calledRecordId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ callResultId }),
+          })
+        } catch (error) {
+          console.error('Error updating call result:', error)
+        }
+      }
+    }
+    
+    // Clear called state and fetch next record
     setCalledRecordId(null)
-    setCallingPhone(null)
     setCallResultId(null)
-    await fetchAll(activeBucket)
+    await fetchAll()
+    toast.success('Moving to next lead')
+  }
+  
+  // Handle updating call result (for post-call panel)
+  const handleCallResultChange = (resultId: string) => {
+    setCallResultId(resultId)
+  }
+
+  const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch(`/api/records/${recordId}/phones/${phoneId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }), // Send single status to toggle
+      })
+      
+      if (res.ok) {
+        toast.success(`Phone status updated`)
+        // Refresh to get updated phone statuses
+        await fetchNextUp()
+      }
+    } catch (error) {
+      console.error('Error updating phone status:', error)
+      toast.error('Failed to update phone status')
+    }
   }
 
   const handleSkip = async (recordId: string) => {
     const success = await logAction(recordId, 'skip')
     if (success) {
       setSessionStats(prev => ({ ...prev, skipped: prev.skipped + 1 }))
+      setWorkedThisSession(prev => prev + 1)
       toast.success('Skipped to next lead')
     }
   }
 
   const handleSnooze = async (recordId: string) => {
-    const success = await logAction(recordId, 'snooze', { days: 1 })
+    const success = await logAction(recordId, 'snooze', { snoozeDuration: 60 })
     if (success) {
       setSessionStats(prev => ({ ...prev, snoozed: prev.snoozed + 1 }))
-      toast.success('Snoozed for 1 day')
+      setWorkedThisSession(prev => prev + 1)
+      toast.success('Snoozed for 1 hour')
     }
   }
 
   const handleComplete = async (recordId: string, taskId: string) => {
-    const success = await logAction(recordId, 'complete-task', { taskId })
+    const success = await logAction(recordId, 'complete', { taskId })
     if (success) {
+      setSessionStats(prev => ({ ...prev, completed: prev.completed + 1 }))
       toast.success('Task completed')
     }
   }
 
-  const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
-    const success = await logAction(recordId, 'phone-status', { phoneId, status })
+  const handleTemperatureChange = async (recordId: string, temperature: 'HOT' | 'WARM' | 'COLD') => {
+    const success = await logAction(recordId, 'temperature', { newTemperature: temperature })
     if (success) {
-      toast.success(`Phone marked as ${status}`)
+      toast.success(`Temperature changed to ${temperature}`)
+      if (selectedRecordId === recordId && drawerData) {
+        setDrawerData({
+          ...drawerData,
+          record: { ...drawerData.record, temperature },
+        })
+      }
     }
   }
 
-  const handleRecordClick = (recordId: string) => {
-    router.push(`/dashboard/records/${recordId}`)
+  const handleRecordClick = async (recordId: string) => {
+    setSelectedRecordId(recordId)
+    setDrawerLoading(true)
+    
+    if (nextUpData?.record?.id === recordId) {
+      setDrawerData({
+        record: {
+          ...nextUpData.record,
+          mailingStreet: null,
+          mailingCity: null,
+          mailingState: null,
+          mailingZip: null,
+          lastContactType: null,
+          lastContactResult: null,
+          skiptraceDate: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        score: nextUpData.score,
+        nextAction: nextUpData.nextAction,
+        confidence: nextUpData.confidence,
+        reasons: nextUpData.reasons,
+        topReason: nextUpData.topReason,
+        reasonString: nextUpData.reasonString,
+        suggestions: nextUpData.suggestions,
+        flags: nextUpData.flags,
+        phones: nextUpData.phones,
+        motivations: nextUpData.motivations,
+        tags: [],
+        pendingTask: nextUpData.pendingTask,
+      })
+      setDrawerLoading(false)
+      return
+    }
+    
+    const token = getToken()
+    if (!token) {
+      setDrawerLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/dockinsight/record/${recordId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setDrawerData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching record details:', error)
+    } finally {
+      setDrawerLoading(false)
+    }
+  }
+
+  const handleDrawerClose = () => {
+    setSelectedRecordId(null)
+    setDrawerData(null)
   }
 
   const handleQueueCall = (recordId: string) => {
-    // Find the record and call the first phone
-    const record = queueRecords.find(r => r.id === recordId)
-    if (record && record.phoneCount > 0) {
-      // We need to fetch the phone details - for now just navigate to record
-      router.push(`/dashboard/records/${recordId}`)
-    }
+    handleRecordClick(recordId)
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      if (selectedRecordId && e.key === 'Escape') {
+        handleDrawerClose()
+        return
+      }
+
+      if (!nextUpData?.record) return
+
+      const recordId = nextUpData.record.id
+      const primaryPhone = nextUpData.phones.find(p => {
+        const type = p.type?.toUpperCase() || ''
+        return type === 'MOBILE' || type === 'CELL'
+      }) || nextUpData.phones[0]
+
+      switch (e.key.toLowerCase()) {
+        case 'c':
+          if (primaryPhone) {
+            e.preventDefault()
+            handleCall(recordId, primaryPhone.number)
+          }
+          break
+        case 'n':
+        case 'arrowright':
+          e.preventDefault()
+          handleSkip(recordId)
+          break
+        case 's':
+          e.preventDefault()
+          handleSnooze(recordId)
+          break
+        case 't':
+          if (nextUpData.pendingTask) {
+            e.preventDefault()
+            handleComplete(recordId, nextUpData.pendingTask.id)
+          }
+          break
+        case '1':
+          e.preventDefault()
+          handleTemperatureChange(recordId, 'HOT')
+          break
+        case '2':
+          e.preventDefault()
+          handleTemperatureChange(recordId, 'WARM')
+          break
+        case '3':
+          e.preventDefault()
+          handleTemperatureChange(recordId, 'COLD')
+          break
+        case 'enter':
+          e.preventDefault()
+          handleRecordClick(recordId)
+          break
+        case 'r':
+          e.preventDefault()
+          fetchAll()
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [nextUpData, selectedRecordId, fetchAll])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
+
+  const getBucketCounts = (): BucketCounts => {
+    if (overviewData?.buckets) {
+      return {
+        callNow: overviewData.buckets.callNow,
+        followUpToday: overviewData.buckets.followUpToday,
+        callQueue: overviewData.buckets.callQueue,
+        verifyFirst: overviewData.buckets.verifyFirst,
+        getNumbers: overviewData.buckets.getNumbers,
+        nurture: overviewData.buckets.nurture,
+      }
+    }
+    if (queueData?.bucketCounts) {
+      return {
+        callNow: queueData.bucketCounts['call-now'] || 0,
+        followUpToday: queueData.bucketCounts['follow-up-today'] || 0,
+        callQueue: queueData.bucketCounts['call-queue'] || 0,
+        verifyFirst: queueData.bucketCounts['verify-first'] || 0,
+        getNumbers: queueData.bucketCounts['get-numbers'] || 0,
+        nurture: queueData.bucketCounts['nurture'] || 0,
+      }
+    }
+    return {
+      callNow: 0,
+      followUpToday: 0,
+      callQueue: 0,
+      verifyFirst: 0,
+      getNumbers: 0,
+      nurture: 0,
+    }
+  }
+
+  const bucketCounts = getBucketCounts()
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">DockInsight</h1>
-          <p className="text-sm text-muted-foreground">v3.0 • Powered by LCE</p>
-        </div>
         <div className="flex items-center gap-3">
-          {sessionStats.calls > 0 && (
-            <Badge variant="secondary" className="text-sm">
-              {sessionStats.calls} worked this session
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchAll(activeBucket)}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <RefreshCw className="w-4 h-4 mr-2" />
-            )}
-            Refresh
-          </Button>
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">DockInsight</h1>
+            <p className="text-sm text-muted-foreground">v2.2 • Your command center</p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchAll}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Refresh
+        </Button>
       </div>
+
+      {/* Next Up Card */}
+      <NextUpCard
+        data={nextUpData}
+        isLoading={isRefreshing && !nextUpData}
+        onCall={handleCall}
+        onSkip={handleSkip}
+        onSnooze={handleSnooze}
+        onComplete={handleComplete}
+        onRecordClick={handleRecordClick}
+        onPhoneStatus={handlePhoneStatus}
+        activeBucket={activeBucket}
+        workedThisSession={workedThisSession}
+        calledRecordId={calledRecordId}
+        callResultId={callResultId}
+        callResultOptions={callResultOptions}
+        onCallResultChange={handleCallResultChange}
+        onNext={handleNext}
+      />
 
       {/* Bucket Selector */}
       <BucketSelector
@@ -274,60 +627,144 @@ export default function DashboardPage() {
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Next Up Card - Takes 2 columns */}
+        {/* Queue */}
         <div className="lg:col-span-2">
-          <NextUpCard
-            data={nextUpData}
-            isLoading={isRefreshing}
-            onCall={handleCall}
-            onSkip={handleSkip}
-            onSnooze={handleSnooze}
-            onComplete={handleComplete}
+          <QueueList
+            records={queueData?.records || []}
+            total={queueData?.total || 0}
+            isLoading={isRefreshing && !queueData}
             onRecordClick={handleRecordClick}
-            onPhoneStatus={handlePhoneStatus}
-            activeBucket={activeBucket}
-            workedThisSession={sessionStats.calls}
-            calledRecordId={calledRecordId}
-            callResultId={callResultId}
-            callResultOptions={callResultOptions}
-            onCallResultChange={handleCallResultChange}
-            onNext={handleNext}
+            onCall={handleQueueCall}
           />
         </div>
 
-        {/* Queue List - Takes 1 column */}
-        <div className="lg:col-span-1">
-          <QueueList
-            records={queueRecords}
-            total={queueTotal}
-            isLoading={isRefreshing}
-            onRecordClick={handleRecordClick}
-            onCall={handleQueueCall}
-            hasMore={queueHasMore}
-          />
+        {/* Stats */}
+        <div className="space-y-4">
+          {/* Session Stats */}
+          {workedThisSession > 0 && (
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">This Session</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Calls Made</span>
+                  <span className="font-bold text-green-700 dark:text-green-300">{sessionStats.callsMade}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Skipped</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.skipped}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Snoozed</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.snoozed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600 dark:text-green-400">Tasks Done</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">{sessionStats.completed}</span>
+                </div>
+                <div className="pt-2 border-t border-green-200 dark:border-green-800">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-green-700 dark:text-green-300">Total Worked</span>
+                    <span className="font-bold text-green-800 dark:text-green-200">{workedThisSession}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Today's Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Calls Made</span>
+                <span className="font-medium text-foreground">{(overviewData?.today.callsMade || 0) + sessionStats.callsMade}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Contacts</span>
+                <span className="font-medium text-foreground">{overviewData?.today.contacts || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tasks Completed</span>
+                <span className="font-medium text-foreground">{(overviewData?.today.tasksCompleted || 0) + sessionStats.completed}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Temperature</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 h-4 rounded-full overflow-hidden">
+                <div 
+                  className="bg-red-400 dark:bg-red-600 h-full transition-all" 
+                  style={{ flex: overviewData?.temperature.hot || 1 }} 
+                />
+                <div 
+                  className="bg-orange-400 dark:bg-orange-600 h-full transition-all" 
+                  style={{ flex: overviewData?.temperature.warm || 1 }} 
+                />
+                <div 
+                  className="bg-blue-400 dark:bg-blue-600 h-full transition-all" 
+                  style={{ flex: overviewData?.temperature.cold || 1 }} 
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                <span>🔥 {overviewData?.temperature.hot || 0}</span>
+                <span>🌡️ {overviewData?.temperature.warm || 0}</span>
+                <span>❄️ {overviewData?.temperature.cold || 0}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Records</span>
+                <span className="font-medium text-foreground">{overviewData?.kpis.totalRecords || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Hot Leads</span>
+                <span className="font-medium text-red-600">{overviewData?.kpis.hotLeads || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Call Ready</span>
+                <span className="font-medium text-green-600">{overviewData?.kpis.callReady || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tasks Due Today</span>
+                <span className="font-medium text-orange-600">{overviewData?.kpis.tasksDue || 0}</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Call Result Modal - for fallback */}
-      <CallResultModal
-        isOpen={showCallModal}
-        onClose={() => {
-          setShowCallModal(false)
-          setCallingPhone(null)
-        }}
-        onSubmit={async (outcome: string, notes?: string, callbackTime?: Date) => {
-          if (nextUpData?.record && callingPhone) {
-            await logAction(nextUpData.record.id, 'call', {
-              outcome,
-              phoneId: callingPhone.id,
-              notes,
-              callbackTime: callbackTime?.toISOString(),
-            })
-          }
-          setShowCallModal(false)
-          setCallingPhone(null)
-        }}
-        phoneNumber={callingPhone?.number || ''}
+      {/* Record Drawer */}
+      <RecordDrawer
+        isOpen={selectedRecordId !== null}
+        onClose={handleDrawerClose}
+        record={drawerData?.record || null}
+        score={drawerData?.score || 0}
+        nextAction={drawerData?.nextAction || ''}
+        confidence={drawerData?.confidence || 'Low'}
+        reasons={drawerData?.reasons || []}
+        reasonString={drawerData?.reasonString || ''}
+        suggestions={drawerData?.suggestions || []}
+        phones={drawerData?.phones || []}
+        motivations={drawerData?.motivations || []}
+        tags={drawerData?.tags || []}
+        tasks={drawerData?.pendingTask ? [drawerData.pendingTask] : []}
+        onCall={handleCall}
+        onTemperatureChange={handleTemperatureChange}
+        onTaskComplete={handleComplete}
+        isLoading={drawerLoading}
       />
     </div>
   )

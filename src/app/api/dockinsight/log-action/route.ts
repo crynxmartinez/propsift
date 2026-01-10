@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine'
 
 interface LogActionRequest {
   recordId: string
@@ -162,29 +161,6 @@ export async function POST(request: Request) {
           content: notes,
         },
       })
-    }
-
-    // Trigger automations based on action type
-    try {
-      let triggerType = ''
-      switch (action) {
-        case 'call':
-          triggerType = 'call_logged'
-          break
-        case 'temperature':
-          triggerType = 'temperature_changed'
-          break
-      }
-      
-      if (triggerType && authUser.ownerId) {
-        const matchingAutomations = await findMatchingAutomations(triggerType, authUser.ownerId)
-        for (const automation of matchingAutomations) {
-          await executeAutomation(automation.id, recordId, triggerType)
-        }
-      }
-    } catch (automationError) {
-      console.error('Error triggering automations:', automationError)
-      // Don't fail the request if automation fails
     }
 
     return NextResponse.json({

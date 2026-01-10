@@ -168,17 +168,7 @@ export async function GET(request: Request) {
     // Cast to include new fields (will be available after migration)
     const record = topRecord as unknown as RecordWithIncludes
 
-    // Calculate bucket counts for BucketSelector (archived format)
-    const bucketCounts = {
-      callNow: filterByBucket(workableRecords, 'call-now').length,
-      followUpToday: filterByBucket(workableRecords, 'follow-up-today').length,
-      callQueue: filterByBucket(workableRecords, 'call-queue').length,
-      verifyFirst: filterByBucket(workableRecords, 'verify-first').length,
-      getNumbers: filterByBucket(workableRecords, 'get-numbers').length,
-      nurture: filterByBucket(workableRecords, 'nurture').length,
-    }
-
-    // Format response for archived NextUpCard component
+    // Format response
     return NextResponse.json({
       record: {
         id: record.id,
@@ -192,7 +182,12 @@ export async function GET(request: Request) {
         temperature: record.temperature,
         callAttempts: record.callAttempts,
         lastContactedAt: record.lastContactedAt || null,
+        lastContactType: record.lastContactType || null,
+        lastContactResult: record.lastContactResult || null,
         hasEngaged: record.hasEngaged || false,
+        skiptraceDate: record.skiptraceDate,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
       },
       score: topRecord.priority.score,
       nextAction: topRecord.priority.nextAction,
@@ -201,28 +196,20 @@ export async function GET(request: Request) {
       topReason: topRecord.priority.topReason,
       reasonString: topRecord.priority.reasonString,
       suggestions: topRecord.priority.suggestions,
-      flags: {
-        hasValidPhone: topRecord.priority.flags.hasValidPhone,
-        hasMobilePhone: topRecord.priority.flags.hasMobilePhone,
-        hasCallablePhone: topRecord.priority.flags.hasCallablePhone,
-        hasEmail: topRecord.priority.flags.hasEmail,
-        hasTask: topRecord.priority.flags.hasTask,
-        hasOverdueTask: topRecord.priority.flags.hasOverdueTask,
-        isDnc: topRecord.priority.flags.isDnc,
-        isClosed: topRecord.priority.flags.isClosed,
-        isSnoozed: topRecord.priority.flags.isSnoozed,
-        neverContacted: topRecord.priority.flags.neverContacted,
-        smartRescue: false,
-      },
+      flags: topRecord.priority.flags,
       phones: record.phoneNumbers.map(p => ({
         id: p.id,
         number: p.number,
         type: p.type,
-        statuses: p.statuses || [],
+        statuses: p.statuses,
       })),
       motivations: record.recordMotivations.map(rm => ({
         id: rm.motivation.id,
         name: rm.motivation.name,
+      })),
+      tags: record.recordTags.map(rt => ({
+        id: rt.tag.id,
+        name: rt.tag.name,
       })),
       pendingTask: pendingTask ? {
         id: pendingTask.id,
@@ -233,8 +220,7 @@ export async function GET(request: Request) {
       } : null,
       queuePosition: 1,
       totalInQueue: filteredRecords.length,
-      contactLogs: [],
-      bucketCounts,
+      bucket: actualBucket,
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
