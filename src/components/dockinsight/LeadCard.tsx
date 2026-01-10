@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Phone, MapPin, Clock, Zap, ChevronRight, Pause, SkipForward } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Phone, MapPin, Clock, Zap, ChevronRight, Pause, SkipForward, Flame, PhoneCall, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -34,18 +33,11 @@ interface LeadCardProps {
   isLoading?: boolean
 }
 
-const TEMP_COLORS = {
-  HOT: 'bg-red-500',
-  WARM: 'bg-orange-500',
-  COLD: 'bg-blue-500',
-  ICE: 'bg-slate-400',
-}
-
-const TEMP_BG = {
-  HOT: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
-  WARM: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800',
-  COLD: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
-  ICE: 'bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800',
+const TEMP_CONFIG = {
+  HOT: { bg: 'from-red-500/20 to-orange-500/10', border: 'border-red-500/50', text: 'text-red-500', label: 'HOT' },
+  WARM: { bg: 'from-orange-500/20 to-yellow-500/10', border: 'border-orange-500/50', text: 'text-orange-500', label: 'WARM' },
+  COLD: { bg: 'from-blue-500/20 to-cyan-500/10', border: 'border-blue-500/50', text: 'text-blue-500', label: 'COLD' },
+  ICE: { bg: 'from-slate-500/20 to-slate-400/10', border: 'border-slate-500/50', text: 'text-slate-500', label: 'ICE' },
 }
 
 export function LeadCard({
@@ -56,7 +48,6 @@ export function LeadCard({
   cadenceStep,
   totalSteps,
   nextActionType,
-  queueSection,
   queueReason,
   reasonString,
   phones,
@@ -71,6 +62,7 @@ export function LeadCard({
 }: LeadCardProps) {
   const [selectedPhoneIndex, setSelectedPhoneIndex] = useState(0)
   const primaryPhone = phones[selectedPhoneIndex] || phones[0]
+  const tempConfig = TEMP_CONFIG[temperatureBand]
 
   const handleCall = () => {
     if (primaryPhone) {
@@ -79,57 +71,68 @@ export function LeadCard({
   }
 
   return (
-    <Card className={`${TEMP_BG[temperatureBand]} border-2`}>
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1 cursor-pointer" onClick={onRecordClick}>
-            <div className="flex items-center gap-2 mb-1">
-              <div className={`w-3 h-3 rounded-full ${TEMP_COLORS[temperatureBand]}`} />
-              <span className="text-xs font-medium text-muted-foreground uppercase">
-                {temperatureBand} Lead
-              </span>
-              {hasCallback && (
-                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                  Callback
-                </Badge>
-              )}
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${tempConfig.bg} border-2 ${tempConfig.border} backdrop-blur-sm`}>
+      {/* Glow effect */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent rounded-full blur-2xl" />
+      
+      <div className="relative p-6">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border ${tempConfig.border}`}>
+              <Flame className={`w-4 h-4 ${tempConfig.text}`} />
+              <span className={`text-sm font-bold ${tempConfig.text}`}>{tempConfig.label}</span>
             </div>
-            <h2 className="text-xl font-bold text-foreground">{record.ownerFullName}</h2>
-            {record.propertyStreet && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                <MapPin className="w-3 h-3" />
-                <span>
-                  {record.propertyStreet}
-                  {record.propertyCity && `, ${record.propertyCity}`}
-                  {record.propertyState && `, ${record.propertyState}`}
-                </span>
+            {hasCallback && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/20 border border-green-500/50">
+                <Calendar className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-medium text-green-500">Callback</span>
               </div>
             )}
           </div>
           
-          {/* Score Badge */}
-          <div className="text-right">
-            <div className="text-2xl font-bold text-foreground">{score}</div>
-            <div className="text-xs text-muted-foreground">Priority Score</div>
-            <Badge variant="outline" className="mt-1 text-xs">
-              {confidenceLevel}
-            </Badge>
+          {/* Score Circle */}
+          <div className="flex flex-col items-center">
+            <div className={`w-16 h-16 rounded-full bg-background/80 backdrop-blur-sm border-2 ${tempConfig.border} flex items-center justify-center`}>
+              <span className="text-2xl font-black text-foreground">{score}</span>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Priority</span>
           </div>
         </div>
 
-        {/* Reason String */}
-        <div className="bg-background/50 rounded-lg p-3 mb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <Zap className="w-4 h-4 text-yellow-500" />
-            <span className="font-medium">{reasonString}</span>
+        {/* Main Info */}
+        <div className="mb-4 cursor-pointer" onClick={onRecordClick}>
+          <h2 className="text-2xl font-bold text-foreground mb-1">{record.ownerFullName}</h2>
+          {record.propertyStreet && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">
+                {record.propertyStreet}
+                {record.propertyCity && `, ${record.propertyCity}`}
+                {record.propertyState && ` ${record.propertyState}`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Why Card */}
+        <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/10">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-4 h-4 text-yellow-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Why This Lead</p>
+              <p className="text-sm font-medium text-foreground">{reasonString || queueReason}</p>
+            </div>
           </div>
+          
           {totalSteps > 0 && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Cadence Step {cadenceStep} of {totalSteps}
-                {nextActionType && ` • Next: ${nextActionType}`}
+                Step {cadenceStep}/{totalSteps}
+                {nextActionType && <span className="ml-2 text-foreground font-medium">• {nextActionType}</span>}
               </span>
             </div>
           )}
@@ -137,15 +140,15 @@ export function LeadCard({
 
         {/* Motivations */}
         {motivations.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {motivations.slice(0, 4).map((m, i) => (
-              <Badge key={i} variant="secondary" className="text-xs">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {motivations.slice(0, 5).map((m, i) => (
+              <Badge key={i} variant="secondary" className="bg-background/60 backdrop-blur-sm border border-white/10 text-xs">
                 {m}
               </Badge>
             ))}
-            {motivations.length > 4 && (
-              <Badge variant="outline" className="text-xs">
-                +{motivations.length - 4} more
+            {motivations.length > 5 && (
+              <Badge variant="outline" className="text-xs bg-background/40">
+                +{motivations.length - 5}
               </Badge>
             )}
           </div>
@@ -153,16 +156,18 @@ export function LeadCard({
 
         {/* Phone Selector */}
         {phones.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-muted-foreground" />
+          <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 mb-4 border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <PhoneCall className="w-5 h-5 text-green-500" />
+              </div>
               <select
                 value={selectedPhoneIndex}
                 onChange={(e) => setSelectedPhoneIndex(parseInt(e.target.value))}
-                className="flex-1 bg-background border rounded-md px-3 py-2 text-sm"
+                className="flex-1 bg-transparent border-0 text-foreground font-medium focus:outline-none focus:ring-0"
               >
                 {phones.map((phone, i) => (
-                  <option key={phone.id} value={i}>
+                  <option key={phone.id} value={i} className="bg-background">
                     {phone.number} ({phone.type})
                   </option>
                 ))}
@@ -176,40 +181,49 @@ export function LeadCard({
           <Button
             onClick={handleCall}
             disabled={!primaryPhone || isLoading}
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            size="lg"
+            className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold h-14 text-lg rounded-xl shadow-lg shadow-green-600/25"
           >
-            <Phone className="w-4 h-4 mr-2" />
-            Call
+            <Phone className="w-5 h-5 mr-2" />
+            Call Now
           </Button>
           <Button
             variant="outline"
+            size="lg"
             onClick={onSkip}
             disabled={isLoading}
+            className="h-14 w-14 rounded-xl bg-background/60 backdrop-blur-sm border-white/20 hover:bg-background/80"
           >
-            <SkipForward className="w-4 h-4" />
+            <SkipForward className="w-5 h-5" />
           </Button>
           <Button
             variant="outline"
+            size="lg"
             onClick={onSnooze}
             disabled={isLoading}
+            className="h-14 w-14 rounded-xl bg-background/60 backdrop-blur-sm border-white/20 hover:bg-background/80"
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-5 h-5" />
           </Button>
           <Button
             variant="outline"
+            size="lg"
             onClick={onPause}
             disabled={isLoading}
+            className="h-14 w-14 rounded-xl bg-background/60 backdrop-blur-sm border-white/20 hover:bg-background/80"
           >
-            <Pause className="w-4 h-4" />
+            <Pause className="w-5 h-5" />
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
+            size="lg"
             onClick={onRecordClick}
+            className="h-14 w-14 rounded-xl bg-background/60 backdrop-blur-sm border-white/20 hover:bg-background/80"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

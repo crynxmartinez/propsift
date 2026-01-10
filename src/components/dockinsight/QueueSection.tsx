@@ -1,10 +1,6 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Phone, MapPin } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useState } from 'react'
+import { Phone, MapPin, Flame } from 'lucide-react'
 
 interface QueueRecord {
   id: string
@@ -17,121 +13,83 @@ interface QueueRecord {
   phones: Array<{ id: string; number: string; type: string }>
 }
 
-interface QueueSectionProps {
-  title: string
-  color: string
+interface QueueListProps {
   records: QueueRecord[]
-  total: number
-  hasMore: boolean
-  isExpanded?: boolean
   onRecordClick: (recordId: string) => void
-  onLoadMore?: () => void
+  emptyMessage?: string
 }
 
-const TEMP_COLORS = {
-  HOT: 'bg-red-500',
-  WARM: 'bg-orange-500',
-  COLD: 'bg-blue-500',
-  ICE: 'bg-slate-400',
+const TEMP_CONFIG = {
+  HOT: { bg: 'bg-red-500/10', border: 'border-red-500/30', dot: 'bg-red-500' },
+  WARM: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', dot: 'bg-orange-500' },
+  COLD: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', dot: 'bg-blue-500' },
+  ICE: { bg: 'bg-slate-500/10', border: 'border-slate-500/30', dot: 'bg-slate-400' },
 }
 
-const SECTION_COLORS: Record<string, string> = {
-  red: 'border-l-red-500',
-  orange: 'border-l-orange-500',
-  yellow: 'border-l-yellow-500',
-  blue: 'border-l-blue-500',
-  purple: 'border-l-purple-500',
-  gray: 'border-l-gray-400',
-}
-
-export function QueueSection({
-  title,
-  color,
-  records,
-  total,
-  hasMore,
-  isExpanded: initialExpanded = true,
-  onRecordClick,
-  onLoadMore,
-}: QueueSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded)
-
-  if (total === 0) {
-    return null
+export function QueueList({ records, onRecordClick, emptyMessage = 'No records' }: QueueListProps) {
+  if (records.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        {emptyMessage}
+      </div>
+    )
   }
 
   return (
-    <Card className={`border-l-4 ${SECTION_COLORS[color] || 'border-l-gray-400'}`}>
-      <CardHeader 
-        className="py-3 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {total}
-            </Badge>
-          </div>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </div>
-      </CardHeader>
-      
-      {isExpanded && (
-        <CardContent className="pt-0 space-y-2">
-          {records.map((record) => (
-            <div
-              key={record.id}
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-              onClick={() => onRecordClick(record.id)}
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className={`w-2 h-2 rounded-full ${TEMP_COLORS[record.temperatureBand]}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{record.ownerFullName}</div>
-                  {record.propertyStreet && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3" />
-                      <span className="truncate">
-                        {record.propertyStreet}
-                        {record.propertyCity && `, ${record.propertyCity}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <div className="text-sm font-bold">{record.priorityScore}</div>
-                  <div className="text-xs text-muted-foreground">{record.queueReason}</div>
-                </div>
-                {record.phones.length > 0 && (
-                  <Phone className="w-4 h-4 text-green-600" />
-                )}
-              </div>
+    <div className="space-y-2">
+      {records.map((record, index) => {
+        const config = TEMP_CONFIG[record.temperatureBand]
+        return (
+          <div
+            key={record.id}
+            onClick={() => onRecordClick(record.id)}
+            className={`group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.01] ${config.bg} border ${config.border} hover:border-primary/50`}
+          >
+            {/* Rank */}
+            <div className="w-6 h-6 rounded-full bg-background/80 flex items-center justify-center text-xs font-bold text-muted-foreground">
+              {index + 1}
             </div>
-          ))}
-          
-          {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation()
-                onLoadMore?.()
-              }}
-            >
-              Show more ({total - records.length} remaining)
-            </Button>
-          )}
-        </CardContent>
-      )}
-    </Card>
+
+            {/* Temperature Dot */}
+            <div className={`w-2.5 h-2.5 rounded-full ${config.dot}`} />
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm text-foreground truncate">
+                {record.ownerFullName}
+              </div>
+              {record.propertyStreet && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {record.propertyStreet}
+                    {record.propertyCity && `, ${record.propertyCity}`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Score & Phone */}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-sm font-bold text-foreground">{record.priorityScore}</div>
+              </div>
+              {record.phones.length > 0 ? (
+                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-green-500" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-muted-foreground/50" />
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
+
+// Keep old export name for compatibility
+export { QueueList as QueueSection }
