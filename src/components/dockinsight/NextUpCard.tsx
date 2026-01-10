@@ -64,6 +64,7 @@ interface NextUpRecord {
   temperature: string | null
   callAttempts: number
   lastContactedAt: string | null
+  lastContactResult: string | null
   hasEngaged: boolean
 }
 
@@ -93,6 +94,12 @@ interface ContactLog {
   result: string
   notes?: string
   createdAt: string
+}
+
+interface RecordStatus {
+  id: string
+  name: string
+  color: string
 }
 
 export interface NextUpData {
@@ -125,6 +132,7 @@ export interface NextUpData {
   totalInQueue: number
   message?: string
   contactLogs?: ContactLog[]
+  status?: RecordStatus | null
   // LCE v2.3.1 fields
   cadenceState?: string
   cadenceType?: string
@@ -306,8 +314,8 @@ export function NextUpCard({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* LCE Cadence Progress Bar */}
-        {data.cadenceStep && data.totalSteps && data.cadenceType && (
+        {/* LCE Cadence Progress Bar - Only show if cadence is active (step > 0) */}
+        {data.cadenceStep !== undefined && data.cadenceStep > 0 && data.totalSteps && data.totalSteps > 0 && data.cadenceType && (
           <div className="bg-muted/50 rounded-lg p-3 -mt-1">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -390,15 +398,41 @@ export function NextUpCard({
                 +{motivations.length - 3} more
               </Badge>
             )}
+            {/* Record Status Badge */}
+            {data.status && (
+              <Badge 
+                variant="outline" 
+                style={{ 
+                  backgroundColor: `${data.status.color}20`,
+                  borderColor: data.status.color,
+                  color: data.status.color 
+                }}
+              >
+                ✨ {data.status.name}
+              </Badge>
+            )}
             {flags.hasOverdueTask && (
               <Badge variant="destructive" className="gap-1">
                 <AlertCircle className="w-3 h-3" />
                 Task Overdue
               </Badge>
             )}
-            {flags.neverContacted && (
-              <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                ✨ New Lead
+            {/* Last Call Result Badge */}
+            {record.lastContactResult && (
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  'gap-1',
+                  record.lastContactResult === 'ANSWERED' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300',
+                  record.lastContactResult === 'VOICEMAIL' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-300',
+                  record.lastContactResult === 'NO_ANSWER' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-300',
+                  record.lastContactResult === 'BUSY' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-300',
+                  record.lastContactResult === 'WRONG_NUMBER' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-300',
+                  record.lastContactResult === 'DISCONNECTED' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-300'
+                )}
+              >
+                <PhoneCall className="w-3 h-3" />
+                {record.lastContactResult.replace('_', ' ')}
               </Badge>
             )}
           </div>

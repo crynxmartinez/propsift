@@ -247,6 +247,11 @@ export async function GET(request: Request) {
         status: pendingTask.status,
         priority: pendingTask.priority,
       } : null,
+      status: record.status ? {
+        id: record.status.id,
+        name: record.status.name,
+        color: record.status.color,
+      } : null,
       queuePosition: 1,
       totalInQueue: filteredRecords.length,
       bucket: actualBucket,
