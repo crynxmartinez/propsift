@@ -83,3 +83,24 @@ export {
   getReEnrollmentSummary,
   getRecordsReadyForReEnrollment,
 } from './reenrollment'
+
+// Workability Gate
+export {
+  checkWorkability,
+  checkCommsAvailability,
+  getActionFallback,
+  assignToQueueSection,
+  QUEUE_SECTION_INFO,
+} from './workability'
+
+// Queue Builder
+export {
+  buildQueue,
+  getNextUp,
+  throttleSection,
+  throttleQueue,
+  generateReasonString,
+  getQueueSummary,
+  getRecordsBySection,
+  skipToNextRecord,
+} from './queue-builder'
