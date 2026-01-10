@@ -58,3 +58,17 @@ export {
   OUTCOME_DISPLAY_NAMES,
   getOutcomeDisplayName,
 } from './call-handler'
+
+// Phone Rotation
+export {
+  sortPhonesByPriority,
+  getNextPhoneToCall,
+  getPhoneStatusUpdate,
+  isPhoneCallable,
+  hasCallablePhone,
+  countCallablePhones,
+  areAllPhonesExhausted,
+  getPhoneSummary,
+  updatePhoneAfterCall,
+  markPhoneAsPrimary,
+} from './phone-rotation'
