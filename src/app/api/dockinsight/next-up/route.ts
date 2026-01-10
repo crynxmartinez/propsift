@@ -141,27 +141,39 @@ export async function GET(request: Request) {
       priority: computePriority(record as unknown as RecordWithRelations),
     }))
 
-    // Filter out not workable records
-    const workableRecords = scoredRecords.filter(
-      r => r.priority.nextAction !== 'Not Workable'
-    )
+    // Filter based on bucket type
+    // If requesting "not-workable" bucket, show those records
+    // Otherwise, filter out not workable records
+    let filteredRecords = scoredRecords
+    
+    if (bucket === 'not-workable') {
+      // Show only Not Workable records
+      filteredRecords = scoredRecords.filter(
+        r => r.priority.nextAction === 'Not Workable'
+      )
+    } else {
+      // Filter out not workable records for other buckets
+      filteredRecords = scoredRecords.filter(
+        r => r.priority.nextAction !== 'Not Workable'
+      )
+    }
 
-    if (workableRecords.length === 0) {
+    if (filteredRecords.length === 0) {
       return NextResponse.json({
         record: null,
-        message: 'No workable records found',
+        message: bucket === 'not-workable' 
+          ? 'No not-workable records found' 
+          : 'No workable records found',
         bucket: bucket || 'all',
         totalInQueue: 0,
       })
     }
 
-    // Filter by bucket if specified - DO NOT fall back to other buckets
-    let filteredRecords = workableRecords
+    // Filter by specific bucket if specified (except not-workable which is already filtered)
     let actualBucket = bucket || 'all'
     
-    if (bucket) {
-      filteredRecords = filterByBucket(workableRecords, bucket)
-      // Do NOT fall back - if bucket is empty, show empty state
+    if (bucket && bucket !== 'not-workable') {
+      filteredRecords = filterByBucket(filteredRecords, bucket)
     }
 
     if (filteredRecords.length === 0) {

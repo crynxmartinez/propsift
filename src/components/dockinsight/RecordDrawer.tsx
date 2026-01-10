@@ -204,13 +204,10 @@ export function RecordDrawer({
           <>
             <SheetHeader className="p-6 pb-4 border-b">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
+                <div className="flex-1 pr-8">
                   <SheetTitle className="text-xl">{record.ownerFullName}</SheetTitle>
                   <p className="text-sm text-muted-foreground mt-1">{propertyAddress || 'No address'}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
               
               {/* Score & Status */}

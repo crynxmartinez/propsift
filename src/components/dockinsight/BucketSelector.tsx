@@ -9,9 +9,16 @@ import {
   Search, 
   Clock,
   AlertTriangle,
-  XCircle
+  XCircle,
+  HelpCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export interface BucketCounts {
   callNow: number
@@ -33,7 +40,8 @@ const bucketConfig = [
   {
     key: 'call-now',
     label: 'Call Now',
-    description: 'High priority, ready to call',
+    description: 'Hot leads with phones - call immediately',
+    help: 'High-priority leads with valid phone numbers and high scores. These should be called first.',
     icon: Phone,
     color: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-50 dark:bg-red-900/20',
@@ -44,7 +52,8 @@ const bucketConfig = [
   {
     key: 'follow-up-today',
     label: 'Follow Up',
-    description: 'Tasks due today',
+    description: 'Scheduled follow-ups due today',
+    help: 'Leads with tasks or callbacks scheduled for today. Complete these to stay on track.',
     icon: ClipboardCheck,
     color: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-50 dark:bg-orange-900/20',
@@ -55,7 +64,8 @@ const bucketConfig = [
   {
     key: 'call-queue',
     label: 'Call Queue',
-    description: 'Medium priority',
+    description: 'Ready to call - medium priority',
+    help: 'Leads with valid phones and moderate scores. Work through these after Call Now.',
     icon: PhoneCall,
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-50 dark:bg-green-900/20',
@@ -66,7 +76,8 @@ const bucketConfig = [
   {
     key: 'verify-first',
     label: 'Verify First',
-    description: 'Needs data verification',
+    description: 'Verify data before calling',
+    help: 'Leads with uncertain data quality. Verify owner info or property details before calling.',
     icon: AlertTriangle,
     color: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
@@ -77,7 +88,8 @@ const bucketConfig = [
   {
     key: 'get-numbers',
     label: 'Get Numbers',
-    description: 'Missing phone data',
+    description: 'Need phone numbers',
+    help: 'Leads without valid phone numbers. Run skip trace or find contact info to move them to Call Queue.',
     icon: Search,
     color: 'text-purple-600 dark:text-purple-400',
     bgColor: 'bg-purple-50 dark:bg-purple-900/20',
@@ -88,7 +100,8 @@ const bucketConfig = [
   {
     key: 'nurture',
     label: 'Nurture',
-    description: 'Low priority',
+    description: 'Long-term follow-up',
+    help: 'Low-priority leads or those not ready now. Check back periodically or add to drip campaigns.',
     icon: Clock,
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
@@ -99,7 +112,8 @@ const bucketConfig = [
   {
     key: 'not-workable',
     label: 'Not Workable',
-    description: 'DNC, Dead, Closed',
+    description: 'Cannot be contacted',
+    help: 'Leads marked as DNC, Dead, Sold, Closed, or otherwise not contactable. Review periodically for errors.',
     icon: XCircle,
     color: 'text-gray-500 dark:text-gray-400',
     bgColor: 'bg-gray-50 dark:bg-gray-900/20',
@@ -114,46 +128,55 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
     buckets.verifyFirst + buckets.getNumbers + buckets.nurture
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">Action Buckets</h3>
-        <Badge variant="secondary" className="text-xs">
-          {totalWorkable} workable
-        </Badge>
+    <TooltipProvider>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground">Action Buckets</h3>
+          <Badge variant="secondary" className="text-xs">
+            {totalWorkable} workable
+          </Badge>
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {bucketConfig.map((bucket) => {
+            const Icon = bucket.icon
+            const isActive = activeBucket === bucket.key
+            const count = buckets[bucket.countKey]
+            
+            return (
+              <Tooltip key={bucket.key}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className={cn(
+                      'cursor-pointer transition-all hover:shadow-md border',
+                      bucket.bgColor,
+                      bucket.borderColor,
+                      isActive && `ring-2 ${bucket.activeColor}`,
+                      count === 0 && 'opacity-50'
+                    )}
+                    onClick={() => onBucketClick(bucket.key)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <Icon className={cn('w-4 h-4', bucket.color)} />
+                        <span className={cn('text-xl font-bold', bucket.color)}>
+                          {count}
+                        </span>
+                      </div>
+                      <div className={cn('text-xs font-medium', bucket.color)}>
+                        {bucket.label}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-semibold">{bucket.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{bucket.help}</p>
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </div>
       </div>
-      <div className="grid grid-cols-7 gap-2">
-        {bucketConfig.map((bucket) => {
-          const Icon = bucket.icon
-          const isActive = activeBucket === bucket.key
-          const count = buckets[bucket.countKey]
-          
-          return (
-            <Card
-              key={bucket.key}
-              className={cn(
-                'cursor-pointer transition-all hover:shadow-md border',
-                bucket.bgColor,
-                bucket.borderColor,
-                isActive && `ring-2 ${bucket.activeColor}`,
-                count === 0 && 'opacity-50'
-              )}
-              onClick={() => onBucketClick(bucket.key)}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <Icon className={cn('w-4 h-4', bucket.color)} />
-                  <span className={cn('text-xl font-bold', bucket.color)}>
-                    {count}
-                  </span>
-                </div>
-                <div className={cn('text-xs font-medium', bucket.color)}>
-                  {bucket.label}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-    </div>
+    </TooltipProvider>
   )
 }
