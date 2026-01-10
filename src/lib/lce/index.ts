@@ -72,3 +72,14 @@ export {
   updatePhoneAfterCall,
   markPhoneAsPrimary,
 } from './phone-rotation'
+
+// Re-Enrollment Engine
+export {
+  checkReEnrollmentEligibility,
+  calculateReEnrollmentDate,
+  executeReEnrollment,
+  isStaleEngaged,
+  checkWakeUpEligibility,
+  getReEnrollmentSummary,
+  getRecordsReadyForReEnrollment,
+} from './reenrollment'
