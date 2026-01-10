@@ -393,19 +393,9 @@ export function computePriority(record: RecordWithRelations): PriorityResult {
     }
   }
   
-  // v2.3: Block completed records from queue
-  if (record.isComplete) {
-    return {
-      score: 0,
-      nextAction: 'Not Workable',
-      confidence: 'High',
-      reasons: [{ label: '✅ Completed', delta: 0, category: 'data' }],
-      topReason: 'Completed',
-      reasonString: 'Record marked as complete',
-      suggestions: [],
-      flags,
-    }
-  }
+  // Note: isComplete means "data is complete" (has all required fields)
+  // This is NOT a "closed/done" status - it's a data quality indicator
+  // Records with complete data should still be workable and scored normally
   
   // ============================================
   // 1. TEMPERATURE (Base Score)
