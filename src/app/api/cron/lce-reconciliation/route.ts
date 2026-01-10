@@ -112,11 +112,13 @@ export async function GET(request: Request) {
       await prisma.reconciliationLog.create({
         data: {
           runType: 'DAILY',
-          status: results.errors.length === 0 ? 'SUCCESS' : 'PARTIAL',
-          recordsProcessed: results.unsnoozed + results.autoEnrolled + results.deepProspectReactivated,
+          status: results.errors.length === 0 ? 'COMPLETED' : 'FAILED',
+          recordsScanned: results.unsnoozed + results.deepProspectReactivated,
           issuesFound: results.staleChecked,
-          issuesFixed: results.unsnoozed + results.autoEnrolled + results.deepProspectReactivated,
-          details: JSON.stringify(results),
+          issuesFixed: results.unsnoozed + results.deepProspectReactivated,
+          fixes: results as object,
+          completedAt: new Date(),
+          errorMessage: results.errors.length > 0 ? results.errors.join('; ') : null,
         },
       })
     } catch (error) {
