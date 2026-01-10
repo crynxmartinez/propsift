@@ -572,6 +572,7 @@ export default function DashboardPage() {
         verifyFirst: overviewData.buckets.verifyFirst,
         getNumbers: overviewData.buckets.getNumbers,
         nurture: overviewData.buckets.nurture,
+        notWorkable: overviewData.buckets.notWorkable,
       }
     }
     if (queueData?.bucketCounts) {
@@ -582,6 +583,7 @@ export default function DashboardPage() {
         verifyFirst: queueData.bucketCounts['verify-first'] || 0,
         getNumbers: queueData.bucketCounts['get-numbers'] || 0,
         nurture: queueData.bucketCounts['nurture'] || 0,
+        notWorkable: queueData.bucketCounts['not-workable'] || 0,
       }
     }
     return {
@@ -591,6 +593,7 @@ export default function DashboardPage() {
       verifyFirst: 0,
       getNumbers: 0,
       nurture: 0,
+      notWorkable: 0,
     }
   }
 

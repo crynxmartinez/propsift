@@ -270,6 +270,12 @@ model Record {
   cadenceExitDate   DateTime? // When exited cadence
   cadenceExitReason String? // COMPLETED, ANSWERED, DNC, DEAD, MANUAL, CLOSED
 
+  // LCE v3.0: First-to-Market Phases
+  currentPhase          String    @default("NEW") // NEW, BLITZ_1, DEEP_PROSPECT, BLITZ_2, MULTI_CHANNEL, NURTURE
+  blitzAttempts         Int       @default(0) // Attempts in current blitz phase (resets on phase change)
+  lastBlitzDate         DateTime? // Last blitz call date (for daily follow-up tracking)
+  deepProspectEnteredAt DateTime? // When entered deep prospecting
+
   // Next Action
   nextActionType String? // CALL, SMS, RVM, EMAIL
   nextActionDue  DateTime? // When next action is due (UTC date)

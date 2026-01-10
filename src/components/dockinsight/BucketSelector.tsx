@@ -8,7 +8,8 @@ import {
   PhoneCall,
   Search, 
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  XCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +20,7 @@ export interface BucketCounts {
   verifyFirst: number
   getNumbers: number
   nurture: number
+  notWorkable: number
 }
 
 interface BucketSelectorProps {
@@ -94,10 +96,22 @@ const bucketConfig = [
     activeColor: 'ring-blue-500',
     countKey: 'nurture' as keyof BucketCounts,
   },
+  {
+    key: 'not-workable',
+    label: 'Not Workable',
+    description: 'DNC, Dead, Closed',
+    icon: XCircle,
+    color: 'text-gray-500 dark:text-gray-400',
+    bgColor: 'bg-gray-50 dark:bg-gray-900/20',
+    borderColor: 'border-gray-200 dark:border-gray-700',
+    activeColor: 'ring-gray-500',
+    countKey: 'notWorkable' as keyof BucketCounts,
+  },
 ]
 
 export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketSelectorProps) {
-  const totalWorkable = Object.values(buckets).reduce((a, b) => a + b, 0)
+  const totalWorkable = buckets.callNow + buckets.followUpToday + buckets.callQueue + 
+    buckets.verifyFirst + buckets.getNumbers + buckets.nurture
 
   return (
     <div className="space-y-3">
@@ -107,7 +121,7 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
           {totalWorkable} workable
         </Badge>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {bucketConfig.map((bucket) => {
           const Icon = bucket.icon
           const isActive = activeBucket === bucket.key

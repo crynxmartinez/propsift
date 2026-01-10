@@ -3,16 +3,21 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
 import { headers } from 'next/headers'
+import { mapCallResultToOutcome, type CallOutcome } from '@/lib/lce/call-outcome-handler'
+import { calculatePhaseTransition, OUTCOME_CONFIG, type LCEPhase } from '@/lib/lce/first-to-market'
 
 interface LogActionRequest {
   recordId: string
   action: 'call' | 'skip' | 'snooze' | 'complete' | 'temperature' | 'pause' | 'resume'
   result?: 'answered' | 'voicemail' | 'no_answer' | 'wrong_number' | 'busy' | 'disconnected'
+  callResultName?: string // Name of call result for LCE mapping
+  phoneId?: string // Phone that was called
   notes?: string
   snoozeDuration?: number // minutes
   taskId?: string
   newTemperature?: 'HOT' | 'WARM' | 'COLD'
   reason?: string // For pause action
+  callbackDate?: string // ISO date for callback scheduling
 }
 
 export async function POST(request: Request) {
@@ -65,17 +70,80 @@ export async function POST(request: Request) {
 
     switch (action) {
       case 'call':
-        // Increment call attempts
+        // Map call result to LCE outcome
+        const callResultName = body.callResultName || result || 'no_answer'
+        const wasAnswered = result === 'answered' || callResultName.toLowerCase().includes('answered')
+        const lceOutcome: CallOutcome = mapCallResultToOutcome(callResultName, wasAnswered)
+        const outcomeConfig = OUTCOME_CONFIG[lceOutcome]
+        
+        // Get current phase and blitz attempts (with fallbacks for new schema)
+        const currentPhase = ((record as Record<string, unknown>).currentPhase as string) || 'NEW'
+        const blitzAttempts = ((record as Record<string, unknown>).blitzAttempts as number) || 0
+        const noResponseStreak = ((record as Record<string, unknown>).noResponseStreak as number) || 0
+        
+        // Calculate phase transition
+        const callbackDateParsed = body.callbackDate ? new Date(body.callbackDate) : undefined
+        const transition = calculatePhaseTransition(
+          currentPhase as LCEPhase,
+          blitzAttempts,
+          lceOutcome,
+          callbackDateParsed
+        )
+        
+        // Build update data with LCE v3.0 First-to-Market logic
         updateData = {
+          // Basic call tracking
           callAttempts: { increment: 1 },
           lastContactedAt: now,
           lastContactType: 'CALL',
-          lastContactResult: result?.toUpperCase() || 'NO_ANSWER',
+          lastContactResult: lceOutcome,
+          
+          // LCE v3.0: Phase tracking
+          currentPhase: transition.newPhase,
+          blitzAttempts: transition.newBlitzAttempts,
+          lastBlitzDate: now,
+          
+          // LCE v3.0: Next action scheduling
+          nextActionDue: transition.nextActionDue,
+          nextActionType: transition.nextActionType,
+          
+          // Engagement tracking
+          hasEngaged: outcomeConfig.isContact ? true : (record.hasEngaged || false),
+          noResponseStreak: outcomeConfig.isContact ? 0 : noResponseStreak + 1,
         }
         
-        // If answered, mark as engaged
-        if (result === 'answered') {
-          updateData.hasEngaged = true
+        // Handle callback scheduling
+        if (lceOutcome === 'ANSWERED_CALLBACK' && callbackDateParsed) {
+          updateData.callbackScheduledFor = callbackDateParsed
+          updateData.callbackRequestedAt = now
+        }
+        
+        // Handle deep prospecting
+        if (transition.shouldMoveToDeepProspect) {
+          updateData.deepProspectEnteredAt = now
+        }
+        
+        // Handle DNC (not workable)
+        if (transition.shouldMoveToNotWorkable) {
+          updateData.cadenceState = 'EXITED_DNC'
+          updateData.cadenceExitDate = now
+          updateData.cadenceExitReason = 'DNC'
+        }
+        
+        // Update phone stats if phoneId provided
+        if (body.phoneId) {
+          await prisma.recordPhoneNumber.update({
+            where: { id: body.phoneId },
+            data: {
+              attemptCount: { increment: 1 },
+              lastAttemptAt: now,
+              lastOutcome: lceOutcome,
+              consecutiveNoAnswer: outcomeConfig.isContact ? 0 : { increment: 1 },
+              phoneStatus: lceOutcome === 'WRONG_NUMBER' ? 'WRONG' : 
+                           lceOutcome === 'DISCONNECTED' ? 'DISCONNECTED' :
+                           lceOutcome === 'ANSWERED_DNC' ? 'DNC' : undefined,
+            },
+          })
         }
         
         activityAction = 'call_logged'

@@ -118,6 +118,13 @@ export interface RecordWithRelations {
   tasks?: Task[]
   status?: Status | null
   comments?: Array<{ id: string; createdAt: Date }>
+  // LCE v3.0: First-to-Market fields
+  currentPhase?: string | null
+  blitzAttempts?: number
+  nextActionDue?: Date | null
+  nextActionType?: string | null
+  callbackScheduledFor?: Date | null
+  noResponseStreak?: number
 }
 
 // ============================================
@@ -864,15 +871,80 @@ export function computePriorityBatch(records: RecordWithRelations[]): Array<Reco
 }
 
 // ============================================
-// SORTING
+// SORTING (LCE v3.0 - First-to-Market)
 // ============================================
+
+// Queue tier determines priority order
+function getQueueTier(record: RecordWithRelations): number {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const phase = record.currentPhase || 'NEW'
+
+  // Tier 1: Callbacks due today (highest priority)
+  if (record.callbackScheduledFor) {
+    const callbackDate = new Date(record.callbackScheduledFor)
+    const callbackDay = new Date(callbackDate.getFullYear(), callbackDate.getMonth(), callbackDate.getDate())
+    if (callbackDay.getTime() <= today.getTime()) {
+      return 1
+    }
+  }
+
+  // Tier 2: New leads (never called) - First to market!
+  if (phase === 'NEW') {
+    return 2
+  }
+
+  // Tier 3: Blitz follow-ups due today
+  if ((phase === 'BLITZ_1' || phase === 'BLITZ_2') && record.nextActionDue) {
+    const actionDate = new Date(record.nextActionDue)
+    const actionDay = new Date(actionDate.getFullYear(), actionDate.getMonth(), actionDate.getDate())
+    if (actionDay.getTime() <= today.getTime()) {
+      return 3
+    }
+  }
+
+  // Tier 4: Score-based follow-ups due today
+  if (record.nextActionDue) {
+    const actionDate = new Date(record.nextActionDue)
+    const actionDay = new Date(actionDate.getFullYear(), actionDate.getMonth(), actionDate.getDate())
+    if (actionDay.getTime() <= today.getTime()) {
+      return 4
+    }
+  }
+
+  // Tier 5: Deep prospecting (needs skiptrace)
+  if (phase === 'DEEP_PROSPECT') {
+    return 5
+  }
+
+  // Tier 6: Multi-channel
+  if (phase === 'MULTI_CHANNEL') {
+    return 6
+  }
+
+  // Tier 7: Nurture
+  if (phase === 'NURTURE') {
+    return 7
+  }
+
+  // Tier 8: Future follow-ups
+  return 8
+}
 
 export function sortByPriority<T extends { priority: PriorityResult }>(records: T[]): T[] {
   return [...records].sort((a, b) => {
-    // First by score (descending)
+    // First by queue tier (LCE v3.0 First-to-Market)
+    const tierA = getQueueTier(a as unknown as RecordWithRelations)
+    const tierB = getQueueTier(b as unknown as RecordWithRelations)
+    if (tierA !== tierB) {
+      return tierA - tierB // Lower tier = higher priority
+    }
+
+    // Then by score (descending) within same tier
     if (b.priority.score !== a.priority.score) {
       return b.priority.score - a.priority.score
     }
+
     // Then by next action priority
     const actionOrder: { [key in NextAction]: number } = {
       'Call Now': 0,

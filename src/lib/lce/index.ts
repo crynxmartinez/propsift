@@ -1,10 +1,25 @@
 /**
- * LCE v2.3.1 - Lead Cadence Engine
+ * LCE v3.0 - Lead Cadence Engine (First-to-Market)
  * Main export file
  */
 
 // Types
 export * from './types'
+
+// First-to-Market Engine (v3.0)
+export {
+  PHASE_CONFIG,
+  OUTCOME_CONFIG,
+  calculatePhaseTransition,
+  enrollNewLead,
+  handleNewPhoneAdded,
+  calculateQueuePriority,
+  type LCEPhase,
+  type CallOutcome,
+  type PhaseTransitionResult,
+  type EnrollmentResult,
+  type QueuePriority,
+} from './first-to-market'
 
 // Scoring
 export {
@@ -134,3 +149,17 @@ export {
   getQueue,
   getNextUp as getNextUpService,
 } from './service'
+
+// Auto-Enrollment (v3.0)
+export {
+  autoEnrollRecord,
+  handlePhoneAdded,
+  bulkAutoEnroll,
+} from './auto-enroll'
+
+// Call Outcome Handler (v3.0)
+export {
+  processCallOutcome,
+  mapCallResultToOutcome,
+  type CallOutcomeResult,
+} from './call-outcome-handler'
