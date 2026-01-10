@@ -43,3 +43,18 @@ export {
   getTotalSteps,
   getCadenceTotalDays,
 } from './cadence'
+
+// Call Handler
+export {
+  createCallAttempt,
+  logOutcome,
+  shouldAutoLogOutcome,
+  createAutoLoggedOutcome,
+  isPositiveOutcome,
+  isNegativeOutcome,
+  requiresComplianceLog,
+  calculateNewEngagementScore,
+  calculateNewNoResponseStreak,
+  OUTCOME_DISPLAY_NAMES,
+  getOutcomeDisplayName,
+} from './call-handler'
