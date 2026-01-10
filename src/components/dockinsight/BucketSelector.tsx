@@ -121,7 +121,7 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
           {totalWorkable} workable
         </Badge>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-2">
         {bucketConfig.map((bucket) => {
           const Icon = bucket.icon
           const isActive = activeBucket === bucket.key
