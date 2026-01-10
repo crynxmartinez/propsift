@@ -974,11 +974,18 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             {motivation.name}
                           </button>
                         ))}
-                      {motivations.filter(m => 
+                      {motivations.length === 0 && !loadingData && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                          No motivations available. Type a name above and click "Create" to add one.
+                        </div>
+                      )}
+                      {motivations.length > 0 && motivations.filter(m => 
                         m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                         !state.motivationIds.includes(m.id)
-                      ).length === 0 && state.motivationIds.length === 0 && !motivationSearch.trim() && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">No motivations available</div>
+                      ).length === 0 && state.motivationIds.length === 0 && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                          {motivationSearch.trim() ? 'No matching motivations' : 'All motivations selected'}
+                        </div>
                       )}
                       {/* Create new motivation button */}
                       {motivationSearch.trim() && !motivations.some(m => m.name.toLowerCase() === motivationSearch.toLowerCase()) && (
@@ -1040,11 +1047,18 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             {tag.name}
                           </button>
                         ))}
-                      {tags.filter(t => 
+                      {tags.length === 0 && !loadingData && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                          No tags available. Type a name above and click "Create" to add one.
+                        </div>
+                      )}
+                      {tags.length > 0 && tags.filter(t => 
                         t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                         !state.tagIds.includes(t.id)
-                      ).length === 0 && state.tagIds.length === 0 && !tagSearch.trim() && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">No tags available</div>
+                      ).length === 0 && state.tagIds.length === 0 && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                          {tagSearch.trim() ? 'No matching tags' : 'All tags selected'}
+                        </div>
                       )}
                       {/* Create new tag button */}
                       {tagSearch.trim() && !tags.some(t => t.name.toLowerCase() === tagSearch.toLowerCase()) && (
