@@ -505,11 +505,10 @@ export async function getQueue(userId: string, section?: QueueSection): Promise<
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  // Fetch active records
+  // Fetch active records - use existing fields until LCE migration is applied
   const records = await prisma.record.findMany({
     where: {
       createdById: userId,
-      cadenceState: { in: ['ACTIVE', 'NOT_ENROLLED'] },
     },
     include: {
       phoneNumbers: true,
@@ -523,8 +522,7 @@ export async function getQueue(userId: string, section?: QueueSection): Promise<
       },
     },
     orderBy: [
-      { priorityScore: 'desc' },
-      { nextActionDue: 'asc' },
+      { updatedAt: 'desc' },
     ],
     take: 200,
   })
@@ -532,15 +530,17 @@ export async function getQueue(userId: string, section?: QueueSection): Promise<
   const queueRecords: QueueRecordData[] = []
 
   for (const record of records) {
-    const hasOverdueTask = record.tasks.some(t => t.dueDate && t.dueDate < today)
-    const hasDueTodayTask = record.tasks.some(t => t.dueDate && t.dueDate >= today && t.dueDate < tomorrow)
+    const hasOverdueTask = record.tasks.some((t: { dueDate: Date | null }) => t.dueDate && t.dueDate < today)
+    const hasDueTodayTask = record.tasks.some((t: { dueDate: Date | null }) => t.dueDate && t.dueDate >= today && t.dueDate < tomorrow)
     const hasCallback = !!(record as unknown as { callbackScheduledFor: Date | null }).callbackScheduledFor
 
-    const phones = record.phoneNumbers.map(p => ({
+    // Use actual phoneNumbers array length, not the denormalized phoneCount field
+    const actualPhoneCount = record.phoneNumbers.length
+    const phones = record.phoneNumbers.map((p: { id: string; number: string; type: string }) => ({
       phoneStatus: (p as unknown as { phoneStatus: string }).phoneStatus || 'UNVERIFIED',
     }))
-    const hasValidPhone = phones.some(p => p.phoneStatus === 'VALID' || p.phoneStatus === 'UNVERIFIED')
-    const hasUnverifiedPhone = phones.some(p => p.phoneStatus === 'UNVERIFIED')
+    const hasValidPhone = actualPhoneCount > 0 // All phones are valid until marked otherwise
+    const hasUnverifiedPhone = actualPhoneCount > 0
 
     const queueAssignment = assignToQueueSection({
       cadenceState: ((record as unknown as { cadenceState: CadenceState }).cadenceState) || 'NOT_ENROLLED',
@@ -549,7 +549,7 @@ export async function getQueue(userId: string, section?: QueueSection): Promise<
       hasDueTodayTask,
       hasValidPhone,
       hasUnverifiedPhone,
-      phoneCount: record.phoneCount,
+      phoneCount: actualPhoneCount,
       isWorkable: true,
     })
 
@@ -564,26 +564,26 @@ export async function getQueue(userId: string, section?: QueueSection): Promise<
       propertyStreet: record.propertyStreet,
       propertyCity: record.propertyCity,
       propertyState: record.propertyState,
-      priorityScore: (record as unknown as { priorityScore: number }).priorityScore || 0,
+      priorityScore: (record as unknown as { priorityScore: number }).priorityScore || 50,
       temperatureBand: ((record as unknown as { temperatureBand: TemperatureBand }).temperatureBand) || 'WARM',
       confidenceLevel: (record as unknown as { confidenceLevel: string }).confidenceLevel || 'MEDIUM',
       cadenceState: ((record as unknown as { cadenceState: CadenceState }).cadenceState) || 'NOT_ENROLLED',
-      cadenceType: (record as unknown as { cadenceType: string | null }).cadenceType,
+      cadenceType: (record as unknown as { cadenceType: string | null }).cadenceType || null,
       cadenceStep: (record as unknown as { cadenceStep: number }).cadenceStep || 0,
-      nextActionType: (record as unknown as { nextActionType: string | null }).nextActionType,
-      nextActionDue: (record as unknown as { nextActionDue: Date | null }).nextActionDue,
+      nextActionType: (record as unknown as { nextActionType: string | null }).nextActionType || 'CALL',
+      nextActionDue: (record as unknown as { nextActionDue: Date | null }).nextActionDue || null,
       queueSection: queueAssignment.section,
       queuePriority: queueAssignment.priority,
       queueReason: queueAssignment.reason,
       hasOverdueTask,
       hasDueTodayTask,
       hasCallback,
-      phones: record.phoneNumbers.map(p => ({
+      phones: record.phoneNumbers.map((p: { id: string; number: string; type: string }) => ({
         id: p.id,
         number: p.number,
         type: p.type,
       })),
-      motivations: record.recordMotivations.map(rm => rm.motivation.name),
+      motivations: record.recordMotivations.map((rm: { motivation: { name: string } }) => rm.motivation.name),
     })
   }
 
