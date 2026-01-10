@@ -369,16 +369,54 @@ export function NextUpCard({
           className="cursor-pointer hover:bg-muted/50 rounded-lg p-3 -mx-3 transition-colors"
           onClick={() => onRecordClick(record.id)}
         >
-          <div className="flex items-start gap-3">
-            <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg text-foreground truncate">
-                {address || 'No address'}
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{record.ownerFullName}</span>
+          <div className="flex items-start justify-between gap-3">
+            {/* Left side - Address and Owner */}
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg text-foreground truncate">
+                  {address || 'No address'}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{record.ownerFullName}</span>
+                </div>
               </div>
+            </div>
+            
+            {/* Right side - Status and Last Call Result */}
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              {/* Record Status */}
+              {data.status && (
+                <div 
+                  className="px-3 py-1 rounded-md text-sm font-medium"
+                  style={{ 
+                    backgroundColor: `${data.status.color}20`,
+                    borderColor: data.status.color,
+                    color: data.status.color,
+                    border: `1px solid ${data.status.color}`
+                  }}
+                >
+                  {data.status.name}
+                </div>
+              )}
+              {/* Last Call Result */}
+              {record.lastContactResult && (
+                <div 
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1',
+                    record.lastContactResult === 'ANSWERED' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                    record.lastContactResult === 'VOICEMAIL' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    record.lastContactResult === 'NO_ANSWER' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                    record.lastContactResult === 'BUSY' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+                    record.lastContactResult === 'WRONG_NUMBER' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                    record.lastContactResult === 'DISCONNECTED' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                  )}
+                >
+                  <PhoneCall className="w-3 h-3" />
+                  {record.lastContactResult.replace('_', ' ')}
+                </div>
+              )}
             </div>
           </div>
           
@@ -398,41 +436,10 @@ export function NextUpCard({
                 +{motivations.length - 3} more
               </Badge>
             )}
-            {/* Record Status Badge */}
-            {data.status && (
-              <Badge 
-                variant="outline" 
-                style={{ 
-                  backgroundColor: `${data.status.color}20`,
-                  borderColor: data.status.color,
-                  color: data.status.color 
-                }}
-              >
-                ✨ {data.status.name}
-              </Badge>
-            )}
             {flags.hasOverdueTask && (
               <Badge variant="destructive" className="gap-1">
                 <AlertCircle className="w-3 h-3" />
                 Task Overdue
-              </Badge>
-            )}
-            {/* Last Call Result Badge */}
-            {record.lastContactResult && (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  'gap-1',
-                  record.lastContactResult === 'ANSWERED' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300',
-                  record.lastContactResult === 'VOICEMAIL' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-300',
-                  record.lastContactResult === 'NO_ANSWER' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-300',
-                  record.lastContactResult === 'BUSY' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-300',
-                  record.lastContactResult === 'WRONG_NUMBER' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-300',
-                  record.lastContactResult === 'DISCONNECTED' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-300'
-                )}
-              >
-                <PhoneCall className="w-3 h-3" />
-                {record.lastContactResult.replace('_', ' ')}
               </Badge>
             )}
           </div>
