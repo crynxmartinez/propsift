@@ -354,6 +354,7 @@ export async function GET(request: NextRequest) {
     const filtersParam = searchParams.get('filters');
     const search = searchParams.get('search') || '';
     const searchType = searchParams.get('searchType') || 'all';
+    const idsOnly = searchParams.get('idsOnly') === 'true'; // Return only IDs for bulk select
 
     // Validate limit
     const validLimits = [10, 20, 50, 100];
@@ -440,6 +441,16 @@ export async function GET(request: NextRequest) {
       } catch (e) {
         console.error('Error parsing filters:', e);
       }
+    }
+
+    // If idsOnly is true, return just the IDs for bulk selection (no pagination)
+    if (idsOnly) {
+      const allRecords = await prisma.record.findMany({
+        where: whereClause,
+        select: { id: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return NextResponse.json({ ids: allRecords.map(r => r.id) });
     }
 
     // Get total count for pagination

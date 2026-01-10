@@ -431,10 +431,42 @@ export default function RecordsPage() {
     return `${Math.floor(diffDays / 365)}y ago`
   }
 
-  const handleSelectAll = () => {
-    const allIds = new Set(records.map(r => r.id))
-    setSelectedIds(allIds)
+  const handleSelectAll = async () => {
     setShowSelectDropdown(false)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      // Build params to match current filter
+      const params = new URLSearchParams({
+        filter: filter,
+        idsOnly: 'true', // Request only IDs, not full records
+      })
+      
+      if (searchQuery.trim().length >= 2) {
+        params.set('search', searchQuery.trim())
+        params.set('searchType', searchType)
+      }
+      
+      if (activeFilters.length > 0) {
+        params.set('filters', JSON.stringify(activeFilters))
+      }
+
+      const res = await fetch(`/api/records?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ids && Array.isArray(data.ids)) {
+          setSelectedIds(new Set(data.ids))
+          toast.success(`Selected ${data.ids.length} records`)
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting all records:', error)
+      toast.error('Failed to select all records')
+    }
   }
 
   const handleSelectVisible = () => {
