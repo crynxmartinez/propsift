@@ -122,3 +122,15 @@ export {
   checkOverdueReEnrollment,
   checkScoreStale,
 } from './reconciliation'
+
+// Service (Database Integration)
+export {
+  scoreRecord,
+  enrollRecordInCadence,
+  logCall,
+  snoozeRecord as snoozeRecordService,
+  pauseRecord as pauseRecordService,
+  resumeRecord as resumeRecordService,
+  getQueue,
+  getNextUp as getNextUpService,
+} from './service'
