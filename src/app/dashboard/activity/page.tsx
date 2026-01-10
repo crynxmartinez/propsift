@@ -70,6 +70,26 @@ export default function ActivityPage() {
     }
   }, [activities])
 
+  // Handle cancel processing activity
+  const handleCancelUpload = async (activityId: string) => {
+    try {
+      const res = await fetch(`/api/activity/${activityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'failed',
+          errorMessage: 'Cancelled by user'
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to cancel')
+      toast.success('Upload cancelled')
+      fetchActivities()
+    } catch (error) {
+      console.error('Cancel error:', error)
+      toast.error('Failed to cancel upload')
+    }
+  }
+
   // Handle download from activity
   const handleDownload = async (activityId: string, filename: string | null) => {
     try {
@@ -258,6 +278,7 @@ export default function ActivityPage() {
                         <TableHead>Processed</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -273,6 +294,17 @@ export default function ActivityPage() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">{formatDate(activity.createdAt).split(' - ')[0]}</TableCell>
                           <TableCell>{getStatusBadge(activity.status)}</TableCell>
+                          <TableCell>
+                            {(activity.status === 'processing' || activity.status === 'pending') && (
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => handleCancelUpload(activity.id)}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
