@@ -4,14 +4,13 @@ import { verifyToken } from '@/lib/auth'
 import { getAuthUser } from '@/lib/roles'
 
 const DEFAULT_CALL_RESULTS = [
-  { name: 'No Answer', color: '#6B7280', isDefault: true, order: 0 },
-  { name: 'Left Voicemail', color: '#3B82F6', isDefault: true, order: 1 },
-  { name: 'Callback Requested', color: '#F59E0B', isDefault: true, order: 2 },
-  { name: 'Not Interested', color: '#EF4444', isDefault: true, order: 3 },
-  { name: 'Interested', color: '#22C55E', isDefault: true, order: 4 },
-  { name: 'Wrong Number', color: '#F97316', isDefault: true, order: 5 },
-  { name: 'Do Not Call', color: '#991B1B', isDefault: true, order: 6 },
-  { name: 'Appointment Set', color: '#8B5CF6', isDefault: true, order: 7 },
+  { name: 'No Answer', color: '#6B7280', isDefault: true, order: 0, resultType: 'NO_CONTACT' },
+  { name: 'Left Voicemail', color: '#3B82F6', isDefault: true, order: 1, resultType: 'NO_CONTACT' },
+  { name: 'Busy', color: '#F59E0B', isDefault: true, order: 2, resultType: 'RETRY' },
+  { name: 'Answered', color: '#22C55E', isDefault: true, order: 3, resultType: 'CONTACT_MADE' },
+  { name: 'Wrong Number', color: '#F97316', isDefault: true, order: 4, resultType: 'BAD_DATA' },
+  { name: 'Disconnected', color: '#EF4444', isDefault: true, order: 5, resultType: 'BAD_DATA' },
+  { name: 'DNC Requested', color: '#991B1B', isDefault: true, order: 6, resultType: 'TERMINAL' },
 ]
 
 async function seedDefaultCallResults(userId: string) {

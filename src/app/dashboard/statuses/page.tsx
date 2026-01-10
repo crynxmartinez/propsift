@@ -10,6 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,10 +57,26 @@ interface StatusItem {
   isDefault: boolean
   isActive: boolean
   order: number
+  workability: string
+  temperatureEffect: string | null
   recordCount: number
   createdAt: string
   updatedAt: string
 }
+
+const WORKABILITY_OPTIONS = [
+  { value: 'WORKABLE', label: 'Workable', description: 'Can be contacted, stays in cadence' },
+  { value: 'PAUSED', label: 'Paused', description: 'Temporarily on hold (e.g., callback scheduled)' },
+  { value: 'CLOSED_WON', label: 'Closed Won', description: 'Deal success - exits cadence' },
+  { value: 'CLOSED_LOST', label: 'Closed Lost', description: 'Not viable - moves to Long Term Nurture' },
+  { value: 'DNC', label: 'Do Not Contact', description: 'Exit permanently - never contact again' },
+]
+
+const TEMPERATURE_EFFECT_OPTIONS = [
+  { value: '', label: 'No Change', description: 'Temperature stays the same' },
+  { value: 'UPGRADE', label: 'Upgrade', description: 'Move up one level (e.g., COLD → WARM)' },
+  { value: 'DOWNGRADE', label: 'Downgrade', description: 'Move down one level (e.g., HOT → WARM)' },
+]
 
 const COLOR_PALETTE = [
   '#3B82F6', '#60A5FA', '#6B7280', '#9CA3AF', '#374151', '#8B5CF6',
@@ -73,6 +96,8 @@ export default function StatusesPage() {
   const [editingStatus, setEditingStatus] = useState<StatusItem | null>(null)
   const [statusName, setStatusName] = useState('')
   const [statusColor, setStatusColor] = useState(COLOR_PALETTE[0])
+  const [statusWorkability, setStatusWorkability] = useState('WORKABLE')
+  const [statusTempEffect, setStatusTempEffect] = useState('')
   const [saving, setSaving] = useState(false)
 
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -105,6 +130,8 @@ export default function StatusesPage() {
     setEditingStatus(null)
     setStatusName('')
     setStatusColor(COLOR_PALETTE[0])
+    setStatusWorkability('WORKABLE')
+    setStatusTempEffect('')
     setShowModal(true)
   }
 
@@ -113,6 +140,8 @@ export default function StatusesPage() {
     setEditingStatus(status)
     setStatusName(status.name)
     setStatusColor(status.color)
+    setStatusWorkability(status.workability || 'WORKABLE')
+    setStatusTempEffect(status.temperatureEffect || '')
     setShowModal(true)
   }
 
@@ -121,6 +150,8 @@ export default function StatusesPage() {
     setEditingStatus(null)
     setStatusName('')
     setStatusColor(COLOR_PALETTE[0])
+    setStatusWorkability('WORKABLE')
+    setStatusTempEffect('')
   }
 
   const handleSave = async () => {
@@ -136,7 +167,12 @@ export default function StatusesPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ name: statusName.trim(), color: statusColor })
+          body: JSON.stringify({ 
+            name: statusName.trim(), 
+            color: statusColor,
+            workability: statusWorkability,
+            temperatureEffect: statusTempEffect || null
+          })
         })
 
         const data = await res.json()
@@ -154,7 +190,12 @@ export default function StatusesPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ name: statusName.trim(), color: statusColor })
+          body: JSON.stringify({ 
+            name: statusName.trim(), 
+            color: statusColor,
+            workability: statusWorkability,
+            temperatureEffect: statusTempEffect || null
+          })
         })
 
         const data = await res.json()
@@ -461,6 +502,44 @@ export default function StatusesPage() {
                   />
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cadence Behavior</Label>
+              <Select value={statusWorkability} onValueChange={setStatusWorkability}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WORKABILITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Temperature Effect</Label>
+              <Select value={statusTempEffect} onValueChange={setStatusTempEffect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No Change" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEMPERATURE_EFFECT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value || 'none'} value={option.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

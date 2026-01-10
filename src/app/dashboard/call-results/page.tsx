@@ -10,6 +10,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,10 +57,19 @@ interface CallResultItem {
   isDefault: boolean
   isActive: boolean
   order: number
+  resultType: string
   recordCount: number
   createdAt: string
   updatedAt: string
 }
+
+const RESULT_TYPE_OPTIONS = [
+  { value: 'NO_CONTACT', label: 'No Contact', description: 'Advance to next cadence step (No Answer, Voicemail)' },
+  { value: 'RETRY', label: 'Retry', description: 'Stay on same step, retry tomorrow (Busy)' },
+  { value: 'CONTACT_MADE', label: 'Contact Made', description: 'Spoke with them - prompt for status (Answered)' },
+  { value: 'BAD_DATA', label: 'Bad Data', description: 'Phone is bad - move to Get Numbers (Wrong Number)' },
+  { value: 'TERMINAL', label: 'Terminal', description: 'Exit permanently - never contact again (DNC)' },
+]
 
 const COLOR_PALETTE = [
   '#6B7280', '#3B82F6', '#F59E0B', '#EF4444', '#22C55E', '#F97316',
@@ -72,6 +88,7 @@ export default function CallResultsPage() {
   const [editingCallResult, setEditingCallResult] = useState<CallResultItem | null>(null)
   const [callResultName, setCallResultName] = useState('')
   const [callResultColor, setCallResultColor] = useState(COLOR_PALETTE[0])
+  const [callResultType, setCallResultType] = useState('NO_CONTACT')
   const [saving, setSaving] = useState(false)
 
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -104,6 +121,7 @@ export default function CallResultsPage() {
     setEditingCallResult(null)
     setCallResultName('')
     setCallResultColor(COLOR_PALETTE[0])
+    setCallResultType('NO_CONTACT')
     setShowModal(true)
   }
 
@@ -112,6 +130,7 @@ export default function CallResultsPage() {
     setEditingCallResult(callResult)
     setCallResultName(callResult.name)
     setCallResultColor(callResult.color)
+    setCallResultType(callResult.resultType || 'NO_CONTACT')
     setShowModal(true)
   }
 
@@ -120,6 +139,7 @@ export default function CallResultsPage() {
     setEditingCallResult(null)
     setCallResultName('')
     setCallResultColor(COLOR_PALETTE[0])
+    setCallResultType('NO_CONTACT')
   }
 
   const handleSave = async () => {
@@ -135,7 +155,11 @@ export default function CallResultsPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ name: callResultName.trim(), color: callResultColor })
+          body: JSON.stringify({ 
+            name: callResultName.trim(), 
+            color: callResultColor,
+            resultType: callResultType
+          })
         })
 
         const data = await res.json()
@@ -153,7 +177,11 @@ export default function CallResultsPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ name: callResultName.trim(), color: callResultColor })
+          body: JSON.stringify({ 
+            name: callResultName.trim(), 
+            color: callResultColor,
+            resultType: callResultType
+          })
         })
 
         const data = await res.json()
@@ -460,6 +488,25 @@ export default function CallResultsPage() {
                   />
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cadence Behavior</Label>
+              <Select value={callResultType} onValueChange={setCallResultType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESULT_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

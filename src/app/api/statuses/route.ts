@@ -4,16 +4,16 @@ import { verifyToken } from '@/lib/auth'
 import { getAuthUser } from '@/lib/roles'
 
 const DEFAULT_STATUSES = [
-  { name: 'New Lead', color: '#3B82F6', isDefault: true, order: 0 },
-  { name: 'Contacted', color: '#06B6D4', isDefault: true, order: 1 },
-  { name: 'Follow Up', color: '#EAB308', isDefault: true, order: 2 },
-  { name: 'Qualified', color: '#22C55E', isDefault: true, order: 3 },
-  { name: 'Not Interested', color: '#6B7280', isDefault: true, order: 4 },
-  { name: 'Negotiating', color: '#F97316', isDefault: true, order: 5 },
-  { name: 'Under Contract', color: '#8B5CF6', isDefault: true, order: 6 },
-  { name: 'Closed', color: '#10B981', isDefault: true, order: 7 },
-  { name: 'Opt Out', color: '#EF4444', isDefault: true, order: 8 },
-  { name: 'DNC', color: '#991B1B', isDefault: true, order: 9 },
+  { name: 'New Lead', color: '#3B82F6', isDefault: true, order: 0, workability: 'WORKABLE', temperatureEffect: null },
+  { name: 'Contacted', color: '#06B6D4', isDefault: true, order: 1, workability: 'WORKABLE', temperatureEffect: null },
+  { name: 'Follow Up', color: '#EAB308', isDefault: true, order: 2, workability: 'WORKABLE', temperatureEffect: null },
+  { name: 'Interested', color: '#22C55E', isDefault: true, order: 3, workability: 'WORKABLE', temperatureEffect: 'UPGRADE' },
+  { name: 'Not Interested', color: '#6B7280', isDefault: true, order: 4, workability: 'WORKABLE', temperatureEffect: 'DOWNGRADE' },
+  { name: 'Callback Scheduled', color: '#F97316', isDefault: true, order: 5, workability: 'PAUSED', temperatureEffect: null },
+  { name: 'Under Contract', color: '#8B5CF6', isDefault: true, order: 6, workability: 'CLOSED_WON', temperatureEffect: null },
+  { name: 'Sold', color: '#10B981', isDefault: true, order: 7, workability: 'CLOSED_WON', temperatureEffect: null },
+  { name: 'Dead', color: '#EF4444', isDefault: true, order: 8, workability: 'CLOSED_LOST', temperatureEffect: null },
+  { name: 'DNC', color: '#991B1B', isDefault: true, order: 9, workability: 'DNC', temperatureEffect: null },
 ]
 
 async function seedDefaultStatuses(userId: string) {

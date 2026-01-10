@@ -142,18 +142,20 @@ model PropertyMotivation {
 }
 
 model Status {
-  id          String           @id @default(cuid())
-  name        String
-  color       String
-  isDefault   Boolean          @default(false)
-  isActive    Boolean          @default(true)
-  order       Int              @default(0)
-  createdById String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  createdBy   User?            @relation("StatusCreator", fields: [createdById], references: [id])
-  properties  PropertyStatus[]
-  records     Record[]
+  id                String           @id @default(cuid())
+  name              String
+  color             String
+  isDefault         Boolean          @default(false)
+  isActive          Boolean          @default(true)
+  order             Int              @default(0)
+  workability       String           @default("WORKABLE") // WORKABLE, PAUSED, CLOSED_WON, CLOSED_LOST, DNC
+  temperatureEffect String? // null, UPGRADE, DOWNGRADE
+  createdById       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  createdBy         User?            @relation("StatusCreator", fields: [createdById], references: [id])
+  properties        PropertyStatus[]
+  records           Record[]
 
   @@unique([name, createdById])
 }
@@ -165,6 +167,7 @@ model CallResult {
   isDefault   Boolean  @default(false)
   isActive    Boolean  @default(true)
   order       Int      @default(0)
+  resultType  String   @default("NO_CONTACT") // NO_CONTACT, RETRY, CONTACT_MADE, BAD_DATA, TERMINAL
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -163,3 +163,19 @@ export {
   mapCallResultToOutcome,
   type CallOutcomeResult,
 } from './call-outcome-handler'
+
+// Result Type Handler (v2.4)
+export {
+  processResultType,
+  processStatus,
+  getResultTypeFromCallResult,
+  getWorkabilityFromStatus,
+  getTemperatureEffectFromStatus,
+  type ResultType,
+  type Workability,
+  type TemperatureEffect,
+  type ResultTypeProcessingInput,
+  type ResultTypeProcessingOutput,
+  type StatusProcessingInput,
+  type StatusProcessingOutput,
+} from './result-type-handler'
