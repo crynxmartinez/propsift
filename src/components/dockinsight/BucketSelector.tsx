@@ -10,7 +10,7 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
-  HelpCircle
+  ExternalLink
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -142,12 +142,17 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
             const isActive = activeBucket === bucket.key
             const count = buckets[bucket.countKey]
             
+            const handleViewAll = (e: React.MouseEvent) => {
+              e.stopPropagation()
+              window.open(`/dashboard/records?bucket=${bucket.key}`, '_blank')
+            }
+            
             return (
               <Tooltip key={bucket.key}>
                 <TooltipTrigger asChild>
                   <Card
                     className={cn(
-                      'cursor-pointer transition-all hover:shadow-md border',
+                      'cursor-pointer transition-all hover:shadow-md border relative group',
                       bucket.bgColor,
                       bucket.borderColor,
                       isActive && `ring-2 ${bucket.activeColor}`,
@@ -162,8 +167,17 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
                           {count}
                         </span>
                       </div>
-                      <div className={cn('text-xs font-medium', bucket.color)}>
-                        {bucket.label}
+                      <div className={cn('text-xs font-medium flex items-center justify-between', bucket.color)}>
+                        <span>{bucket.label}</span>
+                        {count > 0 && (
+                          <button
+                            onClick={handleViewAll}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+                            title="View all in Records"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -171,6 +185,12 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
                 <TooltipContent side="bottom" className="max-w-xs">
                   <p className="font-semibold">{bucket.label}</p>
                   <p className="text-xs text-muted-foreground mt-1">{bucket.help}</p>
+                  {count > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3" />
+                      Click icon to view all in Records
+                    </p>
+                  )}
                 </TooltipContent>
               </Tooltip>
             )

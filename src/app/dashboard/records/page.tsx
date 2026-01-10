@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { FileText, Plus, Filter, Loader2, ChevronDown, ChevronLeft, ChevronRight, Search, Settings, Trash2, Tag, Target, Thermometer, User, Phone, X, Upload, Download, CheckSquare, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import AddPropertyModal from '@/components/AddPropertyModal'
@@ -105,11 +105,24 @@ interface TaskTemplate {
   priority: string
 }
 
+// Bucket label mapping for display
+const BUCKET_LABELS: Record<string, string> = {
+  'call-now': 'Call Now',
+  'follow-up-today': 'Follow Up',
+  'call-queue': 'Call Queue',
+  'verify-first': 'Verify First',
+  'get-numbers': 'Get Numbers',
+  'nurture': 'Nurture',
+  'not-workable': 'Not Workable',
+}
+
 export default function RecordsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [records, setRecords] = useState<RecordItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
+  const [urlBucket, setUrlBucket] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
@@ -200,6 +213,33 @@ export default function RecordsPage() {
     setPage(1)
     setSelectedIds(new Set())
   }, [filter])
+
+  // Read URL params on mount and apply bucket filter
+  useEffect(() => {
+    const bucket = searchParams.get('bucket')
+    if (bucket && BUCKET_LABELS[bucket]) {
+      setUrlBucket(bucket)
+      // Create a bucket filter and add to active filters
+      const bucketFilter: FilterBlock = {
+        id: `bucket_${Date.now()}`,
+        field: 'bucket',
+        fieldLabel: 'Action Bucket',
+        fieldType: 'select',
+        operator: 'is',
+        value: bucket,
+        connector: 'AND',
+      }
+      setActiveFilters([bucketFilter])
+    }
+  }, [searchParams])
+
+  // Clear URL bucket filter
+  const clearUrlBucket = () => {
+    setUrlBucket(null)
+    setActiveFilters([])
+    // Remove bucket param from URL
+    router.push('/dashboard/records')
+  }
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -603,23 +643,45 @@ export default function RecordsPage() {
         </div>
       </div>
 
+      {/* URL Bucket Filter Banner */}
+      {urlBucket && (
+        <div className="flex items-center gap-3 mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <span className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+            Viewing from DockInsight:
+          </span>
+          <Badge variant="secondary" className="bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-200">
+            {BUCKET_LABELS[urlBucket]} Bucket
+          </Badge>
+          <span className="text-sm text-purple-600 dark:text-purple-400">
+            ({totalCount} records)
+          </span>
+          <button
+            onClick={clearUrlBucket}
+            className="ml-auto text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Clear Filter
+          </button>
+        </div>
+      )}
+
       {/* Active Filters Bar */}
-      {activeFilters.length > 0 && (
-        <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <span className="text-sm text-blue-700 font-medium">Active Filters:</span>
+      {activeFilters.length > 0 && !urlBucket && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">Active Filters:</span>
           <div className="flex flex-wrap gap-2">
-            {activeFilters.map((filter, index) => (
+            {activeFilters.map((filter) => (
               <span
                 key={filter.id}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-card border border-blue-200 rounded-full text-xs text-blue-700"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-card border border-blue-200 dark:border-blue-700 rounded-full text-xs text-blue-700 dark:text-blue-300"
               >
-                {filter.fieldLabel}
+                {filter.fieldLabel}: {typeof filter.value === 'string' ? filter.value : Array.isArray(filter.value) ? filter.value.length + ' selected' : String(filter.value)}
                 <button
                   onClick={() => {
                     const newFilters = activeFilters.filter(f => f.id !== filter.id)
                     setActiveFilters(newFilters)
                   }}
-                  className="ml-1 hover:text-blue-900"
+                  className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -628,7 +690,7 @@ export default function RecordsPage() {
           </div>
           <button
             onClick={() => setActiveFilters([])}
-            className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-medium"
+            className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium"
           >
             Clear All
           </button>

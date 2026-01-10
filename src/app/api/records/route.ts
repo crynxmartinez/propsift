@@ -17,6 +17,103 @@ interface FilterBlock {
   connector: 'AND' | 'OR';
 }
 
+// Excluded statuses for "not workable" bucket
+const EXCLUDED_STATUSES = ['dead', 'dnc', 'do not call', 'under contract', 'sold', 'not interested', 'wrong number', 'closed'];
+
+// Build bucket filter condition (maps bucket to complex Prisma query)
+function buildBucketFilterCondition(bucket: string): Record<string, unknown> | null {
+  switch (bucket) {
+    case 'call-now':
+      // High priority, has phone, not excluded status
+      return {
+        AND: [
+          { priorityScore: { gte: 70 } },
+          { phoneNumbers: { some: {} } },
+          {
+            OR: [
+              { status: null },
+              { status: { name: { notIn: EXCLUDED_STATUSES, mode: 'insensitive' } } }
+            ]
+          }
+        ]
+      };
+    
+    case 'follow-up-today':
+      // Has tasks due today or callbacks scheduled today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return {
+        OR: [
+          { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] }, dueDate: { gte: today, lt: tomorrow } } } },
+          { callbackScheduledFor: { gte: today, lt: tomorrow } }
+        ]
+      };
+    
+    case 'call-queue':
+      // Medium priority (50-69), has phone, not excluded
+      return {
+        AND: [
+          { priorityScore: { gte: 50, lt: 70 } },
+          { phoneNumbers: { some: {} } },
+          {
+            OR: [
+              { status: null },
+              { status: { name: { notIn: EXCLUDED_STATUSES, mode: 'insensitive' } } }
+            ]
+          }
+        ]
+      };
+    
+    case 'verify-first':
+      // Low confidence or incomplete data
+      return {
+        OR: [
+          { confidenceLevel: 'LOW' },
+          { isComplete: false }
+        ]
+      };
+    
+    case 'get-numbers':
+      // No valid phone numbers, not excluded
+      return {
+        AND: [
+          { phoneNumbers: { none: {} } },
+          {
+            OR: [
+              { status: null },
+              { status: { name: { notIn: EXCLUDED_STATUSES, mode: 'insensitive' } } }
+            ]
+          }
+        ]
+      };
+    
+    case 'nurture':
+      // Low priority (< 50), not excluded
+      return {
+        AND: [
+          { OR: [{ priorityScore: { lt: 50 } }, { priorityScore: null }] },
+          {
+            OR: [
+              { status: null },
+              { status: { name: { notIn: EXCLUDED_STATUSES, mode: 'insensitive' } } }
+            ]
+          }
+        ]
+      };
+    
+    case 'not-workable':
+      // Excluded statuses (DNC, Dead, Closed, etc.)
+      return {
+        status: { name: { in: EXCLUDED_STATUSES, mode: 'insensitive' } }
+      };
+    
+    default:
+      return null;
+  }
+}
+
 // Build Prisma where clause from filter blocks
 function buildFilterWhereClause(filters: FilterBlock[]): Record<string, unknown> {
   if (filters.length === 0) return {};
@@ -40,12 +137,18 @@ function buildFilterWhereClause(filters: FilterBlock[]): Record<string, unknown>
 function buildSingleFilterCondition(filter: FilterBlock): Record<string, unknown> | null {
   const { field, operator, value } = filter;
 
+  // Handle bucket filter (special LCE filter that maps to complex logic)
+  if (field === 'bucket' && typeof value === 'string') {
+    return buildBucketFilterCondition(value);
+  }
+
   // Handle empty operators
   if (operator === 'is_empty') {
     if (field === 'tags') return { recordTags: { none: {} } };
     if (field === 'motivations') return { recordMotivations: { none: {} } };
     if (field === 'status') return { statusId: null };
     if (field === 'assignedTo') return { assignedToId: null };
+    if (field === 'callResult') return { callResultId: null };
     return { [field]: null };
   }
 
@@ -54,7 +157,24 @@ function buildSingleFilterCondition(filter: FilterBlock): Record<string, unknown
     if (field === 'motivations') return { recordMotivations: { some: {} } };
     if (field === 'status') return { statusId: { not: null } };
     if (field === 'assignedTo') return { assignedToId: { not: null } };
+    if (field === 'callResult') return { callResultId: { not: null } };
     return { [field]: { not: null } };
+  }
+
+  // Handle select fields (single value)
+  if (filter.fieldType === 'select' && typeof value === 'string' && value) {
+    // Map field names to database columns where needed
+    const fieldMapping: Record<string, string> = {
+      callResult: 'callResultId',
+    };
+    const dbField = fieldMapping[field] || field;
+    
+    switch (operator) {
+      case 'is':
+        return { [dbField]: value };
+      case 'is_not':
+        return { [dbField]: { not: value } };
+    }
   }
 
   // Handle multiselect fields (tags, motivations, status)
@@ -168,32 +288,37 @@ function buildSingleFilterCondition(filter: FilterBlock): Record<string, unknown
 
   // Handle boolean fields
   if (filter.fieldType === 'boolean') {
+    const boolValue = operator === 'is_true' ? true : operator === 'is_false' ? false : value === true;
+    
     if (field === 'isComplete') {
-      return { isComplete: value === true };
+      return { isComplete: boolValue };
     }
     if (field === 'isCompany') {
-      return { isCompany: value === true };
+      return { isCompany: boolValue };
     }
     if (field === 'hasPhone') {
-      return value === true 
-        ? { phones: { some: {} } }
-        : { phones: { none: {} } };
+      return boolValue 
+        ? { phoneNumbers: { some: {} } }
+        : { phoneNumbers: { none: {} } };
     }
     if (field === 'hasEmail') {
-      return value === true
+      return boolValue
         ? { emails: { some: {} } }
         : { emails: { none: {} } };
     }
     if (field === 'hasOpenTasks') {
-      return value === true
+      return boolValue
         ? { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] } } } }
         : { tasks: { none: { status: { in: ['PENDING', 'IN_PROGRESS'] } } } };
     }
     if (field === 'hasOverdueTasks') {
       const now = new Date();
-      return value === true
+      return boolValue
         ? { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] }, dueDate: { lt: now } } } }
         : { NOT: { tasks: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] }, dueDate: { lt: now } } } } };
+    }
+    if (field === 'hasEngaged') {
+      return { hasEngaged: boolValue };
     }
   }
 

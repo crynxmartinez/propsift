@@ -91,8 +91,95 @@ interface Props {
   motivations: { id: string; name: string }[]
   statuses: { id: string; name: string; color: string }[]
   users: { id: string; name: string | null; email: string }[]
+  callResults?: { id: string; name: string }[]
   customFields?: { id: string; name: string; type: string }[]
 }
+
+// LCE Options
+const BUCKET_OPTIONS = [
+  { id: 'call-now', name: 'Call Now' },
+  { id: 'follow-up-today', name: 'Follow Up' },
+  { id: 'call-queue', name: 'Call Queue' },
+  { id: 'verify-first', name: 'Verify First' },
+  { id: 'get-numbers', name: 'Get Numbers' },
+  { id: 'nurture', name: 'Nurture' },
+  { id: 'not-workable', name: 'Not Workable' },
+]
+
+const TEMPERATURE_OPTIONS = [
+  { id: 'HOT', name: 'Hot' },
+  { id: 'WARM', name: 'Warm' },
+  { id: 'COLD', name: 'Cold' },
+]
+
+const TEMPERATURE_BAND_OPTIONS = [
+  { id: 'HOT', name: 'Hot' },
+  { id: 'WARM', name: 'Warm' },
+  { id: 'COLD', name: 'Cold' },
+  { id: 'ICE', name: 'Ice' },
+]
+
+const CADENCE_STATE_OPTIONS = [
+  { id: 'NOT_ENROLLED', name: 'Not Enrolled' },
+  { id: 'ACTIVE', name: 'Active' },
+  { id: 'SNOOZED', name: 'Snoozed' },
+  { id: 'PAUSED', name: 'Paused' },
+  { id: 'COMPLETED_NO_CONTACT', name: 'Completed (No Contact)' },
+  { id: 'EXITED_ENGAGED', name: 'Exited (Engaged)' },
+  { id: 'EXITED_DNC', name: 'Exited (DNC)' },
+  { id: 'EXITED_DEAD', name: 'Exited (Dead)' },
+  { id: 'EXITED_CLOSED', name: 'Exited (Closed)' },
+  { id: 'STALE_ENGAGED', name: 'Stale (Engaged)' },
+  { id: 'LONG_TERM_NURTURE', name: 'Long Term Nurture' },
+]
+
+const CURRENT_PHASE_OPTIONS = [
+  { id: 'NEW', name: 'New' },
+  { id: 'BLITZ_1', name: 'Blitz 1' },
+  { id: 'DEEP_PROSPECT', name: 'Deep Prospect' },
+  { id: 'BLITZ_2', name: 'Blitz 2' },
+  { id: 'MULTI_CHANNEL', name: 'Multi-Channel' },
+  { id: 'NURTURE', name: 'Nurture' },
+]
+
+const CADENCE_TYPE_OPTIONS = [
+  { id: 'HOT', name: 'Hot' },
+  { id: 'WARM', name: 'Warm' },
+  { id: 'COLD', name: 'Cold' },
+  { id: 'ICE', name: 'Ice' },
+  { id: 'GENTLE', name: 'Gentle' },
+  { id: 'ANNUAL', name: 'Annual' },
+]
+
+const NEXT_ACTION_TYPE_OPTIONS = [
+  { id: 'CALL', name: 'Call' },
+  { id: 'SMS', name: 'SMS' },
+  { id: 'RVM', name: 'RVM' },
+  { id: 'EMAIL', name: 'Email' },
+]
+
+const CONFIDENCE_LEVEL_OPTIONS = [
+  { id: 'HIGH', name: 'High' },
+  { id: 'MEDIUM', name: 'Medium' },
+  { id: 'LOW', name: 'Low' },
+]
+
+const LAST_CONTACT_TYPE_OPTIONS = [
+  { id: 'CALL', name: 'Call' },
+  { id: 'SMS', name: 'SMS' },
+  { id: 'MAIL', name: 'Direct Mail' },
+  { id: 'RVM', name: 'RVM' },
+  { id: 'EMAIL', name: 'Email' },
+]
+
+const LAST_CONTACT_RESULT_OPTIONS = [
+  { id: 'ANSWERED', name: 'Answered' },
+  { id: 'VOICEMAIL', name: 'Voicemail' },
+  { id: 'NO_ANSWER', name: 'No Answer' },
+  { id: 'WRONG_NUMBER', name: 'Wrong Number' },
+  { id: 'BUSY', name: 'Busy' },
+  { id: 'DISCONNECTED', name: 'Disconnected' },
+]
 
 // Operators by field type
 const OPERATORS: Record<string, { value: string; label: string }[]> = {
@@ -160,6 +247,7 @@ export default function RecordFilterPanel({
   motivations,
   statuses,
   users,
+  callResults = [],
   customFields = [],
 }: Props) {
   // Filter state
@@ -215,12 +303,69 @@ export default function RecordFilterPanel({
       ],
     },
     {
+      name: 'LCE (LEAD CADENCE)',
+      fields: [
+        { key: 'bucket', label: 'Action Bucket', type: 'select', category: 'LCE (LEAD CADENCE)', options: BUCKET_OPTIONS },
+        { key: 'temperature', label: 'Temperature', type: 'select', category: 'LCE (LEAD CADENCE)', options: TEMPERATURE_OPTIONS },
+        { key: 'temperatureBand', label: 'Temperature Band', type: 'select', category: 'LCE (LEAD CADENCE)', options: TEMPERATURE_BAND_OPTIONS },
+        { key: 'priorityScore', label: 'Priority Score', type: 'number', category: 'LCE (LEAD CADENCE)' },
+        { key: 'cadenceState', label: 'Cadence State', type: 'select', category: 'LCE (LEAD CADENCE)', options: CADENCE_STATE_OPTIONS },
+        { key: 'currentPhase', label: 'Current Phase', type: 'select', category: 'LCE (LEAD CADENCE)', options: CURRENT_PHASE_OPTIONS },
+        { key: 'cadenceType', label: 'Cadence Type', type: 'select', category: 'LCE (LEAD CADENCE)', options: CADENCE_TYPE_OPTIONS },
+        { key: 'nextActionType', label: 'Next Action Type', type: 'select', category: 'LCE (LEAD CADENCE)', options: NEXT_ACTION_TYPE_OPTIONS },
+        { key: 'nextActionDue', label: 'Next Action Due', type: 'date', category: 'LCE (LEAD CADENCE)' },
+        { key: 'confidenceLevel', label: 'Confidence Level', type: 'select', category: 'LCE (LEAD CADENCE)', options: CONFIDENCE_LEVEL_OPTIONS },
+      ],
+    },
+    {
+      name: 'CONTACT HISTORY',
+      fields: [
+        { key: 'callResult', label: 'Call Result', type: 'select', category: 'CONTACT HISTORY', options: callResults },
+        { key: 'lastContactedAt', label: 'Last Contacted', type: 'date', category: 'CONTACT HISTORY' },
+        { key: 'lastContactType', label: 'Last Contact Type', type: 'select', category: 'CONTACT HISTORY', options: LAST_CONTACT_TYPE_OPTIONS },
+        { key: 'lastContactResult', label: 'Last Contact Result', type: 'select', category: 'CONTACT HISTORY', options: LAST_CONTACT_RESULT_OPTIONS },
+        { key: 'hasEngaged', label: 'Has Engaged', type: 'boolean', category: 'CONTACT HISTORY' },
+        { key: 'snoozedUntil', label: 'Snoozed Until', type: 'date', category: 'CONTACT HISTORY' },
+        { key: 'callbackScheduledFor', label: 'Callback Scheduled', type: 'date', category: 'CONTACT HISTORY' },
+      ],
+    },
+    {
+      name: 'COUNTS & ATTEMPTS',
+      fields: [
+        { key: 'callAttempts', label: 'Call Attempts', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'directMailAttempts', label: 'Direct Mail Attempts', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'smsAttempts', label: 'SMS Attempts', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'rvmAttempts', label: 'RVM Attempts', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'noResponseStreak', label: 'No Response Streak', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'enrollmentCount', label: 'Enrollment Count', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'phoneCount', label: 'Phone Count', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'emailCount', label: 'Email Count', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'tagCount', label: 'Tag Count', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'motivationCount', label: 'Motivation Count', type: 'number', category: 'COUNTS & ATTEMPTS' },
+        { key: 'engagementScore', label: 'Engagement Score', type: 'number', category: 'COUNTS & ATTEMPTS' },
+      ],
+    },
+    {
       name: 'PROPERTY',
       fields: [
         { key: 'propertyStreet', label: 'Property Street', type: 'text', category: 'PROPERTY' },
         { key: 'propertyCity', label: 'Property City', type: 'text', category: 'PROPERTY' },
         { key: 'propertyState', label: 'Property State', type: 'text', category: 'PROPERTY' },
         { key: 'propertyZip', label: 'Property ZIP', type: 'text', category: 'PROPERTY' },
+      ],
+    },
+    {
+      name: 'PROPERTY DETAILS',
+      fields: [
+        { key: 'estimatedValue', label: 'Estimated Value', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'bedrooms', label: 'Bedrooms', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'bathrooms', label: 'Bathrooms', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'sqft', label: 'Square Footage', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'lotSize', label: 'Lot Size', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'yearBuilt', label: 'Year Built', type: 'number', category: 'PROPERTY DETAILS' },
+        { key: 'structureType', label: 'Structure Type', type: 'text', category: 'PROPERTY DETAILS' },
+        { key: 'heatingType', label: 'Heating Type', type: 'text', category: 'PROPERTY DETAILS' },
+        { key: 'airConditioner', label: 'Air Conditioner', type: 'text', category: 'PROPERTY DETAILS' },
       ],
     },
     {
@@ -239,8 +384,6 @@ export default function RecordFilterPanel({
       fields: [
         { key: 'hasPhone', label: 'Has Phone', type: 'boolean', category: 'CONTACT' },
         { key: 'hasEmail', label: 'Has Email', type: 'boolean', category: 'CONTACT' },
-        { key: 'phoneCount', label: 'Phone Count', type: 'number', category: 'CONTACT' },
-        { key: 'emailCount', label: 'Email Count', type: 'number', category: 'CONTACT' },
       ],
     },
     {
@@ -249,6 +392,9 @@ export default function RecordFilterPanel({
         { key: 'createdAt', label: 'Created Date', type: 'date', category: 'DATES' },
         { key: 'updatedAt', label: 'Updated Date', type: 'date', category: 'DATES' },
         { key: 'skiptraceDate', label: 'Skip Trace Date', type: 'date', category: 'DATES' },
+        { key: 'cadenceStartDate', label: 'Cadence Start Date', type: 'date', category: 'DATES' },
+        { key: 'cadenceExitDate', label: 'Cadence Exit Date', type: 'date', category: 'DATES' },
+        { key: 'reEnrollmentDate', label: 'Re-enrollment Date', type: 'date', category: 'DATES' },
       ],
     },
     {
@@ -323,6 +469,47 @@ export default function RecordFilterPanel({
   // Clear all filters
   const clearFilters = () => {
     setFilters([])
+  }
+
+  // Quick filter presets
+  const QUICK_PRESETS = [
+    {
+      label: '🔥 Hot Leads',
+      filter: { field: 'temperature', fieldLabel: 'Temperature', fieldType: 'select', operator: 'is', value: 'HOT' },
+    },
+    {
+      label: '📞 Has Phone',
+      filter: { field: 'hasPhone', fieldLabel: 'Has Phone', fieldType: 'boolean', operator: 'is_true', value: true },
+    },
+    {
+      label: '🔍 Needs Skip Trace',
+      filter: { field: 'skiptraceDate', fieldLabel: 'Skip Trace Date', fieldType: 'date', operator: 'is_empty', value: null },
+    },
+    {
+      label: '⏰ Overdue Tasks',
+      filter: { field: 'hasOverdueTasks', fieldLabel: 'Has Overdue Tasks', fieldType: 'boolean', operator: 'is_true', value: true },
+    },
+    {
+      label: '📵 No Phone',
+      filter: { field: 'hasPhone', fieldLabel: 'Has Phone', fieldType: 'boolean', operator: 'is_false', value: false },
+    },
+    {
+      label: '🆕 New This Week',
+      filter: { field: 'createdAt', fieldLabel: 'Created Date', fieldType: 'date', operator: 'in_last', value: 7 },
+    },
+  ]
+
+  const applyQuickPreset = (preset: typeof QUICK_PRESETS[0]) => {
+    const newFilter: FilterBlock = {
+      id: `filter_${Date.now()}`,
+      field: preset.filter.field,
+      fieldLabel: preset.filter.fieldLabel,
+      fieldType: preset.filter.fieldType as FilterBlock['fieldType'],
+      operator: preset.filter.operator,
+      value: preset.filter.value,
+      connector: 'AND',
+    }
+    setFilters([...filters, newFilter])
   }
 
   // Apply filters
@@ -757,6 +944,22 @@ export default function RecordFilterPanel({
                   <RotateCcw className="w-4 h-4 mr-1.5" />
                   Clear
                 </Button>
+              </div>
+
+              {/* Quick Filter Presets */}
+              <div className="mb-4">
+                <Label className="text-xs text-muted-foreground mb-2 block">Quick Filters</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUICK_PRESETS.map((preset, index) => (
+                    <button
+                      key={index}
+                      onClick={() => applyQuickPreset(preset)}
+                      className="px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Add Filter Block Button */}
