@@ -367,6 +367,7 @@ export const OUTCOME_DISPLAY_NAMES: Record<CallOutcome, string> = {
   ANSWERED_NEUTRAL: 'Answered - Neutral',
   ANSWERED_NOT_NOW: 'Answered - Not Now',
   ANSWERED_NOT_INTERESTED: 'Answered - Not Interested',
+  ANSWERED_DNC: 'Answered - DNC Requested',
   VOICEMAIL: 'Voicemail Left',
   NO_ANSWER: 'No Answer',
   BUSY: 'Busy',
