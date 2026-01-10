@@ -969,13 +969,7 @@ const CADENCE_FILTERED_BUCKETS: Bucket[] = [
   'call-queue',
   'verify-first',
 ]
-
-// Buckets that are always visible regardless of nextActionDue
-const ALWAYS_VISIBLE_BUCKETS: Bucket[] = [
-  'get-numbers',  // Need phone data, not calls
-  'nurture',      // Long-term pool
-  'not-workable', // DNC/Closed
-]
+// Note: get-numbers, nurture, not-workable are always visible (no cadence filter)
 
 /**
  * Check if a record is due for action based on cadence
