@@ -10,8 +10,10 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
-  ExternalLink
+  ExternalLink,
+  List
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   Tooltip,
@@ -167,18 +169,18 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
                           {count}
                         </span>
                       </div>
-                      <div className={cn('text-xs font-medium flex items-center justify-between', bucket.color)}>
-                        <span>{bucket.label}</span>
-                        {count > 0 && (
-                          <button
-                            onClick={handleViewAll}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded"
-                            title="View all in Records"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                        )}
+                      <div className={cn('text-xs font-medium', bucket.color)}>
+                        {bucket.label}
                       </div>
+                      {count > 0 && (
+                        <button
+                          onClick={handleViewAll}
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black/20 dark:hover:bg-white/20 rounded bg-black/10 dark:bg-white/10"
+                          title="View all in Records"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </CardContent>
                   </Card>
                 </TooltipTrigger>
@@ -196,6 +198,22 @@ export function BucketSelector({ buckets, activeBucket, onBucketClick }: BucketS
             )
           })}
         </div>
+        
+        {/* View All Records Button for Active Bucket */}
+        {activeBucket && buckets[bucketConfig.find(b => b.key === activeBucket)?.countKey || 'callNow'] > 0 && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/dashboard/records?bucket=${activeBucket}`, '_blank')}
+              className="text-xs"
+            >
+              <List className="w-3.5 h-3.5 mr-1.5" />
+              View All {bucketConfig.find(b => b.key === activeBucket)?.label} Records
+              <ExternalLink className="w-3 h-3 ml-1.5" />
+            </Button>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   )
