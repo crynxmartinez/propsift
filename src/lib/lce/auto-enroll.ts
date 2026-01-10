@@ -1,7 +1,16 @@
 /**
- * LCE v3.0 - Auto-Enrollment Service
+ * LCE v3.0 - Enrollment Service
  * 
- * Automatically enrolls records in the First-to-Market cadence system
+ * Utility functions for enrolling records in the First-to-Market cadence system.
+ * 
+ * IMPORTANT: Records are NOT auto-enrolled on import/creation.
+ * Enrollment is triggered when:
+ * 1. Status changes to "New Lead" (see /api/records/[id]/route.ts)
+ * 2. A new phone is added to a record in DEEP_PROSPECT phase
+ * 3. Manual bulk enrollment via bulkAutoEnroll()
+ * 
+ * This ensures users explicitly mark records as ready to work before
+ * they enter the First-to-Market cadence system.
  */
 
 import { prisma } from '@/lib/prisma'

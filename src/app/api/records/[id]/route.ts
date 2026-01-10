@@ -5,6 +5,7 @@ import { isRecordComplete } from '@/lib/completenessCheck';
 import { verifyToken } from '@/lib/auth';
 import { getAuthUser } from '@/lib/roles';
 import { findMatchingAutomations, executeAutomation } from '@/lib/automation/engine';
+import { enrollNewLead } from '@/lib/lce/first-to-market';
 
 // GET /api/records/[id] - Get a single record with full details
 export async function GET(
@@ -680,6 +681,73 @@ export async function PUT(
     triggerAutomationsForChanges(params.id, authUser.ownerId, existingRecord, updateData, addTagIds, removeTagIds).catch(err => {
       console.error('Error triggering automations:', err);
     });
+
+    // LCE v3.0: Trigger enrollment when status changes to "New Lead"
+    // This is the entry point to the First-to-Market cadence system
+    if (statusId !== undefined && statusId !== existingRecord.statusId) {
+      try {
+        // Fetch the new status to check if it's "New Lead"
+        const newStatus = await prisma.status.findUnique({
+          where: { id: statusId },
+          select: { name: true },
+        });
+
+        // Check if this is a "New Lead" status assignment
+        const isNewLeadStatus = newStatus?.name?.toLowerCase().includes('new lead');
+        
+        // Check if record hasn't been enrolled yet (currentPhase is NEW or null)
+        const currentPhase = (existingRecord as Record<string, unknown>).currentPhase as string | null;
+        const hasNotBeenEnrolled = !currentPhase || currentPhase === 'NEW';
+
+        if (isNewLeadStatus && hasNotBeenEnrolled) {
+          // Check if record has valid phone numbers
+          const phoneNumbers = await prisma.recordPhoneNumber.findMany({
+            where: { recordId: params.id },
+            select: { statuses: true },
+          });
+          
+          const hasValidPhone = phoneNumbers.some(p => {
+            const statuses = p.statuses || [];
+            const badStatuses = ['wrong', 'disconnected', 'invalid', 'bad', 'dnc'];
+            return !statuses.some(s => badStatuses.some(bad => s.toLowerCase().includes(bad)));
+          });
+
+          // Enroll in LCE First-to-Market cadence
+          const enrollment = enrollNewLead(hasValidPhone);
+
+          await prisma.record.update({
+            where: { id: params.id },
+            data: {
+              currentPhase: enrollment.phase,
+              cadenceState: enrollment.cadenceState,
+              nextActionDue: enrollment.nextActionDue,
+              nextActionType: enrollment.nextActionType,
+              cadenceStartDate: new Date(),
+              blitzAttempts: 0,
+              enrollmentCount: { increment: 1 },
+            } as Parameters<typeof prisma.record.update>[0]['data'],
+          });
+
+          // Log LCE enrollment
+          await prisma.recordActivityLog.create({
+            data: {
+              recordId: params.id,
+              userId: authUser.id,
+              action: 'lce_enrolled',
+              field: 'currentPhase',
+              oldValue: 'NEW',
+              newValue: enrollment.phase,
+              source: 'status_change_to_new_lead',
+            },
+          });
+
+          console.log(`LCE: Record ${params.id} enrolled in First-to-Market cadence (phase: ${enrollment.phase})`);
+        }
+      } catch (lceError) {
+        // Don't fail the request if LCE enrollment fails
+        console.error('LCE enrollment error:', lceError);
+      }
+    }
 
     return NextResponse.json(updatedRecord);
   } catch (error) {

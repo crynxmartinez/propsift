@@ -49,44 +49,10 @@ export async function GET(request: Request) {
       results.errors.push(`Unsnooze error: ${error}`)
     }
 
-    // 2. Auto-enroll NEW records with valid phones
-    try {
-      const newRecords = await prisma.record.findMany({
-        where: {
-          currentPhase: 'NEW',
-          cadenceState: 'NOT_ENROLLED',
-          phoneNumbers: {
-            some: {
-              phoneStatus: { notIn: ['WRONG', 'DISCONNECTED', 'DNC'] },
-            },
-          },
-        },
-        select: { id: true },
-        take: 100, // Limit batch size
-      })
-
-      for (const record of newRecords) {
-        try {
-          await prisma.record.update({
-            where: { id: record.id },
-            data: {
-              currentPhase: 'BLITZ_1',
-              cadenceState: 'ACTIVE',
-              nextActionDue: now,
-              nextActionType: 'CALL',
-              cadenceStartDate: now,
-              blitzAttempts: 0,
-              enrollmentCount: { increment: 1 },
-            } as Parameters<typeof prisma.record.update>[0]['data'],
-          })
-          results.autoEnrolled++
-        } catch (error) {
-          results.errors.push(`Auto-enroll ${record.id}: ${error}`)
-        }
-      }
-    } catch (error) {
-      results.errors.push(`Auto-enroll query error: ${error}`)
-    }
+    // 2. NOTE: Auto-enrollment removed - LCE enrollment now triggers when 
+    //    status changes to "New Lead" (see /api/records/[id]/route.ts)
+    //    This ensures users explicitly mark records as ready to work before
+    //    they enter the First-to-Market cadence system.
 
     // 3. Check for DEEP_PROSPECT records that now have new phones
     try {
