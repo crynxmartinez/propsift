@@ -950,7 +950,7 @@ export function sortByPriority<T extends { priority: PriorityResult }>(records: 
 }
 
 // ============================================
-// BUCKET FILTERING (v2.2)
+// BUCKET FILTERING (v2.2) + CADENCE VISIBILITY (v2.4)
 // ============================================
 
 export type Bucket = 
@@ -962,7 +962,42 @@ export type Bucket =
   | 'nurture' 
   | 'not-workable'
 
-export function filterByBucket<T extends { priority: PriorityResult }>(
+// Buckets that follow cadence-based visibility (hidden until nextActionDue)
+const CADENCE_FILTERED_BUCKETS: Bucket[] = [
+  'call-now',
+  'follow-up-today', 
+  'call-queue',
+  'verify-first',
+]
+
+// Buckets that are always visible regardless of nextActionDue
+const ALWAYS_VISIBLE_BUCKETS: Bucket[] = [
+  'get-numbers',  // Need phone data, not calls
+  'nurture',      // Long-term pool
+  'not-workable', // DNC/Closed
+]
+
+/**
+ * Check if a record is due for action based on cadence
+ * Returns true if:
+ * - nextActionDue is null (never set, treat as due now)
+ * - nextActionDue is today or in the past (due or overdue)
+ */
+export function isRecordDueForAction(record: { nextActionDue?: Date | null }): boolean {
+  if (!record.nextActionDue) {
+    return true // No date set = due now
+  }
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const actionDate = new Date(record.nextActionDue)
+  actionDate.setHours(0, 0, 0, 0)
+  
+  return actionDate.getTime() <= today.getTime()
+}
+
+export function filterByBucket<T extends { priority: PriorityResult; nextActionDue?: Date | null }>(
   records: T[],
   bucket: Bucket
 ): T[] {
@@ -976,10 +1011,19 @@ export function filterByBucket<T extends { priority: PriorityResult }>(
     'not-workable': 'Not Workable',
   }
   
-  return records.filter(r => r.priority.nextAction === actionMap[bucket])
+  // First filter by bucket/action type
+  const bucketRecords = records.filter(r => r.priority.nextAction === actionMap[bucket])
+  
+  // Apply cadence visibility filter for specific buckets
+  if (CADENCE_FILTERED_BUCKETS.includes(bucket)) {
+    return bucketRecords.filter(r => isRecordDueForAction(r))
+  }
+  
+  // Always visible buckets - return all matching records
+  return bucketRecords
 }
 
-export function getBucketCounts(records: Array<{ priority: PriorityResult }>): { [key in Bucket]: number } {
+export function getBucketCounts(records: Array<{ priority: PriorityResult; nextActionDue?: Date | null }>): { [key in Bucket]: number } {
   const counts: { [key in Bucket]: number } = {
     'call-now': 0,
     'follow-up-today': 0,
@@ -991,14 +1035,33 @@ export function getBucketCounts(records: Array<{ priority: PriorityResult }>): {
   }
   
   for (const record of records) {
-    switch (record.priority.nextAction) {
-      case 'Call Now': counts['call-now']++; break
-      case 'Follow Up Today': counts['follow-up-today']++; break
-      case 'Call Queue': counts['call-queue']++; break
-      case 'Verify First': counts['verify-first']++; break
-      case 'Get Numbers': counts['get-numbers']++; break
-      case 'Nurture': counts['nurture']++; break
-      case 'Not Workable': counts['not-workable']++; break
+    const action = record.priority.nextAction
+    const isDue = isRecordDueForAction(record)
+    
+    // For cadence-filtered buckets, only count if record is due
+    // For always-visible buckets, always count
+    switch (action) {
+      case 'Call Now': 
+        if (isDue) counts['call-now']++
+        break
+      case 'Follow Up Today': 
+        if (isDue) counts['follow-up-today']++
+        break
+      case 'Call Queue': 
+        if (isDue) counts['call-queue']++
+        break
+      case 'Verify First': 
+        if (isDue) counts['verify-first']++
+        break
+      case 'Get Numbers': 
+        counts['get-numbers']++ // Always visible
+        break
+      case 'Nurture': 
+        counts['nurture']++ // Always visible
+        break
+      case 'Not Workable': 
+        counts['not-workable']++ // Always visible
+        break
     }
   }
   
