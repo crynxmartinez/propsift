@@ -148,6 +148,12 @@ interface CallResultOption {
   color: string
 }
 
+interface StatusOption {
+  id: string
+  name: string
+  color: string
+}
+
 interface NextUpCardProps {
   data: NextUpData | null
   isLoading: boolean
@@ -167,6 +173,10 @@ interface NextUpCardProps {
   callResultOptions?: CallResultOption[]
   onCallResultChange?: (resultId: string) => void
   onNext?: () => void
+  // Status and Call Result dropdown props
+  statusOptions?: StatusOption[]
+  onStatusChange?: (recordId: string, statusId: string) => void
+  onLogCallResult?: (recordId: string, resultId: string) => void
 }
 
 export function NextUpCard({ 
@@ -187,6 +197,9 @@ export function NextUpCard({
   callResultOptions = [],
   onCallResultChange,
   onNext,
+  statusOptions = [],
+  onStatusChange,
+  onLogCallResult,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reasonsExpanded, setReasonsExpanded] = useState(false)
@@ -384,39 +397,82 @@ export function NextUpCard({
               </div>
             </div>
             
-            {/* Right side - Status and Last Call Result */}
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {/* Record Status */}
-              {data.status && (
-                <div 
-                  className="px-3 py-1 rounded-md text-sm font-medium"
-                  style={{ 
-                    backgroundColor: `${data.status.color}20`,
-                    borderColor: data.status.color,
-                    color: data.status.color,
-                    border: `1px solid ${data.status.color}`
-                  }}
-                >
-                  {data.status.name}
-                </div>
-              )}
-              {/* Last Call Result */}
-              {record.lastContactResult && (
-                <div 
-                  className={cn(
-                    'px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1',
-                    record.lastContactResult === 'ANSWERED' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                    record.lastContactResult === 'VOICEMAIL' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                    record.lastContactResult === 'NO_ANSWER' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                    record.lastContactResult === 'BUSY' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-                    record.lastContactResult === 'WRONG_NUMBER' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                    record.lastContactResult === 'DISCONNECTED' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                  )}
-                >
-                  <PhoneCall className="w-3 h-3" />
-                  {record.lastContactResult.replace('_', ' ')}
-                </div>
-              )}
+            {/* Right side - Status and Call Result Dropdowns */}
+            <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              {/* Status Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 gap-1"
+                    style={data.status ? { 
+                      backgroundColor: `${data.status.color}20`,
+                      borderColor: data.status.color,
+                      color: data.status.color
+                    } : undefined}
+                  >
+                    {data.status?.name || 'Status'}
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {statusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status.id}
+                      onClick={() => onStatusChange?.(record.id, status.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: status.color }}
+                      />
+                      {status.name}
+                      {data.status?.id === status.id && (
+                        <Check className="w-4 h-4 ml-auto" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Call Result Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-8 px-3 gap-1",
+                      record.lastContactResult === 'ANSWERED' && 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400',
+                      record.lastContactResult === 'VOICEMAIL' && 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400',
+                      record.lastContactResult === 'NO_ANSWER' && 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400',
+                      record.lastContactResult === 'BUSY' && 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400',
+                      record.lastContactResult === 'WRONG_NUMBER' && 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400',
+                      record.lastContactResult === 'DISCONNECTED' && 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/30 dark:text-gray-400'
+                    )}
+                  >
+                    <PhoneCall className="w-3 h-3" />
+                    {record.lastContactResult ? record.lastContactResult.replace('_', ' ') : 'Call Result'}
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {callResultOptions.map((result) => (
+                    <DropdownMenuItem
+                      key={result.id}
+                      onClick={() => onLogCallResult?.(record.id, result.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: result.color }}
+                      />
+                      {result.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           

@@ -116,6 +116,12 @@ interface CallResultOption {
   color: string
 }
 
+interface StatusOption {
+  id: string
+  name: string
+  color: string
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -139,6 +145,7 @@ export default function DashboardPage() {
   const [calledRecordId, setCalledRecordId] = useState<string | null>(null)
   const [callResultId, setCallResultId] = useState<string | null>(null)
   const [callResultOptions, setCallResultOptions] = useState<CallResultOption[]>([])
+  const [statusOptions, setStatusOptions] = useState<StatusOption[]>([])
 
   const getToken = useCallback(() => {
     return localStorage.getItem('token')
@@ -225,6 +232,23 @@ export default function DashboardPage() {
     }
   }, [getToken])
 
+  const fetchStatuses = useCallback(async () => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch('/api/statuses', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setStatusOptions(data.filter((s: StatusOption & { isActive: boolean }) => s.isActive))
+      }
+    } catch (error) {
+      console.error('Error fetching statuses:', error)
+    }
+  }, [getToken])
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -233,8 +257,8 @@ export default function DashboardPage() {
     }
     
     setLoading(true)
-    Promise.all([fetchAll(), fetchCallResults()]).finally(() => setLoading(false))
-  }, [router, fetchAll, fetchCallResults])
+    Promise.all([fetchAll(), fetchCallResults(), fetchStatuses()]).finally(() => setLoading(false))
+  }, [router, fetchAll, fetchCallResults, fetchStatuses])
 
   useEffect(() => {
     fetchQueue(activeBucket)
@@ -330,6 +354,57 @@ export default function DashboardPage() {
   // Handle updating call result (for post-call panel)
   const handleCallResultChange = (resultId: string) => {
     setCallResultId(resultId)
+  }
+
+  // Handle status change from dropdown
+  const handleStatusChange = async (recordId: string, statusId: string) => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch(`/api/records/${recordId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ statusId }),
+      })
+      
+      if (res.ok) {
+        toast.success('Status updated')
+        await fetchNextUp(activeBucket)
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error('Failed to update status')
+    }
+  }
+
+  // Handle logging call result from dropdown
+  const handleLogCallResult = async (recordId: string, resultId: string) => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      // Log the call result
+      const res = await fetch('/api/dockinsight/log-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recordId, action: 'call', callResultId: resultId }),
+      })
+      
+      if (res.ok) {
+        toast.success('Call result logged')
+        await fetchNextUp(activeBucket)
+      }
+    } catch (error) {
+      console.error('Error logging call result:', error)
+      toast.error('Failed to log call result')
+    }
   }
 
   const handlePhoneStatus = async (recordId: string, phoneId: string, status: string) => {
@@ -646,6 +721,9 @@ export default function DashboardPage() {
         callResultOptions={callResultOptions}
         onCallResultChange={handleCallResultChange}
         onNext={handleNext}
+        statusOptions={statusOptions}
+        onStatusChange={handleStatusChange}
+        onLogCallResult={handleLogCallResult}
       />
 
       {/* Bucket Selector */}
