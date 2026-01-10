@@ -932,7 +932,11 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       <span className="ml-2 text-sm text-gray-500">Loading...</span>
                     </div>
                   ) : activeListTab === 'motivations' ? (
-                    <div className="bg-gray-50">
+                    <div className="bg-gray-50 min-h-[100px]">
+                      {/* Debug info */}
+                      <div className="px-4 py-1 text-xs text-gray-400 bg-gray-100 border-b">
+                        {motivations.length} motivation(s) loaded
+                      </div>
                       {/* Selected motivations first */}
                       {state.motivationIds.length > 0 && (
                         <div className="border-b border-gray-200 pb-2 mb-2">
