@@ -161,6 +161,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   const [motivations, setMotivations] = useState<MotivationItem[]>([])
   const [tags, setTags] = useState<TagItem[]>([])
   const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [loadingData, setLoadingData] = useState(false)
   
   // Search states for Step 2
   const [motivationSearch, setMotivationSearch] = useState('')
@@ -191,23 +192,52 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Fetch motivations, tags, and custom fields
   useEffect(() => {
     if (isOpen) {
+      setLoadingData(true)
       const token = localStorage.getItem('token')
       const headers = { Authorization: `Bearer ${token}` }
       
       fetch('/api/motivations', { headers })
-        .then(res => res.json())
-        .then(data => Array.isArray(data) ? setMotivations(data) : setMotivations([]))
-        .catch(console.error)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return res.json()
+        })
+        .then(data => {
+          console.log('Motivations loaded:', data)
+          setMotivations(Array.isArray(data) ? data : [])
+        })
+        .catch(err => {
+          console.error('Failed to load motivations:', err)
+          setMotivations([])
+        })
+        .finally(() => setLoadingData(false))
       
       fetch('/api/tags', { headers })
-        .then(res => res.json())
-        .then(data => Array.isArray(data) ? setTags(data) : setTags([]))
-        .catch(console.error)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return res.json()
+        })
+        .then(data => {
+          console.log('Tags loaded:', data)
+          setTags(Array.isArray(data) ? data : [])
+        })
+        .catch(err => {
+          console.error('Failed to load tags:', err)
+          setTags([])
+        })
       
       fetch('/api/custom-fields', { headers })
-        .then(res => res.json())
-        .then(data => Array.isArray(data) ? setCustomFields(data) : setCustomFields([]))
-        .catch(console.error)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return res.json()
+        })
+        .then(data => {
+          console.log('Custom fields loaded:', data)
+          setCustomFields(Array.isArray(data) ? data : [])
+        })
+        .catch(err => {
+          console.error('Failed to load custom fields:', err)
+          setCustomFields([])
+        })
     }
   }, [isOpen])
 
@@ -896,7 +926,12 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 
                 {/* Scrollable Content Area */}
                 <div className="flex-1 overflow-y-auto min-h-0" data-dropdown-container>
-                  {activeListTab === 'motivations' ? (
+                  {loadingData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                      <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                    </div>
+                  ) : activeListTab === 'motivations' ? (
                     <div className="bg-gray-50">
                       {/* Selected motivations first */}
                       {state.motivationIds.length > 0 && (
