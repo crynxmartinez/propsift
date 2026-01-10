@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, RefreshCw, Inbox } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   BucketSelector, 
   NextUpCard, 
-  QueueListPanel, 
+  QueueList, 
   CallResultModal,
   type BucketCounts,
   type NextUpData,
@@ -22,25 +22,20 @@ interface CallResultOption {
   color: string
 }
 
-interface QueueData {
-  records: QueueRecord[]
-  total: number
-  hasMore: boolean
-}
-
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [nextUpData, setNextUpData] = useState<NextUpData | null>(null)
   const [queueRecords, setQueueRecords] = useState<QueueRecord[]>([])
   const [queueTotal, setQueueTotal] = useState(0)
+  const [queueHasMore, setQueueHasMore] = useState(false)
   const [bucketCounts, setBucketCounts] = useState<BucketCounts>({
     callNow: 0,
-    followUp: 0,
-    queue: 0,
-    tasks: 0,
-    newLeads: 0,
+    followUpToday: 0,
+    callQueue: 0,
+    verifyFirst: 0,
     getNumbers: 0,
+    nurture: 0,
   })
   const [activeBucket, setActiveBucket] = useState('call-now')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -197,25 +192,11 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSnooze = async (recordId: string, duration: string) => {
-    const success = await logAction(recordId, 'snooze', { duration })
+  const handleSnooze = async (recordId: string) => {
+    const success = await logAction(recordId, 'snooze', { days: 1 })
     if (success) {
       setSessionStats(prev => ({ ...prev, snoozed: prev.snoozed + 1 }))
-      toast.success(`Snoozed for ${duration}`)
-    }
-  }
-
-  const handlePause = async (recordId: string) => {
-    const success = await logAction(recordId, 'pause', { reason: 'Manual pause' })
-    if (success) {
-      toast.success('Cadence paused')
-    }
-  }
-
-  const handleResume = async (recordId: string) => {
-    const success = await logAction(recordId, 'resume')
-    if (success) {
-      toast.success('Cadence resumed')
+      toast.success('Snoozed for 1 day')
     }
   }
 
@@ -301,8 +282,6 @@ export default function DashboardPage() {
             onCall={handleCall}
             onSkip={handleSkip}
             onSnooze={handleSnooze}
-            onPause={handlePause}
-            onResume={handleResume}
             onComplete={handleComplete}
             onRecordClick={handleRecordClick}
             onPhoneStatus={handlePhoneStatus}
@@ -318,13 +297,13 @@ export default function DashboardPage() {
 
         {/* Queue List - Takes 1 column */}
         <div className="lg:col-span-1">
-          <QueueListPanel
+          <QueueList
             records={queueRecords}
             total={queueTotal}
             isLoading={isRefreshing}
-            selectedRecordId={nextUpData?.record?.id}
             onRecordClick={handleRecordClick}
             onCall={handleQueueCall}
+            hasMore={queueHasMore}
           />
         </div>
       </div>

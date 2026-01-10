@@ -7,18 +7,18 @@ import {
   ClipboardCheck, 
   PhoneCall,
   Search, 
-  Inbox,
-  AlertCircle
+  Clock,
+  AlertTriangle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface BucketCounts {
   callNow: number
-  followUp: number
-  queue: number
-  tasks: number
-  newLeads: number
+  followUpToday: number
+  callQueue: number
+  verifyFirst: number
   getNumbers: number
+  nurture: number
 }
 
 interface BucketSelectorProps {
@@ -31,8 +31,8 @@ const bucketConfig = [
   {
     key: 'call-now',
     label: 'Call Now',
-    description: 'Overdue & callbacks',
-    icon: AlertCircle,
+    description: 'High priority, ready to call',
+    icon: Phone,
     color: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     borderColor: 'border-red-200 dark:border-red-800',
@@ -40,59 +40,59 @@ const bucketConfig = [
     countKey: 'callNow' as keyof BucketCounts,
   },
   {
-    key: 'follow-up',
+    key: 'follow-up-today',
     label: 'Follow Up',
-    description: 'Due today',
+    description: 'Tasks due today',
     icon: ClipboardCheck,
     color: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-50 dark:bg-orange-900/20',
     borderColor: 'border-orange-200 dark:border-orange-800',
     activeColor: 'ring-orange-500',
-    countKey: 'followUp' as keyof BucketCounts,
+    countKey: 'followUpToday' as keyof BucketCounts,
   },
   {
-    key: 'queue',
-    label: 'Queue',
-    description: 'Active cadence',
+    key: 'call-queue',
+    label: 'Call Queue',
+    description: 'Medium priority',
     icon: PhoneCall,
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-50 dark:bg-green-900/20',
     borderColor: 'border-green-200 dark:border-green-800',
     activeColor: 'ring-green-500',
-    countKey: 'queue' as keyof BucketCounts,
+    countKey: 'callQueue' as keyof BucketCounts,
   },
   {
-    key: 'tasks',
-    label: 'Tasks',
-    description: 'Pending tasks',
-    icon: ClipboardCheck,
+    key: 'verify-first',
+    label: 'Verify First',
+    description: 'Needs data verification',
+    icon: AlertTriangle,
     color: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
     borderColor: 'border-yellow-200 dark:border-yellow-800',
     activeColor: 'ring-yellow-500',
-    countKey: 'tasks' as keyof BucketCounts,
-  },
-  {
-    key: 'new-leads',
-    label: 'New',
-    description: 'Fresh leads',
-    icon: Inbox,
-    color: 'text-purple-600 dark:text-purple-400',
-    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-    borderColor: 'border-purple-200 dark:border-purple-800',
-    activeColor: 'ring-purple-500',
-    countKey: 'newLeads' as keyof BucketCounts,
+    countKey: 'verifyFirst' as keyof BucketCounts,
   },
   {
     key: 'get-numbers',
     label: 'Get Numbers',
-    description: 'Missing phones',
+    description: 'Missing phone data',
     icon: Search,
+    color: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+    borderColor: 'border-purple-200 dark:border-purple-800',
+    activeColor: 'ring-purple-500',
+    countKey: 'getNumbers' as keyof BucketCounts,
+  },
+  {
+    key: 'nurture',
+    label: 'Nurture',
+    description: 'Low priority',
+    icon: Clock,
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     borderColor: 'border-blue-200 dark:border-blue-800',
     activeColor: 'ring-blue-500',
-    countKey: 'getNumbers' as keyof BucketCounts,
+    countKey: 'nurture' as keyof BucketCounts,
   },
 ]
 

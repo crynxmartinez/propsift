@@ -76,30 +76,20 @@ export async function GET(request: Request) {
     // Apply pagination
     const paginatedRecords = sortedRecords.slice(offset, offset + limit)
 
-    // Map confidence to expected format
-    const confidenceMap: Record<string, 'HIGH' | 'MEDIUM' | 'LOW'> = {
-      'High': 'HIGH',
-      'Medium': 'MEDIUM', 
-      'Low': 'LOW',
-    }
-
-    // Format response for QueueListPanel component
+    // Format response for archived QueueList component
     const formattedRecords = paginatedRecords.map((r, index) => {
-      const tempBand = (r.temperature?.toUpperCase() || 'COLD') as string
-      const temperature = ['HOT', 'WARM', 'COLD', 'ICE'].includes(tempBand) ? tempBand : 'COLD'
-      
       return {
         id: r.id,
         ownerFullName: r.ownerFullName,
         propertyStreet: r.propertyStreet,
         propertyCity: r.propertyCity,
         propertyState: r.propertyState,
-        temperature,
+        temperature: r.temperature,
         score: r.priority.score,
         nextAction: r.priority.nextAction,
         topReason: r.priority.topReason,
         reasonString: r.priority.reasonString,
-        confidence: confidenceMap[r.priority.confidence] || 'MEDIUM',
+        confidence: r.priority.confidence,
         phoneCount: r.phoneNumbers.length,
         hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
         motivationCount: r.recordMotivations.length,
