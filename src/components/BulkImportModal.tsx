@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search } from 'lucide-react'
+import { X, Loader2, Check, Upload, FileText, AlertCircle, GripVertical, Search, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -176,6 +176,12 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
   // Drag state for field mapping
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null)
   
+  // Custom field creation state
+  const [showCreateCustomField, setShowCreateCustomField] = useState(false)
+  const [newCustomFieldName, setNewCustomFieldName] = useState('')
+  const [newCustomFieldType, setNewCustomFieldType] = useState<string>('TEXT')
+  const [creatingCustomField, setCreatingCustomField] = useState(false)
+  
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -216,6 +222,10 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       setFieldSearch('')
       setDraggedColumn(null)
       setIsDropdownOpen(false)
+      setShowCreateCustomField(false)
+      setNewCustomFieldName('')
+      setNewCustomFieldType('TEXT')
+      setCreatingCustomField(false)
     }
   }, [isOpen])
 
@@ -322,6 +332,43 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       console.error('Error creating motivation:', error)
     } finally {
       setCreatingMotivation(false)
+    }
+  }
+
+  // Create new custom field
+  const createCustomField = async () => {
+    if (!newCustomFieldName.trim()) {
+      toast.error('Please enter a field name')
+      return
+    }
+    setCreatingCustomField(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/custom-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ 
+          name: newCustomFieldName.trim(),
+          fieldType: newCustomFieldType,
+          displayType: 'card',
+        }),
+      })
+      if (res.ok) {
+        const newField = await res.json()
+        setCustomFields(prev => [...prev, newField])
+        toast.success(`Custom field "${newField.name}" created`)
+        setNewCustomFieldName('')
+        setNewCustomFieldType('TEXT')
+        setShowCreateCustomField(false)
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to create custom field')
+      }
+    } catch (error) {
+      console.error('Error creating custom field:', error)
+      toast.error('Failed to create custom field')
+    } finally {
+      setCreatingCustomField(false)
     }
   }
 
@@ -1154,8 +1201,16 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 {/* Right: System Fields (Drop Zones) */}
                 <div className="border border-gray-200 rounded-lg flex flex-col h-96">
                   <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">System Fields</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateCustomField(true)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Custom Field
+                      </button>
                     </div>
                     <div className="relative">
                       <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1291,6 +1346,105 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                   </div>
                 </div>
               )}
+
+              {/* Create Custom Field Modal */}
+              {showCreateCustomField && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                  <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                    <div className="flex items-center justify-between px-6 py-4 border-b">
+                      <h3 className="text-lg font-semibold">Create Custom Field</h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateCustomField(false)
+                          setNewCustomFieldName('')
+                          setNewCustomFieldType('TEXT')
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Create a new custom field that will appear in the Additional Info section of property details.
+                      </p>
+                      <div>
+                        <Label htmlFor="customFieldName" className="text-sm font-medium">
+                          Field Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="customFieldName"
+                          value={newCustomFieldName}
+                          onChange={(e) => setNewCustomFieldName(e.target.value)}
+                          placeholder="e.g., Zoning Type, HOA Fee, Pool"
+                          className="mt-1"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customFieldType" className="text-sm font-medium">
+                          Field Type <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={newCustomFieldType}
+                          onValueChange={setNewCustomFieldType}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TEXT">Text</SelectItem>
+                            <SelectItem value="NUMBER">Number</SelectItem>
+                            <SelectItem value="DATE">Date</SelectItem>
+                            <SelectItem value="BOOLEAN">Yes/No</SelectItem>
+                            <SelectItem value="CURRENCY">Currency</SelectItem>
+                            <SelectItem value="TEXTAREA">Long Text</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {newCustomFieldType === 'TEXT' && 'Single line text input'}
+                          {newCustomFieldType === 'NUMBER' && 'Numeric values only'}
+                          {newCustomFieldType === 'DATE' && 'Date picker'}
+                          {newCustomFieldType === 'BOOLEAN' && 'Toggle switch (Yes/No)'}
+                          {newCustomFieldType === 'CURRENCY' && 'Money values with formatting'}
+                          {newCustomFieldType === 'TEXTAREA' && 'Multi-line text input'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowCreateCustomField(false)
+                          setNewCustomFieldName('')
+                          setNewCustomFieldType('TEXT')
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={createCustomField}
+                        disabled={!newCustomFieldName.trim() || creatingCustomField}
+                      >
+                        {creatingCustomField ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Field
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1346,15 +1500,30 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
               <div className="bg-muted rounded-lg p-6">
                 <h3 className="font-medium mb-4">Field Mapping</h3>
                 <div className="space-y-2">
-                  {Object.entries(state.fieldMapping).map(([systemField, csvColumn]) => (
-                    <div key={systemField} className="flex items-center text-sm">
-                      <span className="text-muted-foreground w-40">{csvColumn}</span>
-                      <span className="text-muted-foreground mx-2">→</span>
-                      <span className="font-medium">
-                        {SYSTEM_FIELDS.find(f => f.key === systemField)?.label}
-                      </span>
-                    </div>
-                  ))}
+                  {Object.entries(state.fieldMapping).map(([systemField, csvColumn]) => {
+                    // Check if it's a custom field
+                    const isCustomField = systemField.startsWith('custom_')
+                    const customFieldId = isCustomField ? systemField.replace('custom_', '') : null
+                    const customField = customFieldId ? customFields.find(cf => cf.id === customFieldId) : null
+                    const systemFieldDef = SYSTEM_FIELDS.find(f => f.key === systemField)
+                    
+                    return (
+                      <div key={systemField} className="flex items-center text-sm">
+                        <span className="text-muted-foreground w-40">{csvColumn}</span>
+                        <span className="text-muted-foreground mx-2">→</span>
+                        <span className="font-medium">
+                          {isCustomField ? (
+                            <span className="flex items-center gap-1">
+                              {customField?.name || 'Custom Field'}
+                              <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Custom</span>
+                            </span>
+                          ) : (
+                            systemFieldDef?.label || systemField
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
