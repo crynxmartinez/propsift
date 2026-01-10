@@ -68,6 +68,7 @@ export type CallOutcome =
   | 'ANSWERED_NEUTRAL'
   | 'ANSWERED_NOT_NOW'
   | 'ANSWERED_NOT_INTERESTED'
+  | 'ANSWERED_DNC'
   | 'VOICEMAIL'
   | 'NO_ANSWER'
   | 'BUSY'
