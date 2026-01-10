@@ -8,64 +8,64 @@ datasource db {
 }
 
 model User {
-  id                   String                @id @default(cuid())
-  email                String                @unique
-  password             String
-  name                 String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Role & Status
-  role                 String                @default("owner")   // owner, super_admin, admin, member
-  status               String                @default("active")  // active, inactive
-  isPlatformAdmin      Boolean               @default(false)     // Platform-level admin (PropSift staff only)
-  
+  role            String  @default("owner") // owner, super_admin, admin, member
+  status          String  @default("active") // active, inactive
+  isPlatformAdmin Boolean @default(false) // Platform-level admin (PropSift staff only)
+
   // Account ownership (for team members)
-  accountOwnerId       String?
-  accountOwner         User?                 @relation("TeamMembers", fields: [accountOwnerId], references: [id])
-  teamMembers          User[]                @relation("TeamMembers")
-  
+  accountOwnerId String?
+  accountOwner   User?   @relation("TeamMembers", fields: [accountOwnerId], references: [id])
+  teamMembers    User[]  @relation("TeamMembers")
+
   // Profile fields
-  firstName            String?
-  lastName             String?
-  phone                String?
-  timezone             String?               @default("America/Chicago")
-  
+  firstName String?
+  lastName  String?
+  phone     String?
+  timezone  String? @default("America/Chicago")
+
   // Company info (typically only for owner)
-  companyName          String?
-  companyEmail         String?
-  companyPhone         String?
-  billingAddress       String?
-  billingCity          String?
-  billingState         String?
-  billingZip           String?
-  billingCountry       String?               @default("United States")
-  
+  companyName    String?
+  companyEmail   String?
+  companyPhone   String?
+  billingAddress String?
+  billingCity    String?
+  billingState   String?
+  billingZip     String?
+  billingCountry String? @default("United States")
+
   // Relations
-  systemLogs           ActivityLog[]
-  notifications        Notification[]
-  assignedRecords      Record[]
-  createdRecords       Record[]              @relation("RecordCreator")
-  activityLogs         RecordActivityLog[]
-  comments             RecordComment[]
-  assignedTasks        Task[]                @relation("TaskAssignee")
-  createdTasks         Task[]                @relation("TaskCreator")
-  createdTags          Tag[]                 @relation("TagCreator")
-  createdMotivations   Motivation[]          @relation("MotivationCreator")
-  createdStatuses      Status[]              @relation("StatusCreator")
-  createdCallResults   CallResult[]          @relation("CallResultCreator")
-  createdCustomFields  CustomFieldDefinition[] @relation("CustomFieldCreator")
-  createdTaskTemplates TaskTemplate[]        @relation("TaskTemplateCreator")
-  createdFilterFolders FilterFolder[]        @relation("FilterFolderCreator")
-  createdFilterTemplates FilterTemplate[]    @relation("FilterTemplateCreator")
-  createdBoards        Board[]               @relation("BoardCreator")
-  createdAutomationFolders AutomationFolder[] @relation("AutomationFolderCreator")
-  createdAutomations   Automation[]          @relation("AutomationCreator")
-  
+  systemLogs               ActivityLog[]
+  notifications            Notification[]
+  assignedRecords          Record[]
+  createdRecords           Record[]                @relation("RecordCreator")
+  activityLogs             RecordActivityLog[]
+  comments                 RecordComment[]
+  assignedTasks            Task[]                  @relation("TaskAssignee")
+  createdTasks             Task[]                  @relation("TaskCreator")
+  createdTags              Tag[]                   @relation("TagCreator")
+  createdMotivations       Motivation[]            @relation("MotivationCreator")
+  createdStatuses          Status[]                @relation("StatusCreator")
+  createdCallResults       CallResult[]            @relation("CallResultCreator")
+  createdCustomFields      CustomFieldDefinition[] @relation("CustomFieldCreator")
+  createdTaskTemplates     TaskTemplate[]          @relation("TaskTemplateCreator")
+  createdFilterFolders     FilterFolder[]          @relation("FilterFolderCreator")
+  createdFilterTemplates   FilterTemplate[]        @relation("FilterTemplateCreator")
+  createdBoards            Board[]                 @relation("BoardCreator")
+  createdAutomationFolders AutomationFolder[]      @relation("AutomationFolderCreator")
+  createdAutomations       Automation[]            @relation("AutomationCreator")
+
   // Feedback system
-  feedbackPosts        FeedbackPost[]        @relation("FeedbackPostCreator")
-  feedbackVotes        FeedbackVote[]        @relation("FeedbackVoteUser")
-  feedbackComments     FeedbackComment[]     @relation("FeedbackCommentUser")
+  feedbackPosts    FeedbackPost[]    @relation("FeedbackPostCreator")
+  feedbackVotes    FeedbackVote[]    @relation("FeedbackVoteUser")
+  feedbackComments FeedbackComment[] @relation("FeedbackCommentUser")
 }
 
 model Property {
@@ -187,11 +187,11 @@ model PropertyStatus {
 }
 
 model Record {
-  id                 String              @id @default(cuid())
+  id                 String    @id @default(cuid())
   ownerFirstName     String?
   ownerLastName      String?
   ownerFullName      String
-  isCompany          Boolean             @default(false)
+  isCompany          Boolean   @default(false)
   isCompanyOverride  Boolean?
   propertyStreet     String?
   propertyCity       String?
@@ -215,50 +215,96 @@ model Record {
   heatingType        String?
   airConditioner     String?
   yearBuilt          Int?
-  callAttempts       Int                 @default(0)
-  directMailAttempts Int                 @default(0)
-  smsAttempts        Int                 @default(0)
-  rvmAttempts        Int                 @default(0)
-  isContact          Boolean             @default(false)
-  isComplete         Boolean             @default(false)
+  callAttempts       Int       @default(0)
+  directMailAttempts Int       @default(0)
+  smsAttempts        Int       @default(0)
+  rvmAttempts        Int       @default(0)
+  isContact          Boolean   @default(false)
+  isComplete         Boolean   @default(false)
   statusId           String?
   callResultId       String?
   assignedToId       String?
   createdById        String?
   skiptraceDate      DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
   // DockInsight 2.2.2: Denormalized counters for analytics
-  phoneCount         Int                 @default(0)
-  emailCount         Int                 @default(0)
-  tagCount           Int                 @default(0)
-  motivationCount    Int                 @default(0)
-  
+  phoneCount      Int @default(0)
+  emailCount      Int @default(0)
+  tagCount        Int @default(0)
+  motivationCount Int @default(0)
+
   // DockInsight v2: Contact Tracking
-  lastContactedAt    DateTime?           // When was last outreach?
-  lastContactType    String?             // CALL, SMS, MAIL, RVM, EMAIL
-  lastContactResult  String?             // ANSWERED, VOICEMAIL, NO_ANSWER, WRONG_NUMBER
-  hasEngaged         Boolean             @default(false)  // Ever had a conversation?
-  
+  lastContactedAt   DateTime? // When was last outreach?
+  lastContactType   String? // CALL, SMS, MAIL, RVM, EMAIL
+  lastContactResult String? // ANSWERED, VOICEMAIL, NO_ANSWER, WRONG_NUMBER
+  hasEngaged        Boolean   @default(false) // Ever had a conversation?
+
   // DockInsight v2: Snooze feature
-  snoozedUntil       DateTime?           // Hide from queue until this time
-  
-  customFieldValues  CustomFieldValue[]
-  notifications      Notification[]
-  assignedTo         User?               @relation(fields: [assignedToId], references: [id])
-  createdBy          User?               @relation("RecordCreator", fields: [createdById], references: [id])
-  status             Status?             @relation(fields: [statusId], references: [id])
-  callResult         CallResult?         @relation(fields: [callResultId], references: [id])
-  activityLogs       RecordActivityLog[]
-  comments           RecordComment[]
-  emails             RecordEmail[]
-  recordMotivations  RecordMotivation[]
-  phoneNumbers       RecordPhoneNumber[]
-  recordTags         RecordTag[]
-  tasks              Task[]
-  boardPositions     RecordBoardPosition[]
-  
+  snoozedUntil DateTime? // Hide from queue until this time
+
+  // ==========================================
+  // LCE v2.3.1: Lead Cadence Engine Fields
+  // ==========================================
+
+  // Priority Score
+  priorityScore   Int? // Calculated priority score (0-100+)
+  scoreComputedAt DateTime? // When score was last calculated
+  scoreVersion    String? // Algorithm version (e.g., "LCE_2_3_1")
+  scoreBreakdown  Json? // JSON breakdown of score components
+
+  // Confidence Level
+  confidenceLevel String? // HIGH, MEDIUM, LOW
+
+  // Temperature Band (derived from score)
+  temperatureBand     String? // HOT, WARM, COLD, ICE (derived from priorityScore)
+  bandDemotionCounter Int       @default(0) // Days below threshold for hysteresis
+  bandLastCheckedAt   DateTime? // When band was last evaluated
+
+  // Cadence State Machine
+  cadenceState      String    @default("NOT_ENROLLED") // NOT_ENROLLED, ACTIVE, SNOOZED, PAUSED, COMPLETED_NO_CONTACT, EXITED_ENGAGED, EXITED_DNC, EXITED_DEAD, EXITED_CLOSED, STALE_ENGAGED, LONG_TERM_NURTURE
+  cadenceType       String? // HOT, WARM, COLD, ICE, GENTLE, ANNUAL
+  cadenceStep       Int       @default(0) // Current step in cadence (1-indexed)
+  cadenceStartDate  DateTime? // When enrolled in current cadence
+  cadenceExitDate   DateTime? // When exited cadence
+  cadenceExitReason String? // COMPLETED, ANSWERED, DNC, DEAD, MANUAL, CLOSED
+
+  // Next Action
+  nextActionType String? // CALL, SMS, RVM, EMAIL
+  nextActionDue  DateTime? // When next action is due (UTC date)
+
+  // Engagement & Fatigue
+  engagementScore  Int @default(0) // Engagement points
+  noResponseStreak Int @default(0) // Consecutive no-responses
+
+  // Re-enrollment
+  enrollmentCount  Int       @default(0) // How many cadence cycles
+  reEnrollmentDate DateTime? // When eligible for re-enrollment
+
+  // Pause/Snooze reasons
+  pausedUntil  DateTime? // When pause expires (if paused with date)
+  pausedReason String? // Why paused
+
+  // Callback tracking
+  callbackRequestedAt  DateTime? // When callback was requested
+  callbackScheduledFor DateTime? // When callback is scheduled
+
+  customFieldValues CustomFieldValue[]
+  notifications     Notification[]
+  assignedTo        User?                 @relation(fields: [assignedToId], references: [id])
+  createdBy         User?                 @relation("RecordCreator", fields: [createdById], references: [id])
+  status            Status?               @relation(fields: [statusId], references: [id])
+  callResult        CallResult?           @relation(fields: [callResultId], references: [id])
+  activityLogs      RecordActivityLog[]
+  comments          RecordComment[]
+  emails            RecordEmail[]
+  recordMotivations RecordMotivation[]
+  phoneNumbers      RecordPhoneNumber[]
+  recordTags        RecordTag[]
+  tasks             Task[]
+  boardPositions    RecordBoardPosition[]
+
   // DockInsight 2.2.2: Analytics indexes
   @@index([createdById])
   @@index([createdById, createdAt])
@@ -266,18 +312,24 @@ model Record {
   @@index([createdById, statusId])
   @@index([createdById, callResultId])
   @@index([createdById, assignedToId])
-  
   // DockInsight v2: Contact tracking indexes
   @@index([createdById, lastContactedAt])
   @@index([createdById, hasEngaged])
   @@index([snoozedUntil])
+  // LCE v2.3.1: Cadence and queue indexes
+  @@index([createdById, cadenceState])
+  @@index([createdById, nextActionDue])
+  @@index([createdById, priorityScore])
+  @@index([createdById, temperatureBand])
+  @@index([createdById, reEnrollmentDate])
+  @@index([cadenceState, nextActionDue])
 }
 
 model RecordTag {
   id          String   @id @default(cuid())
   recordId    String
   tagId       String
-  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdById String? // DockInsight 2.2.2: Tenant scope for analytics
   createdAt   DateTime @default(now())
   record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
   tag         Tag      @relation(fields: [tagId], references: [id])
@@ -294,7 +346,7 @@ model RecordMotivation {
   id           String     @id @default(cuid())
   recordId     String
   motivationId String
-  createdById  String?    // DockInsight 2.2.2: Tenant scope for analytics
+  createdById  String? // DockInsight 2.2.2: Tenant scope for analytics
   createdAt    DateTime   @default(now())
   motivation   Motivation @relation(fields: [motivationId], references: [id])
   record       Record     @relation(fields: [recordId], references: [id], onDelete: Cascade)
@@ -313,15 +365,25 @@ model RecordPhoneNumber {
   number      String
   type        String   @default("MOBILE")
   statuses    String[] @default([])
-  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdById String? // DockInsight 2.2.2: Tenant scope for analytics
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  // LCE v2.3.1: Phone-level tracking
+  phoneStatus         String    @default("UNVERIFIED") // VALID, UNVERIFIED, WRONG, DISCONNECTED, DNC
+  isPrimary           Boolean   @default(false)
+  attemptCount        Int       @default(0)
+  lastAttemptAt       DateTime?
+  lastOutcome         String? // ANSWERED, VOICEMAIL, NO_ANSWER, BUSY, WRONG_NUMBER, DISCONNECTED, DNC
+  consecutiveNoAnswer Int       @default(0)
 
   // DockInsight 2.2.2: Analytics indexes
   @@index([recordId])
   @@index([createdById])
   @@index([createdById, createdAt])
+  // LCE v2.3.1: Phone status index
+  @@index([recordId, phoneStatus])
 }
 
 model RecordEmail {
@@ -329,7 +391,7 @@ model RecordEmail {
   recordId    String
   email       String
   isPrimary   Boolean  @default(false)
-  createdById String?  // DockInsight 2.2.2: Tenant scope for analytics
+  createdById String? // DockInsight 2.2.2: Tenant scope for analytics
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   record      Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
@@ -448,11 +510,11 @@ model Task {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   completedAt     DateTime?
-  notifications  Notification[]
-  assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])
-  record         Record?        @relation(fields: [recordId], references: [id])
-  template       TaskTemplate?  @relation(fields: [templateId], references: [id])
+  notifications   Notification[]
+  assignedTo      User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy       User           @relation("TaskCreator", fields: [createdById], references: [id])
+  record          Record?        @relation(fields: [recordId], references: [id])
+  template        TaskTemplate?  @relation(fields: [templateId], references: [id])
 
   @@index([assignedToId])
   @@index([recordId])
@@ -628,20 +690,20 @@ model Automation {
   folder      AutomationFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   isActive    Boolean           @default(false)
   isDraft     Boolean           @default(true)
-  
+
   // Workflow definition stored as JSON
   // Contains: triggers, nodes, edges, viewport
   workflowData Json?
-  
+
   // Statistics
-  runCount    Int               @default(0)
-  lastRunAt   DateTime?
-  
+  runCount  Int       @default(0)
+  lastRunAt DateTime?
+
   createdById String
-  createdBy   User              @relation("AutomationCreator", fields: [createdById], references: [id])
+  createdBy   User            @relation("AutomationCreator", fields: [createdById], references: [id])
   logs        AutomationLog[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@unique([name, createdById])
   @@index([createdById])
@@ -654,21 +716,21 @@ model AutomationLog {
   automationId String
   automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   recordId     String?
-  
+
   // Execution details
-  triggeredBy  String     // trigger type that started this run
-  status       String     @default("running") // running, completed, failed, skipped
-  startedAt    DateTime   @default(now())
-  completedAt  DateTime?
-  
+  triggeredBy String // trigger type that started this run
+  status      String    @default("running") // running, completed, failed, skipped
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
   // Step-by-step execution log
-  steps        Json?      // Array of { nodeId, status, startedAt, completedAt, error? }
-  
+  steps Json? // Array of { nodeId, status, startedAt, completedAt, error? }
+
   // Error tracking
   errorMessage String?
   errorNodeId  String?
-  
-  createdAt    DateTime   @default(now())
+
+  createdAt DateTime @default(now())
 
   @@index([automationId])
   @@index([recordId])
@@ -684,12 +746,12 @@ model FeedbackPost {
   id           String            @id @default(cuid())
   title        String
   description  String
-  status       String            @default("open")    // open, in_progress, planned, completed
+  status       String            @default("open") // open, in_progress, planned, completed
   category     String            @default("feature") // feature, improvement, bug, other
-  voteCount    Int               @default(0)         // Denormalized for fast sorting
-  commentCount Int               @default(0)         // Denormalized for display
-  adminNote    String?                               // Official response from PropSift team
-  isPinned     Boolean           @default(false)     // Pin important posts to top
+  voteCount    Int               @default(0) // Denormalized for fast sorting
+  commentCount Int               @default(0) // Denormalized for display
+  adminNote    String? // Official response from PropSift team
+  isPinned     Boolean           @default(false) // Pin important posts to top
   createdById  String
   createdBy    User              @relation("FeedbackPostCreator", fields: [createdById], references: [id])
   votes        FeedbackVote[]
@@ -734,3 +796,140 @@ model FeedbackComment {
   @@index([createdAt])
 }
 
+// ==========================================
+// LCE v2.3.1: LEAD CADENCE ENGINE MODELS
+// ==========================================
+
+model CadenceTemplate {
+  id              String   @id @default(cuid())
+  name            String // HOT, WARM, COLD, ICE, GENTLE, ANNUAL or custom
+  temperatureBand String // HOT, WARM, COLD, ICE
+  description     String?
+  totalSteps      Int
+  totalDays       Int
+  isDefault       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdById     String? // null for system defaults
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  steps CadenceStep[]
+
+  @@unique([name, createdById])
+  @@index([temperatureBand])
+  @@index([isDefault])
+  @@index([createdById])
+}
+
+model CadenceStep {
+  id          String          @id @default(cuid())
+  cadenceId   String
+  cadence     CadenceTemplate @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  stepNumber  Int // 1-indexed
+  dayOffset   Int // Days from cadence start
+  actionType  String // CALL, SMS, RVM, EMAIL
+  description String?
+  createdAt   DateTime        @default(now())
+
+  @@unique([cadenceId, stepNumber])
+  @@index([cadenceId])
+}
+
+model CadenceLog {
+  id          String  @id @default(cuid())
+  recordId    String
+  createdById String? // Tenant scope
+
+  // Attempt tracking
+  attemptId   String   @unique @default(cuid()) // UUID for idempotency
+  attemptedAt DateTime @default(now())
+
+  // What was attempted
+  cadenceType String? // HOT, WARM, COLD, etc.
+  stepNumber  Int?
+  actionType  String // CALL, SMS, RVM, EMAIL
+  phoneId     String? // Which phone was used (for calls)
+  phoneNumber String? // The actual number called
+
+  // Outcome (may be null until logged)
+  outcome         String? // ANSWERED_INTERESTED, ANSWERED_CALLBACK, ANSWERED_NEUTRAL, ANSWERED_NOT_NOW, ANSWERED_NOT_INTERESTED, VOICEMAIL, NO_ANSWER, BUSY, WRONG_NUMBER, DISCONNECTED, DNC
+  outcomeLoggedAt DateTime?
+  autoLogged      Boolean   @default(false) // True if outcome was auto-logged after timeout
+
+  // Metadata
+  notes        String?
+  executedById String? // User who made the call
+
+  createdAt DateTime @default(now())
+
+  @@index([recordId])
+  @@index([createdById])
+  @@index([attemptedAt])
+  @@index([outcome])
+  @@index([createdById, attemptedAt])
+}
+
+model ComplianceLog {
+  id          String  @id @default(cuid())
+  recordId    String
+  createdById String? // Tenant scope
+
+  // What happened
+  action String // DNC_REQUESTED, MARKED_NOT_INTERESTED, MARKED_DEAD, WORKABILITY_BLOCKED
+  reason String? // User-provided reason
+
+  // Which phone (if applicable)
+  phoneId     String?
+  phoneNumber String?
+
+  // Who did it
+  executedById String?
+  executedAt   DateTime @default(now())
+
+  // Additional context
+  notes    String?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([recordId])
+  @@index([createdById])
+  @@index([action])
+  @@index([executedAt])
+}
+
+model ReconciliationLog {
+  id          String  @id @default(cuid())
+  createdById String? // Tenant scope (null for system-wide)
+
+  // Run info
+  runDate DateTime @default(now())
+  runType String   @default("DAILY") // DAILY, MANUAL, STARTUP
+
+  // Statistics
+  recordsScanned Int @default(0)
+  issuesFound    Int @default(0)
+  issuesFixed    Int @default(0)
+  manualReview   Int @default(0)
+
+  // Detailed fixes (JSON array)
+  fixes Json? // Array of { type, recordId, description, before, after }
+
+  // Health metrics snapshot
+  healthMetrics Json? // { activeInCadence, awaitingReEnroll, longTermNurture, notWorkable, getNumbersQueue }
+
+  // Timing
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  durationMs  Int?
+
+  // Status
+  status       String  @default("RUNNING") // RUNNING, COMPLETED, FAILED
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdById])
+  @@index([runDate])
+  @@index([status])
+}
