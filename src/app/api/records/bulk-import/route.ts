@@ -246,67 +246,46 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            // Append phones (don't delete existing, just add new ones)
-            for (const phone of phones) {
-              const existingPhone = await prisma.recordPhoneNumber.findFirst({
-                where: { recordId: existingRecord.id, number: phone },
-              });
-              if (!existingPhone) {
-                await prisma.recordPhoneNumber.create({
-                  data: { recordId: existingRecord.id, number: phone },
-                });
-              }
-            }
-
-            // Append emails (don't delete existing, just add new ones)
-            for (const emailAddress of emails) {
-              const existingEmail = await prisma.recordEmail.findFirst({
-                where: { recordId: existingRecord.id, email: emailAddress },
-              });
-              if (!existingEmail) {
-                await prisma.recordEmail.create({
-                  data: { recordId: existingRecord.id, email: emailAddress },
-                });
-              }
-            }
-
-            // Append motivations (don't remove existing)
-            for (const motivationId of motivationIds) {
-              await prisma.recordMotivation.upsert({
-                where: { recordId_motivationId: { recordId: existingRecord.id, motivationId } },
-                create: { recordId: existingRecord.id, motivationId },
-                update: {},
-              });
-            }
-
-            // Append tags (don't remove existing)
-            for (const tagId of tagIds) {
-              await prisma.recordTag.upsert({
-                where: { recordId_tagId: { recordId: existingRecord.id, tagId } },
-                create: { recordId: existingRecord.id, tagId },
-                update: {},
-              });
-            }
-
-            // Add/update custom fields
-            for (const [fieldId, value] of Object.entries(customFieldValues)) {
-              await prisma.customFieldValue.upsert({
-                where: { fieldId_recordId: { recordId: existingRecord.id, fieldId } },
-                create: { recordId: existingRecord.id, fieldId, value },
-                update: { value },
-              });
-            }
-
-            // Log record update
-            await prisma.recordActivityLog.create({
-              data: {
-                recordId: existingRecord.id,
-                action: 'updated',
-                field: 'record',
-                newValue: 'Bulk import update',
-                source: 'Bulk Import',
-              },
-            });
+            // Batch append phones, emails, motivations, tags, custom fields using createMany with skipDuplicates
+            await Promise.all([
+              // Append phones (skipDuplicates handles existing)
+              phones.length > 0 ? prisma.recordPhoneNumber.createMany({
+                data: phones.map(phone => ({ recordId: existingRecord.id, number: phone })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Append emails
+              emails.length > 0 ? prisma.recordEmail.createMany({
+                data: emails.map(email => ({ recordId: existingRecord.id, email })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Append motivations
+              motivationIds.length > 0 ? prisma.recordMotivation.createMany({
+                data: motivationIds.map(motivationId => ({ recordId: existingRecord.id, motivationId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Append tags
+              tagIds.length > 0 ? prisma.recordTag.createMany({
+                data: tagIds.map(tagId => ({ recordId: existingRecord.id, tagId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add/update custom fields (use createMany, duplicates will be skipped)
+              Object.keys(customFieldValues).length > 0 ? prisma.customFieldValue.createMany({
+                data: Object.entries(customFieldValues).map(([fieldId, value]) => ({ 
+                  recordId: existingRecord.id, fieldId, value 
+                })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Log record update
+              prisma.recordActivityLog.create({
+                data: {
+                  recordId: existingRecord.id,
+                  action: 'updated',
+                  field: 'record',
+                  newValue: 'Bulk import update',
+                  source: 'Bulk Import',
+                },
+              }),
+            ]);
 
             updated++;
           } else {
@@ -347,51 +326,46 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            // Add phones (max 15)
-            for (const phone of phones) {
-              await prisma.recordPhoneNumber.create({
-                data: { recordId: newRecord.id, number: phone },
-              });
-            }
-
-            // Add emails (max 5)
-            for (const emailAddress of emails) {
-              await prisma.recordEmail.create({
-                data: { recordId: newRecord.id, email: emailAddress },
-              });
-            }
-
-            // Add motivations
-            for (const motivationId of motivationIds) {
-              await prisma.recordMotivation.create({
-                data: { recordId: newRecord.id, motivationId },
-              });
-            }
-
-            // Add tags
-            for (const tagId of tagIds) {
-              await prisma.recordTag.create({
-                data: { recordId: newRecord.id, tagId },
-              });
-            }
-
-            // Add custom fields
-            for (const [fieldId, value] of Object.entries(customFieldValues)) {
-              await prisma.customFieldValue.create({
-                data: { recordId: newRecord.id, fieldId, value },
-              });
-            }
-
-            // Log record creation
-            await prisma.recordActivityLog.create({
-              data: {
-                recordId: newRecord.id,
-                action: 'created',
-                field: 'record',
-                newValue: 'Created via bulk import',
-                source: 'Bulk Import',
-              },
-            });
+            // Batch create phones, emails, motivations, tags, custom fields, and activity log
+            await Promise.all([
+              // Add phones (max 15)
+              phones.length > 0 ? prisma.recordPhoneNumber.createMany({
+                data: phones.map(phone => ({ recordId: newRecord.id, number: phone })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add emails (max 5)
+              emails.length > 0 ? prisma.recordEmail.createMany({
+                data: emails.map(email => ({ recordId: newRecord.id, email })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add motivations
+              motivationIds.length > 0 ? prisma.recordMotivation.createMany({
+                data: motivationIds.map(motivationId => ({ recordId: newRecord.id, motivationId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add tags
+              tagIds.length > 0 ? prisma.recordTag.createMany({
+                data: tagIds.map(tagId => ({ recordId: newRecord.id, tagId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add custom fields
+              Object.keys(customFieldValues).length > 0 ? prisma.customFieldValue.createMany({
+                data: Object.entries(customFieldValues).map(([fieldId, value]) => ({ 
+                  recordId: newRecord.id, fieldId, value 
+                })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Log record creation
+              prisma.recordActivityLog.create({
+                data: {
+                  recordId: newRecord.id,
+                  action: 'created',
+                  field: 'record',
+                  newValue: 'Created via bulk import',
+                  source: 'Bulk Import',
+                },
+              }),
+            ]);
 
             // Trigger record_created automations (async)
             findMatchingAutomations('record_created', authUser.ownerId).then(automations => {
@@ -511,69 +485,46 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // Add phones (don't remove existing, just add new ones)
-            for (const phone of phones) {
-              // Check if phone already exists
-              const existingPhone = await prisma.recordPhoneNumber.findFirst({
-                where: { recordId: existingRecord.id, number: phone },
-              });
-              if (!existingPhone) {
-                await prisma.recordPhoneNumber.create({
-                  data: { recordId: existingRecord.id, number: phone },
-                });
-              }
-            }
-
-            // Add emails (don't remove existing, just add new ones)
-            for (const emailAddress of emails) {
-              // Check if email already exists
-              const existingEmail = await prisma.recordEmail.findFirst({
-                where: { recordId: existingRecord.id, email: emailAddress },
-              });
-              if (!existingEmail) {
-                await prisma.recordEmail.create({
-                  data: { recordId: existingRecord.id, email: emailAddress },
-                });
-              }
-            }
-
-            // Add motivations (don't remove existing)
-            for (const motivationId of motivationIds) {
-              await prisma.recordMotivation.upsert({
-                where: { recordId_motivationId: { recordId: existingRecord.id, motivationId } },
-                create: { recordId: existingRecord.id, motivationId },
-                update: {},
-              });
-            }
-
-            // Add tags (don't remove existing)
-            for (const tagId of tagIds) {
-              await prisma.recordTag.upsert({
-                where: { recordId_tagId: { recordId: existingRecord.id, tagId } },
-                create: { recordId: existingRecord.id, tagId },
-                update: {},
-              });
-            }
-
-            // Add/update custom fields
-            for (const [fieldId, value] of Object.entries(customFieldValues)) {
-              await prisma.customFieldValue.upsert({
-                where: { fieldId_recordId: { recordId: existingRecord.id, fieldId } },
-                create: { recordId: existingRecord.id, fieldId, value },
-                update: { value },
-              });
-            }
-
-            // Log record update (UPDATE mode)
-            await prisma.recordActivityLog.create({
-              data: {
-                recordId: existingRecord.id,
-                action: 'updated',
-                field: 'record',
-                newValue: 'Bulk import update',
-                source: 'Bulk Import',
-              },
-            });
+            // Batch add phones, emails, motivations, tags, custom fields using createMany with skipDuplicates
+            await Promise.all([
+              // Add phones (skipDuplicates handles existing)
+              phones.length > 0 ? prisma.recordPhoneNumber.createMany({
+                data: phones.map(phone => ({ recordId: existingRecord.id, number: phone })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add emails
+              emails.length > 0 ? prisma.recordEmail.createMany({
+                data: emails.map(email => ({ recordId: existingRecord.id, email })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add motivations
+              motivationIds.length > 0 ? prisma.recordMotivation.createMany({
+                data: motivationIds.map(motivationId => ({ recordId: existingRecord.id, motivationId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add tags
+              tagIds.length > 0 ? prisma.recordTag.createMany({
+                data: tagIds.map(tagId => ({ recordId: existingRecord.id, tagId })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Add custom fields (skipDuplicates for new, won't update existing)
+              Object.keys(customFieldValues).length > 0 ? prisma.customFieldValue.createMany({
+                data: Object.entries(customFieldValues).map(([fieldId, value]) => ({ 
+                  recordId: existingRecord.id, fieldId, value 
+                })),
+                skipDuplicates: true,
+              }) : Promise.resolve(),
+              // Log record update (UPDATE mode)
+              prisma.recordActivityLog.create({
+                data: {
+                  recordId: existingRecord.id,
+                  action: 'updated',
+                  field: 'record',
+                  newValue: 'Bulk import update',
+                  source: 'Bulk Import',
+                },
+              }),
+            ]);
 
             updated++;
           } else {
