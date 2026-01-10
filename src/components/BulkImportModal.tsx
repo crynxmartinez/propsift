@@ -896,9 +896,34 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                 
                 {/* Scrollable Content Area */}
                 <div className="flex-1 overflow-y-auto min-h-0" data-dropdown-container>
-                  {/* Dropdown - when focused or searching */}
-                  {activeListTab === 'motivations' && isDropdownOpen ? (
+                  {activeListTab === 'motivations' ? (
                     <div className="bg-gray-50">
+                      {/* Selected motivations first */}
+                      {state.motivationIds.length > 0 && (
+                        <div className="border-b border-gray-200 pb-2 mb-2">
+                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase bg-gray-100">Selected</div>
+                          {state.motivationIds.map((id) => {
+                            const motivation = motivations.find(m => m.id === id)
+                            return motivation ? (
+                              <div
+                                key={id}
+                                className="flex items-center justify-between px-4 py-2 bg-blue-50"
+                              >
+                                <span className="text-sm text-blue-700">{motivation.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleArrayItem('motivationIds', id)}
+                                  className="text-blue-400 hover:text-blue-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ) : null
+                          })}
+                        </div>
+                      )}
+                      
+                      {/* Available motivations */}
                       {motivations
                         .filter(m => 
                           m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
@@ -908,9 +933,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           <button
                             key={motivation.id}
                             type="button"
-                            onClick={() => {
-                              toggleArrayItem('motivationIds', motivation.id)
-                            }}
+                            onClick={() => toggleArrayItem('motivationIds', motivation.id)}
                             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
                             {motivation.name}
@@ -919,8 +942,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       {motivations.filter(m => 
                         m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                         !state.motivationIds.includes(m.id)
-                      ).length === 0 && !motivationSearch.trim() && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No motivations available</div>
+                      ).length === 0 && state.motivationIds.length === 0 && !motivationSearch.trim() && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">No motivations available</div>
                       )}
                       {/* Create new motivation button */}
                       {motivationSearch.trim() && !motivations.some(m => m.name.toLowerCase() === motivationSearch.toLowerCase()) && (
@@ -939,8 +962,34 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         </button>
                       )}
                     </div>
-                  ) : activeListTab === 'tags' && isDropdownOpen ? (
+                  ) : (
                     <div className="bg-gray-50">
+                      {/* Selected tags first */}
+                      {state.tagIds.length > 0 && (
+                        <div className="border-b border-gray-200 pb-2 mb-2">
+                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase bg-gray-100">Selected</div>
+                          {state.tagIds.map((id) => {
+                            const tag = tags.find(t => t.id === id)
+                            return tag ? (
+                              <div
+                                key={id}
+                                className="flex items-center justify-between px-4 py-2 bg-blue-50"
+                              >
+                                <span className="text-sm text-blue-700">{tag.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleArrayItem('tagIds', id)}
+                                  className="text-blue-400 hover:text-blue-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ) : null
+                          })}
+                        </div>
+                      )}
+                      
+                      {/* Available tags */}
                       {tags
                         .filter(t => 
                           t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
@@ -950,9 +999,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           <button
                             key={tag.id}
                             type="button"
-                            onClick={() => {
-                              toggleArrayItem('tagIds', tag.id)
-                            }}
+                            onClick={() => toggleArrayItem('tagIds', tag.id)}
                             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
                           >
                             {tag.name}
@@ -961,8 +1008,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       {tags.filter(t => 
                         t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                         !state.tagIds.includes(t.id)
-                      ).length === 0 && !tagSearch.trim() && (
-                        <div className="px-4 py-2 text-sm text-gray-500">No tags available</div>
+                      ).length === 0 && state.tagIds.length === 0 && !tagSearch.trim() && (
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">No tags available</div>
                       )}
                       {/* Create new tag button */}
                       {tagSearch.trim() && !tags.some(t => t.name.toLowerCase() === tagSearch.toLowerCase()) && (
@@ -981,61 +1028,6 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         </button>
                       )}
                     </div>
-                  ) : (
-                    /* Selected Items List - when not searching */
-                    activeListTab === 'motivations' ? (
-                      <>
-                        {state.motivationIds.map((id) => {
-                          const motivation = motivations.find(m => m.id === id)
-                          return motivation ? (
-                            <div
-                              key={id}
-                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                            >
-                              <span className="text-sm text-gray-700">{motivation.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => toggleArrayItem('motivationIds', id)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : null
-                        })}
-                        {state.motivationIds.length === 0 && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-400">
-                            No motivations selected
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {state.tagIds.map((id) => {
-                          const tag = tags.find(t => t.id === id)
-                          return tag ? (
-                            <div
-                              key={id}
-                              className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                            >
-                              <span className="text-sm text-gray-700">{tag.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => toggleArrayItem('tagIds', id)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : null
-                        })}
-                        {state.tagIds.length === 0 && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-400">
-                            No tags selected
-                          </div>
-                        )}
-                      </>
-                    )
                   )}
                 </div>
               </div>
