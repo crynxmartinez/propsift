@@ -932,27 +932,27 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       <span className="ml-2 text-sm text-gray-500">Loading...</span>
                     </div>
                   ) : activeListTab === 'motivations' ? (
-                    <div className="bg-gray-50 min-h-[100px]">
+                    <div className="bg-white dark:bg-gray-800 min-h-[100px]">
                       {/* Debug info */}
-                      <div className="px-4 py-1 text-xs text-gray-400 bg-gray-100 border-b">
+                      <div className="px-4 py-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                         {motivations.length} motivation(s) loaded
                       </div>
                       {/* Selected motivations first */}
                       {state.motivationIds.length > 0 && (
-                        <div className="border-b border-gray-200 pb-2 mb-2">
-                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase bg-gray-100">Selected</div>
+                        <div className="border-b border-gray-200 dark:border-gray-600 pb-2 mb-2">
+                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase bg-gray-100 dark:bg-gray-700">Selected</div>
                           {state.motivationIds.map((id) => {
                             const motivation = motivations.find(m => m.id === id)
                             return motivation ? (
                               <div
                                 key={id}
-                                className="flex items-center justify-between px-4 py-2 bg-blue-50"
+                                className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/30"
                               >
-                                <span className="text-sm text-blue-700">{motivation.name}</span>
+                                <span className="text-sm text-blue-700 dark:text-blue-300">{motivation.name}</span>
                                 <button
                                   type="button"
                                   onClick={() => toggleArrayItem('motivationIds', id)}
-                                  className="text-blue-400 hover:text-blue-600"
+                                  className="text-blue-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
                                   ×
                                 </button>
@@ -973,13 +973,13 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             key={motivation.id}
                             type="button"
                             onClick={() => toggleArrayItem('motivationIds', motivation.id)}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0"
                           >
                             {motivation.name}
                           </button>
                         ))}
                       {motivations.length === 0 && !loadingData && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           No motivations available. Type a name above and click "Create" to add one.
                         </div>
                       )}
@@ -987,7 +987,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         m.name.toLowerCase().includes(motivationSearch.toLowerCase()) &&
                         !state.motivationIds.includes(m.id)
                       ).length === 0 && state.motivationIds.length === 0 && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           {motivationSearch.trim() ? 'No matching motivations' : 'All motivations selected'}
                         </div>
                       )}
@@ -997,7 +997,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           type="button"
                           onClick={() => createMotivation(motivationSearch)}
                           disabled={creatingMotivation}
-                          className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-200 dark:border-gray-600 flex items-center gap-2"
                         >
                           {creatingMotivation ? (
                             <span className="animate-spin">⏳</span>
@@ -1009,23 +1009,23 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                       )}
                     </div>
                   ) : (
-                    <div className="bg-gray-50">
+                    <div className="bg-white dark:bg-gray-800">
                       {/* Selected tags first */}
                       {state.tagIds.length > 0 && (
-                        <div className="border-b border-gray-200 pb-2 mb-2">
-                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase bg-gray-100">Selected</div>
+                        <div className="border-b border-gray-200 dark:border-gray-600 pb-2 mb-2">
+                          <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase bg-gray-100 dark:bg-gray-700">Selected</div>
                           {state.tagIds.map((id) => {
                             const tag = tags.find(t => t.id === id)
                             return tag ? (
                               <div
                                 key={id}
-                                className="flex items-center justify-between px-4 py-2 bg-blue-50"
+                                className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/30"
                               >
-                                <span className="text-sm text-blue-700">{tag.name}</span>
+                                <span className="text-sm text-blue-700 dark:text-blue-300">{tag.name}</span>
                                 <button
                                   type="button"
                                   onClick={() => toggleArrayItem('tagIds', id)}
-                                  className="text-blue-400 hover:text-blue-600"
+                                  className="text-blue-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
                                   ×
                                 </button>
@@ -1046,13 +1046,13 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                             key={tag.id}
                             type="button"
                             onClick={() => toggleArrayItem('tagIds', tag.id)}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-0"
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0"
                           >
                             {tag.name}
                           </button>
                         ))}
                       {tags.length === 0 && !loadingData && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           No tags available. Type a name above and click "Create" to add one.
                         </div>
                       )}
@@ -1060,7 +1060,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                         t.name.toLowerCase().includes(tagSearch.toLowerCase()) &&
                         !state.tagIds.includes(t.id)
                       ).length === 0 && state.tagIds.length === 0 && (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           {tagSearch.trim() ? 'No matching tags' : 'All tags selected'}
                         </div>
                       )}
@@ -1070,7 +1070,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
                           type="button"
                           onClick={() => createTag(tagSearch)}
                           disabled={creatingTag}
-                          className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-200 dark:border-gray-600 flex items-center gap-2"
                         >
                           {creatingTag ? (
                             <span className="animate-spin">⏳</span>
