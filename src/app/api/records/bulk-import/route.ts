@@ -54,6 +54,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No data to import' }, { status: 400 });
     }
 
+    // Check monthly import limit (10,000 records/month)
+    const MONTHLY_IMPORT_LIMIT = 10000;
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // Get all team member IDs for this team (owner + members with this accountOwnerId)
+    const teamMembers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { id: authUser.ownerId },
+          { accountOwnerId: authUser.ownerId },
+        ],
+      },
+      select: { id: true },
+    });
+    const teamMemberIds = teamMembers.map(m => m.id);
+
+    // Count records imported this month by this team
+    const monthlyImports = await prisma.activityLog.aggregate({
+      where: {
+        action: 'bulk_import',
+        status: 'completed',
+        createdAt: { gte: startOfMonth },
+        userId: { in: teamMemberIds },
+      },
+      _sum: { processed: true },
+    });
+
+    const importedThisMonth = monthlyImports._sum?.processed || 0;
+    const remainingQuota = MONTHLY_IMPORT_LIMIT - importedThisMonth;
+
+    if (remainingQuota <= 0) {
+      return NextResponse.json({ 
+        error: 'Monthly import limit reached',
+        message: `You have reached your monthly limit of ${MONTHLY_IMPORT_LIMIT.toLocaleString()} records. Your limit resets on the 1st of next month.`,
+        importedThisMonth,
+        limit: MONTHLY_IMPORT_LIMIT,
+      }, { status: 429 });
+    }
+
+    // Check if this import would exceed the limit
+    if (csvData.length > remainingQuota) {
+      return NextResponse.json({ 
+        error: 'Import would exceed monthly limit',
+        message: `This import contains ${csvData.length.toLocaleString()} records, but you only have ${remainingQuota.toLocaleString()} records remaining in your monthly quota.`,
+        importedThisMonth,
+        remainingQuota,
+        limit: MONTHLY_IMPORT_LIMIT,
+        requestedRecords: csvData.length,
+      }, { status: 429 });
+    }
+
     // Get column indices from mapping
     const getColumnIndex = (systemField: string): number => {
       const csvColumn = fieldMapping[systemField];

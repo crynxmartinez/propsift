@@ -54,7 +54,7 @@ function HeroSection() {
 
 function PricingCards() {
   const features = [
-    'Unlimited Records',
+    '10K Records/Month',
     'DockInsight Analytics Dashboard',
     'Lead Cadence Engine (LCE)',
     'Smart Lead Scoring',
@@ -139,7 +139,7 @@ function FeatureComparison() {
     {
       name: 'Lead Management',
       features: [
-        'Unlimited Property Records',
+        '10K Property Records/Month',
         'Owner Information & Contact Details',
         'Outreach Tracking & History',
         'Tags & Motivations',

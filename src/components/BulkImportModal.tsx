@@ -606,10 +606,10 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
       onClose()
       toast.success('Upload started! View progress in Activity > Upload')
       
-      // 3. Start background import (fire and forget)
+      // 3. Start background import
       // API handles activity log updates internally
       const token = localStorage.getItem('token')
-      fetch('/api/records/bulk-import', {
+      const importRes = await fetch('/api/records/bulk-import', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -625,11 +625,20 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
           csvHeaders: state.csvHeaders,
           csvData: state.csvData,
         }),
-      }).then(() => {
-        onSuccess()
-      }).catch((error) => {
-        console.error('Import error:', error)
       })
+
+      if (!importRes.ok) {
+        const errorData = await importRes.json()
+        if (importRes.status === 429) {
+          // Monthly limit exceeded
+          toast.error(errorData.message || 'Monthly import limit reached')
+        } else {
+          toast.error(errorData.error || 'Import failed')
+        }
+        return
+      }
+
+      onSuccess()
       
     } catch (error) {
       console.error('Import error:', error)

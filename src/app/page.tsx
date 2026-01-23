@@ -590,7 +590,7 @@ function HowItWorksSection() {
 
 function PricingSection() {
   const features = [
-    'Unlimited Records',
+    '10K Records/Month',
     'DockInsight Analytics',
     'Lead Cadence Engine',
     'Smart Lead Scoring',
