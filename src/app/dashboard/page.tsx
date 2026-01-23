@@ -684,7 +684,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">DockInsight</h1>
-            <p className="text-sm text-muted-foreground">v2.2 • Your command center</p>
+            <p className="text-sm text-muted-foreground">v4.0 • Your command center</p>
           </div>
         </div>
         <Button
