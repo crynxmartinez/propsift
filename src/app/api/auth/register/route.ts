@@ -5,10 +5,10 @@ import { sendVerificationEmail, generateVerificationToken, getVerificationExpiry
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const { firstName, lastName, email, password } = await request.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    if (!firstName || !lastName || !email || !password) {
+      return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }
 
     if (password.length < 6) {
@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
+        firstName,
+        lastName,
         email,
         password: hashedPassword,
         status: 'pending',
