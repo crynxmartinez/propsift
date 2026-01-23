@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -26,6 +26,26 @@ import {
 } from 'lucide-react'
 
 export default function LandingPage() {
+  const [showPopup, setShowPopup] = useState(false)
+
+  useEffect(() => {
+    // Check if popup was already dismissed this session
+    const dismissed = sessionStorage.getItem('lce-popup-dismissed')
+    if (dismissed) return
+
+    // Show popup after 5 seconds
+    const timer = setTimeout(() => {
+      setShowPopup(true)
+    }, 5000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleClosePopup = () => {
+    setShowPopup(false)
+    sessionStorage.setItem('lce-popup-dismissed', 'true')
+  }
+
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
@@ -41,6 +61,80 @@ export default function LandingPage() {
         <CTASection />
       </main>
       <Footer />
+
+      {/* LCE Popup */}
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-gradient-to-br from-gray-900 to-gray-950 border-2 border-blue-600 rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
+            {/* Close button */}
+            <button
+              onClick={handleClosePopup}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Content */}
+            <div className="text-center">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900/50 text-blue-400 rounded-full text-sm font-semibold mb-6">
+                <Zap className="w-4 h-4" />
+                Limited Time Offer
+              </div>
+
+              {/* Headline */}
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                Meet the <span className="text-blue-400">Lead Cadence Engine</span>
+              </h2>
+
+              {/* Description */}
+              <p className="text-gray-400 mb-6">
+                The only CRM that tells you <strong className="text-white">exactly who to call</strong> and <strong className="text-white">when to follow up</strong>. 
+                Our algorithm does the thinking — you do the closing.
+              </p>
+
+              {/* Features */}
+              <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+                {[
+                  'Auto-scheduled follow-ups',
+                  'Smart lead scoring',
+                  'Temperature-based priority',
+                  'Never miss a callback',
+                ].map((feature) => (
+                  <div key={feature} className="flex items-center gap-2 text-sm text-gray-300">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+
+              {/* Free offer */}
+              <div className="bg-green-900/30 border border-green-600/50 rounded-xl p-4 mb-6">
+                <p className="text-green-400 font-semibold text-lg">
+                  🎉 FREE for all of 2026!
+                </p>
+                <p className="text-green-300/80 text-sm">
+                  No credit card required. Full access to everything.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <Link
+                href="/register"
+                onClick={handleClosePopup}
+                className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-lg"
+              >
+                Get Started Free
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+
+              <p className="text-gray-500 text-xs mt-4">
+                Join 500+ wholesalers already using PropSift
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
