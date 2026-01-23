@@ -4,6 +4,17 @@ import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
 import { computePriority, sortByPriority, filterByBucket, RecordWithRelations, PriorityResult, Bucket } from '@/lib/scoring'
 import { headers } from 'next/headers'
+import {
+  assignQueueTier,
+  getPhoneSummary,
+  getTotalSteps,
+  getCadenceProgress,
+  type PhoneData,
+  type CadencePhase,
+  type CadenceState,
+  type CadenceType,
+  type QueueTier,
+} from '@/lib/lce/v4'
 
 // Type for record with included relations
 interface RecordWithIncludes {
@@ -255,13 +266,25 @@ export async function GET(request: Request) {
       queuePosition: 1,
       totalInQueue: filteredRecords.length,
       bucket: actualBucket,
-      // LCE v2.3.1 cadence data
-      cadenceState: record.cadenceState || 'NOT_ENROLLED',
+      // LCE v4.0 cadence data
+      cadencePhase: (record as any).cadencePhase || 'NEW',
+      cadenceState: record.cadenceState || 'ACTIVE',
       cadenceType: record.cadenceType || null,
       cadenceStep: record.cadenceStep || 0,
-      totalSteps: record.cadenceType ? CADENCE_TOTAL_STEPS[record.cadenceType] || 5 : 0,
+      totalSteps: record.cadenceType ? getTotalSteps(record.cadenceType as CadenceType) : 0,
+      cadenceProgress: record.cadenceType 
+        ? getCadenceProgress(record.cadenceStep || 0, record.cadenceType as CadenceType) 
+        : '0/0',
       nextActionType: record.nextActionType || null,
       nextActionDue: record.nextActionDue || null,
+      // LCE v4.0 additional fields
+      blitzAttempts: (record as any).blitzAttempts || 0,
+      enrollmentCount: (record as any).enrollmentCount || 0,
+      reEnrollmentDate: (record as any).reEnrollmentDate || null,
+      snoozedUntil: record.snoozedUntil || null,
+      pausedReason: record.pausedReason || null,
+      queueTier: (record as any).queueTier || 9,
+      phoneExhausted: (record as any).phoneExhaustedAt ? true : false,
     })
   } catch (error) {
     console.error('Error fetching next-up record:', error)
