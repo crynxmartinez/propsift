@@ -18,7 +18,11 @@ import {
   ChevronUp,
   Star,
   Menu,
-  X
+  X,
+  RefreshCw,
+  Thermometer,
+  LayoutGrid,
+  Settings2
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -293,39 +297,51 @@ function SocialProofBar() {
 function FeaturesSection() {
   const features = [
     {
-      icon: ClipboardList,
-      title: 'Lead Management',
-      description: 'Centralize all your property leads with owner info, property details, and complete outreach tracking. Never lose a lead again.',
+      icon: RefreshCw,
+      title: 'Lead Cadence Engine (LCE)',
+      description: 'Auto-schedules follow-ups based on lead temperature. Hides leads until due, tracks attempts, and ensures you never miss a follow-up.',
       color: 'blue',
     },
     {
       icon: BarChart3,
-      title: 'DockInsight Analytics',
-      description: 'Real-time KPIs, charts, and action cards show you exactly where to focus. See hot leads, stale leads, and call-ready prospects at a glance.',
+      title: 'DockInsight Dashboard',
+      description: 'Your calling command center with 6 priority buckets, real-time stats, quick actions, and keyboard shortcuts for maximum efficiency.',
       color: 'purple',
     },
     {
       icon: Target,
-      title: 'Kanban Boards',
-      description: 'Visual pipeline management for acquisitions and dispositions. Drag and drop records through your custom stages.',
+      title: 'Smart Lead Scoring',
+      description: 'Automatic priority scoring based on motivations, data quality, engagement history, and phone status. Always know which leads to call first.',
       color: 'green',
+    },
+    {
+      icon: Thermometer,
+      title: 'Temperature System',
+      description: '4-tier lead classification (Hot/Warm/Cold/Ice) with automatic contact frequency. Hot leads get 7 calls in 14 days, Ice gets 2 in 60.',
+      color: 'red',
+    },
+    {
+      icon: LayoutGrid,
+      title: 'Kanban Board',
+      description: 'Visual pipeline management with drag-and-drop stages. Track acquisitions and dispositions through your custom workflow.',
+      color: 'orange',
     },
     {
       icon: Zap,
       title: 'Workflow Automations',
-      description: 'Set up trigger-based actions. When a lead goes hot, automatically assign it, create tasks, and notify your team.',
-      color: 'orange',
+      description: 'Trigger-based actions that work for you. Auto-assign leads, create tasks, change statuses, and notify your team automatically.',
+      color: 'yellow',
+    },
+    {
+      icon: Settings2,
+      title: 'Custom Statuses & Call Results',
+      description: 'Fully configurable workflow with workability settings and temperature effects. Make PropSift match exactly how you work.',
+      color: 'pink',
     },
     {
       icon: Users,
       title: 'Team Collaboration',
-      description: 'Role-based access control, round-robin task assignment, and activity tracking. Scale your operation with confidence.',
-      color: 'pink',
-    },
-    {
-      icon: Phone,
-      title: 'Outreach Tracking',
-      description: 'Track call attempts, direct mail, SMS, and voicemails. Know exactly when and how you contacted each lead.',
+      description: 'Up to 10 team members with role-based access, activity tracking, round-robin assignment, and shared leads.',
       color: 'cyan',
     },
   ]
@@ -334,7 +350,9 @@ function FeaturesSection() {
     blue: { bg: 'bg-blue-900/50', icon: 'text-blue-400' },
     purple: { bg: 'bg-purple-900/50', icon: 'text-purple-400' },
     green: { bg: 'bg-green-900/50', icon: 'text-green-400' },
+    red: { bg: 'bg-red-900/50', icon: 'text-red-400' },
     orange: { bg: 'bg-orange-900/50', icon: 'text-orange-400' },
+    yellow: { bg: 'bg-yellow-900/50', icon: 'text-yellow-400' },
     pink: { bg: 'bg-pink-900/50', icon: 'text-pink-400' },
     cyan: { bg: 'bg-cyan-900/50', icon: 'text-cyan-400' },
   }
@@ -351,7 +369,7 @@ function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature) => {
             const Icon = feature.icon
             const colors = colorClasses[feature.color]
