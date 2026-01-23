@@ -110,6 +110,22 @@ interface SessionStats {
   completed: number
 }
 
+// Smart Dial types
+type SmartDialState = 'idle' | 'dialing' | 'waiting_result' | 'all_done'
+
+interface PhoneCallResult {
+  phoneId: string
+  phoneNumber: string
+  status: string | null // null = not called yet
+}
+
+interface SmartDialData {
+  state: SmartDialState
+  currentPhoneIndex: number
+  phoneResults: PhoneCallResult[]
+  validPhones: Array<{ id: string; number: string; type: string; statuses: string[] }>
+}
+
 interface CallResultOption {
   id: string
   name: string
@@ -146,6 +162,14 @@ export default function DashboardPage() {
   const [callResultId, setCallResultId] = useState<string | null>(null)
   const [callResultOptions, setCallResultOptions] = useState<CallResultOption[]>([])
   const [statusOptions, setStatusOptions] = useState<StatusOption[]>([])
+  
+  // Smart Dial state
+  const [smartDial, setSmartDial] = useState<SmartDialData>({
+    state: 'idle',
+    currentPhoneIndex: 0,
+    phoneResults: [],
+    validPhones: [],
+  })
 
   const getToken = useCallback(() => {
     return localStorage.getItem('token')
@@ -357,6 +381,142 @@ export default function DashboardPage() {
     }
   }
   
+  // Smart Dial: Start dialing all valid phones
+  const handleSmartDialPlay = () => {
+    if (!nextUpData?.phones) return
+    
+    // Filter out phones with DNC, DEAD, WRONG statuses
+    const validPhones = nextUpData.phones.filter(phone => {
+      const statuses = phone.statuses || []
+      return !statuses.includes('DNC') && !statuses.includes('DEAD') && !statuses.includes('WRONG')
+    })
+    
+    if (validPhones.length === 0) {
+      toast.error('No callable phones available')
+      setSmartDial(prev => ({ ...prev, state: 'all_done', validPhones: [] }))
+      return
+    }
+    
+    // Initialize phone results
+    const phoneResults: PhoneCallResult[] = validPhones.map(p => ({
+      phoneId: p.id,
+      phoneNumber: p.number,
+      status: null,
+    }))
+    
+    setSmartDial({
+      state: 'dialing',
+      currentPhoneIndex: 0,
+      phoneResults,
+      validPhones,
+    })
+    
+    // Dial the first phone
+    dialPhone(validPhones[0], nextUpData.record!.id)
+  }
+  
+  // Smart Dial: Dial a specific phone
+  const dialPhone = async (phone: { id: string; number: string }, recordId: string) => {
+    const formattedPhone = phone.number.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+    
+    // Show toast and open dialer
+    toast.success(`📞 Dialing ${formattedPhone}`)
+    window.open(`tel:${phone.number}`, '_self')
+    
+    // Log the call
+    const token = getToken()
+    if (token) {
+      try {
+        await fetch('/api/dockinsight/log-action', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ recordId, action: 'call', result: 'no_answer', phoneId: phone.id }),
+        })
+        setSessionStats(prev => ({ ...prev, callsMade: prev.callsMade + 1 }))
+      } catch (error) {
+        console.error('Error logging call:', error)
+      }
+    }
+    
+    // Move to waiting_result state
+    setSmartDial(prev => ({ ...prev, state: 'waiting_result' }))
+  }
+  
+  // Smart Dial: Handle phone status selection (after call)
+  const handleSmartDialResult = async (status: string) => {
+    if (!nextUpData?.record) return
+    
+    const { currentPhoneIndex, phoneResults, validPhones } = smartDial
+    const currentPhone = validPhones[currentPhoneIndex]
+    
+    // Update phone status in database
+    const token = getToken()
+    if (token && currentPhone) {
+      try {
+        await fetch(`/api/records/${nextUpData.record.id}/phones/${currentPhone.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        })
+      } catch (error) {
+        console.error('Error updating phone status:', error)
+      }
+    }
+    
+    // Update local state
+    const newPhoneResults = [...phoneResults]
+    newPhoneResults[currentPhoneIndex] = { ...newPhoneResults[currentPhoneIndex], status }
+    
+    const nextIndex = currentPhoneIndex + 1
+    
+    if (nextIndex >= validPhones.length) {
+      // All phones done
+      setSmartDial(prev => ({
+        ...prev,
+        state: 'all_done',
+        phoneResults: newPhoneResults,
+      }))
+      setWorkedThisSession(prev => prev + 1)
+      toast.success('All phones called!')
+    } else {
+      // Dial next phone
+      setSmartDial(prev => ({
+        ...prev,
+        state: 'dialing',
+        currentPhoneIndex: nextIndex,
+        phoneResults: newPhoneResults,
+      }))
+      dialPhone(validPhones[nextIndex], nextUpData.record!.id)
+    }
+  }
+  
+  // Smart Dial: Stop mid-sequence
+  const handleSmartDialStop = () => {
+    setSmartDial(prev => ({ ...prev, state: 'idle' }))
+    toast.info('Smart dial stopped')
+  }
+  
+  // Smart Dial: Move to next lead
+  const handleSmartDialNextLead = async () => {
+    // Reset smart dial state
+    setSmartDial({
+      state: 'idle',
+      currentPhoneIndex: 0,
+      phoneResults: [],
+      validPhones: [],
+    })
+    
+    // Fetch next lead
+    await fetchAll()
+    toast.success('Moving to next lead')
+  }
+
   // Handle moving to next record after post-call actions
   const handleNext = async () => {
     if (calledRecordId && callResultId) {
@@ -476,19 +636,19 @@ export default function DashboardPage() {
   }
 
   const handleSnooze = async (recordId: string, duration: string) => {
-    // Convert duration to minutes
+    // Convert duration to minutes - Updated for Smart Dial: 5m, 10m, 30m, 1hr
     const durationMap: Record<string, number> = {
+      '5m': 5,
+      '10m': 10,
+      '30m': 30,
       '1h': 60,
-      'tomorrow': 1440, // 24 hours
-      '3d': 4320, // 3 days
-      '1w': 10080, // 7 days
     }
     const snoozeDuration = durationMap[duration] || 60
     const success = await logAction(recordId, 'snooze', { snoozeDuration })
     if (success) {
       setSessionStats(prev => ({ ...prev, snoozed: prev.snoozed + 1 }))
       setWorkedThisSession(prev => prev + 1)
-      const durationLabel = duration === '1h' ? '1 hour' : duration === 'tomorrow' ? 'tomorrow' : duration === '3d' ? '3 days' : '1 week'
+      const durationLabel = duration === '5m' ? '5 minutes' : duration === '10m' ? '10 minutes' : duration === '30m' ? '30 minutes' : '1 hour'
       toast.success(`Snoozed for ${durationLabel}`)
     }
   }
@@ -758,6 +918,12 @@ export default function DashboardPage() {
         statusOptions={statusOptions}
         onStatusChange={handleStatusChange}
         onLogCallResult={handleLogCallResult}
+        // Smart Dial props
+        smartDial={smartDial}
+        onSmartDialPlay={handleSmartDialPlay}
+        onSmartDialStop={handleSmartDialStop}
+        onSmartDialResult={handleSmartDialResult}
+        onSmartDialNextLead={handleSmartDialNextLead}
       />
 
       {/* Bucket Selector */}

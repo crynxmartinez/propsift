@@ -164,6 +164,22 @@ interface StatusOption {
   color: string
 }
 
+// Smart Dial types
+type SmartDialState = 'idle' | 'dialing' | 'waiting_result' | 'all_done'
+
+interface PhoneCallResult {
+  phoneId: string
+  phoneNumber: string
+  status: string | null
+}
+
+interface SmartDialData {
+  state: SmartDialState
+  currentPhoneIndex: number
+  phoneResults: PhoneCallResult[]
+  validPhones: Array<{ id: string; number: string; type: string; statuses: string[] }>
+}
+
 interface NextUpCardProps {
   data: NextUpData | null
   isLoading: boolean
@@ -187,6 +203,12 @@ interface NextUpCardProps {
   statusOptions?: StatusOption[]
   onStatusChange?: (recordId: string, statusId: string) => void
   onLogCallResult?: (recordId: string, resultId: string) => void
+  // Smart Dial props
+  smartDial?: SmartDialData
+  onSmartDialPlay?: () => void
+  onSmartDialStop?: () => void
+  onSmartDialResult?: (status: string) => void
+  onSmartDialNextLead?: () => void
 }
 
 export function NextUpCard({ 
@@ -210,6 +232,12 @@ export function NextUpCard({
   statusOptions = [],
   onStatusChange,
   onLogCallResult,
+  // Smart Dial
+  smartDial,
+  onSmartDialPlay,
+  onSmartDialStop,
+  onSmartDialResult,
+  onSmartDialNextLead,
 }: NextUpCardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [reasonsExpanded, setReasonsExpanded] = useState(false)
@@ -953,7 +981,7 @@ export function NextUpCard({
               </>
             )}
           </Button>
-          {/* Snooze Dropdown */}
+          {/* Snooze Dropdown - Updated options: 5m, 10m, 30m, 1hr */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -977,85 +1005,158 @@ export function NextUpCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '5m'))}>
+                <Clock className="w-4 h-4 mr-2" />
+                5 minutes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '10m'))}>
+                <Clock className="w-4 h-4 mr-2" />
+                10 minutes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '30m'))}>
+                <Clock className="w-4 h-4 mr-2" />
+                30 minutes
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '1h'))}>
                 <Clock className="w-4 h-4 mr-2" />
                 1 hour
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, 'tomorrow'))}>
-                <Calendar className="w-4 h-4 mr-2" />
-                Tomorrow
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '3d'))}>
-                <Calendar className="w-4 h-4 mr-2" />
-                3 days
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction('snooze', () => onSnooze(record.id, '1w'))}>
-                <Calendar className="w-4 h-4 mr-2" />
-                1 week
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {primaryPhone && calledRecordId === record.id ? (
-            /* Post-Call Panel: Show NEXT button and call result selector */
+          
+          {/* Smart Dial Play/Stop/Next Lead Button */}
+          {smartDial?.state === 'all_done' ? (
             <Button 
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => onNext?.()}
+              onClick={() => onSmartDialNextLead?.()}
               disabled={actionLoading !== null}
             >
-              {actionLoading === 'next' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <SkipForward className="w-4 h-4 mr-2" />
-                  Next Lead
-                </>
-              )}
+              <SkipForward className="w-4 h-4 mr-2" />
+              Next Lead
+            </Button>
+          ) : smartDial?.state === 'dialing' || smartDial?.state === 'waiting_result' ? (
+            <Button 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => onSmartDialStop?.()}
+              disabled={actionLoading !== null}
+            >
+              <Pause className="w-4 h-4 mr-2" />
+              Stop
             </Button>
           ) : primaryPhone ? (
             <Button 
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleAction('call', () => onCall(record.id, primaryPhone.number, primaryPhone.id))}
+              onClick={() => onSmartDialPlay?.()}
               disabled={actionLoading !== null}
             >
-              {actionLoading === 'call' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Phone className="w-4 h-4 mr-2" />
-                  Call
-                </>
-              )}
+              <Play className="w-4 h-4 mr-2" />
+              Play
             </Button>
           ) : null}
         </div>
         
-        {/* Post-Call Result Panel */}
-        {calledRecordId === record.id && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">Call Made - Select Result:</span>
+        {/* Smart Dial Progress Panel */}
+        {smartDial && smartDial.state !== 'idle' && (
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+            {/* Progress Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Smart Dial</span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {smartDial.phoneResults.filter(p => p.status !== null).length}/{smartDial.validPhones.length} phones
+              </span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {callResultOptions.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => onCallResultChange?.(option.id)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
-                    callResultId === option.id
-                      ? "text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-                  )}
-                  style={callResultId === option.id ? { backgroundColor: option.color } : {}}
-                >
-                  {option.name}
-                </button>
-              ))}
+            
+            {/* Progress Bar */}
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-4">
+              <div 
+                className="h-full bg-primary transition-all duration-300"
+                style={{ 
+                  width: `${(smartDial.phoneResults.filter(p => p.status !== null).length / Math.max(smartDial.validPhones.length, 1)) * 100}%` 
+                }}
+              />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Update phone statuses above, then click &quot;Next Lead&quot; when ready.
-            </p>
+            
+            {/* Phone List with Status */}
+            <div className="space-y-2 mb-4">
+              {smartDial.validPhones.map((phone, index) => {
+                const result = smartDial.phoneResults[index]
+                const isCurrent = index === smartDial.currentPhoneIndex && (smartDial.state === 'dialing' || smartDial.state === 'waiting_result')
+                const isDone = result?.status !== null
+                
+                return (
+                  <div 
+                    key={phone.id}
+                    className={cn(
+                      "flex items-center justify-between p-2 rounded-lg text-sm",
+                      isCurrent && "bg-primary/10 border border-primary/30",
+                      isDone && "bg-muted/30",
+                      !isCurrent && !isDone && "opacity-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isDone ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : isCurrent ? (
+                        <PhoneCall className="w-4 h-4 text-primary animate-pulse" />
+                      ) : (
+                        <Phone className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span className={cn(isCurrent && "font-medium")}>
+                        {formatPhoneNumber(phone.number)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{phone.type}</span>
+                    </div>
+                    {isDone && (
+                      <Badge variant="secondary" className="text-xs">
+                        {result.status}
+                      </Badge>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* Call Result Buttons - Show when waiting for result */}
+            {smartDial.state === 'waiting_result' && (
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <PhoneCall className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    Call Result: {formatPhoneNumber(smartDial.validPhones[smartDial.currentPhoneIndex]?.number || '')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['No Answer', 'Voicemail', 'Busy', 'Connected', 'Wrong #', 'DNC'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => onSmartDialResult?.(status.toUpperCase().replace(' ', '_').replace('#', 'NUMBER'))}
+                      className={cn(
+                        "px-3 py-2 text-sm font-medium rounded-lg transition-all",
+                        "bg-muted hover:bg-muted/80 text-foreground",
+                        status === 'Connected' && "bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                        status === 'No Answer' && "bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                        status === 'Voicemail' && "bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                        status === 'Wrong #' && "bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                        status === 'DNC' && "bg-orange-100 hover:bg-orange-200 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                      )}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* All Done Message */}
+            {smartDial.state === 'all_done' && (
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">All phones called! Click &quot;Next Lead&quot; to continue.</span>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
