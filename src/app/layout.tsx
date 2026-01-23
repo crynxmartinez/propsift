@@ -3,41 +3,69 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ui/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { JsonLd } from '@/components/seo/JsonLd'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: {
-    default: 'PropSift - CRM for Real Estate Wholesalers',
+    default: 'PropSift - Real Estate Lead Analytics & CRM',
     template: '%s | PropSift',
   },
-  description: 'The all-in-one CRM built for real estate wholesalers. Organize leads, automate follow-ups, track outreach, and close more deals. Start your free trial today.',
-  keywords: ['real estate wholesaling', 'CRM', 'lead management', 'real estate investors', 'property leads', 'wholesaler CRM', 'real estate automation'],
+  description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals. Free trial.',
+  keywords: [
+    'real estate CRM',
+    'wholesaler CRM', 
+    'real estate lead management',
+    'property lead analytics',
+    'real estate automation',
+    'lead scoring software',
+    'wholesaling software',
+    'real estate investor tools',
+    'cold calling CRM',
+    'lead cadence management',
+  ],
   authors: [{ name: 'PropSift' }],
   creator: 'PropSift',
   publisher: 'PropSift',
   metadataBase: new URL('https://propsift.com'),
+  alternates: {
+    canonical: 'https://propsift.com',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  category: 'Real Estate Software',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://propsift.com',
     siteName: 'PropSift',
-    title: 'PropSift - CRM for Real Estate Wholesalers',
-    description: 'The all-in-one CRM built for real estate wholesalers. Organize leads, automate follow-ups, and close more deals.',
+    title: 'PropSift - Real Estate Lead Analytics & CRM',
+    description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals.',
     images: [
       {
-        url: '/og-image.svg',
+        url: '/logo.svg',
         width: 1200,
         height: 630,
-        alt: 'PropSift - CRM for Real Estate Wholesalers',
+        alt: 'PropSift - Real Estate Lead Analytics & CRM',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PropSift - CRM for Real Estate Wholesalers',
-    description: 'The all-in-one CRM built for real estate wholesalers. Organize leads, automate follow-ups, and close more deals.',
-    images: ['/og-image.svg'],
+    title: 'PropSift - Real Estate Lead Analytics & CRM',
+    description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals.',
+    images: ['/logo.svg'],
+    creator: '@propsift',
   },
   icons: {
     icon: [
@@ -55,6 +83,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <JsonLd />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
