@@ -294,7 +294,41 @@ export default function DashboardPage() {
   }
 
   const handleCall = async (recordId: string, phoneNumber: string, phoneId?: string) => {
-    window.open(`tel:${phoneNumber}`, '_self')
+    // Show modern toast with countdown before opening dialer
+    const formattedPhone = phoneNumber.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+    let countdown = 5
+    
+    const toastId = toast.loading(
+      <div className="flex flex-col gap-1">
+        <div className="font-medium">📞 Opening dialer...</div>
+        <div className="text-sm text-muted-foreground">Calling {formattedPhone}</div>
+        <div className="text-xs text-muted-foreground">Auto-dialing in {countdown}s • Click to dial now</div>
+      </div>,
+      { duration: 6000 }
+    )
+
+    const openDialer = () => {
+      clearInterval(countdownInterval)
+      toast.dismiss(toastId)
+      window.open(`tel:${phoneNumber}`, '_self')
+    }
+
+    // Auto-dial after 5 seconds
+    const countdownInterval = setInterval(() => {
+      countdown--
+      if (countdown <= 0) {
+        openDialer()
+      } else {
+        toast.loading(
+          <div className="flex flex-col gap-1 cursor-pointer" onClick={openDialer}>
+            <div className="font-medium">📞 Opening dialer...</div>
+            <div className="text-sm text-muted-foreground">Calling {formattedPhone}</div>
+            <div className="text-xs text-muted-foreground">Auto-dialing in {countdown}s • Click to dial now</div>
+          </div>,
+          { id: toastId, duration: 6000 }
+        )
+      }
+    }, 1000)
     
     // Log the call but DON'T fetch next record - stay on current record
     const token = getToken()
