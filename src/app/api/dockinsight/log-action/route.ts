@@ -3,8 +3,18 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { mapCallResultToOutcome, type CallOutcome } from '@/lib/lce/call-outcome-handler'
-import { calculatePhaseTransition, OUTCOME_CONFIG, type LCEPhase } from '@/lib/lce/first-to-market'
+import {
+  processAction,
+  mapCallResultToOutcome,
+  getPhoneSummary,
+  type PhoneData,
+  type LCERecord,
+  type CadencePhase,
+  type CadenceState,
+  type CadenceType,
+  type TemperatureBand,
+  type QueueTier,
+} from '@/lib/lce/v4'
 
 interface LogActionRequest {
   recordId: string
@@ -68,84 +78,124 @@ export async function POST(request: Request) {
     let activityOldValue = ''
     let activityNewValue = ''
 
+    // Fetch phones for LCE v4.0 processing
+    const phones = await prisma.recordPhoneNumber.findMany({
+      where: { recordId },
+    })
+
+    // Convert to PhoneData format for LCE v4.0
+    const phoneData: PhoneData[] = phones.map(p => ({
+      id: p.id,
+      number: p.number,
+      type: p.type || 'OTHER',
+      phoneStatus: (p.phoneStatus as 'VALID' | 'UNVERIFIED' | 'WRONG' | 'DISCONNECTED' | 'DNC') || 'UNVERIFIED',
+      isPrimary: p.isPrimary || false,
+      attemptCount: p.attemptCount || 0,
+      lastAttemptAt: p.lastAttemptAt,
+      lastOutcome: p.lastOutcome as any || null,
+      consecutiveNoAnswer: p.consecutiveNoAnswer || 0,
+    }))
+
+    // Build LCE record from database record
+    const lceRecord: LCERecord = {
+      id: record.id,
+      priorityScore: record.priorityScore || 50,
+      temperatureBand: (record.temperature as TemperatureBand) || 'WARM',
+      confidenceLevel: 'MEDIUM',
+      cadencePhase: ((record as any).cadencePhase as CadencePhase) || 'NEW',
+      cadenceState: ((record as any).cadenceState as CadenceState) || 'ACTIVE',
+      cadenceType: ((record as any).cadenceType as CadenceType) || null,
+      cadenceStep: (record as any).cadenceStep || 0,
+      cadenceStartDate: (record as any).cadenceStartDate || null,
+      cadenceProgress: (record as any).cadenceProgress || null,
+      nextActionDue: (record as any).nextActionDue || null,
+      nextActionType: (record as any).nextActionType || null,
+      callbackScheduledFor: (record as any).callbackScheduledFor || null,
+      blitzAttempts: (record as any).blitzAttempts || 0,
+      blitzStartedAt: (record as any).blitzStartedAt || null,
+      temperatureStartedAt: (record as any).temperatureStartedAt || null,
+      enrollmentCount: (record as any).enrollmentCount || 0,
+      reEnrollmentDate: (record as any).reEnrollmentDate || null,
+      cadenceExitDate: (record as any).cadenceExitDate || null,
+      cadenceExitReason: (record as any).cadenceExitReason || null,
+      lastPhoneCalledId: (record as any).lastPhoneCalledId || null,
+      phoneExhaustedAt: (record as any).phoneExhaustedAt || null,
+      hasValidPhone: phoneData.some(p => p.phoneStatus === 'VALID' || p.phoneStatus === 'UNVERIFIED'),
+      phoneCount: phoneData.length,
+      queueTier: ((record as any).queueTier as QueueTier) || 9,
+      callAttempts: record.callAttempts || 0,
+      lastContactedAt: record.lastContactedAt || null,
+      hasEngaged: record.hasEngaged || false,
+      noResponseStreak: (record as any).noResponseStreak || 0,
+      snoozedUntil: (record as any).snoozedUntil || null,
+      pausedReason: (record as any).pausedReason || null,
+      hasOverdueTask: false,
+      hasDueTodayTask: false,
+    }
+
     switch (action) {
       case 'call':
-        // Map call result to LCE outcome
+        // Use LCE v4.0 processAction for call handling
         const callResultName = body.callResultName || result || 'no_answer'
-        const wasAnswered = result === 'answered' || callResultName.toLowerCase().includes('answered')
-        const lceOutcome: CallOutcome = mapCallResultToOutcome(callResultName, wasAnswered)
-        const outcomeConfig = OUTCOME_CONFIG[lceOutcome]
-        
-        // Get current phase and blitz attempts (with fallbacks for new schema)
-        const currentPhase = ((record as Record<string, unknown>).currentPhase as string) || 'NEW'
-        const blitzAttempts = ((record as Record<string, unknown>).blitzAttempts as number) || 0
-        const noResponseStreak = ((record as Record<string, unknown>).noResponseStreak as number) || 0
-        
-        // Calculate phase transition
         const callbackDateParsed = body.callbackDate ? new Date(body.callbackDate) : undefined
-        const transition = calculatePhaseTransition(
-          currentPhase as LCEPhase,
-          blitzAttempts,
-          lceOutcome,
-          callbackDateParsed
-        )
         
-        // Build update data with LCE v3.0 First-to-Market logic
+        const callResult = processAction({
+          record: lceRecord,
+          action: 'call',
+          phones: phoneData,
+          callResultName,
+          phoneId: body.phoneId,
+          callbackDate: callbackDateParsed,
+        })
+
+        if (!callResult.success) {
+          return NextResponse.json({ error: callResult.error }, { status: 400 })
+        }
+
+        // Build update data from LCE v4.0 result
+        const lceOutcome = mapCallResultToOutcome(callResultName)
+        
         updateData = {
-          // Basic call tracking
           callAttempts: { increment: 1 },
           lastContactedAt: now,
           lastContactType: 'CALL',
           lastContactResult: lceOutcome,
-          
-          // LCE v3.0: Phase tracking
-          currentPhase: transition.newPhase,
-          blitzAttempts: transition.newBlitzAttempts,
-          lastBlitzDate: now,
-          
-          // LCE v3.0: Next action scheduling
-          nextActionDue: transition.nextActionDue,
-          nextActionType: transition.nextActionType,
-          
-          // Engagement tracking
-          hasEngaged: outcomeConfig.isContact ? true : (record.hasEngaged || false),
-          noResponseStreak: outcomeConfig.isContact ? 0 : noResponseStreak + 1,
+          // LCE v4.0 fields
+          cadencePhase: callResult.recordUpdates.cadencePhase,
+          cadenceState: callResult.recordUpdates.cadenceState,
+          cadenceStep: callResult.recordUpdates.cadenceStep,
+          cadenceType: callResult.recordUpdates.cadenceType,
+          cadenceProgress: callResult.recordUpdates.cadenceProgress,
+          blitzAttempts: callResult.recordUpdates.blitzAttempts,
+          nextActionDue: callResult.recordUpdates.nextActionDue,
+          nextActionType: callResult.recordUpdates.nextActionType,
+          lastPhoneCalledId: callResult.recordUpdates.lastPhoneCalledId,
+          phoneExhaustedAt: callResult.recordUpdates.phoneExhaustedAt,
+          queueTier: callResult.recordUpdates.queueTier,
+          hasEngaged: callResult.recordUpdates.hasEngaged ?? record.hasEngaged,
+          noResponseStreak: callResult.recordUpdates.noResponseStreak,
         }
-        
+
         // Handle callback scheduling
         if (lceOutcome === 'ANSWERED_CALLBACK' && callbackDateParsed) {
           updateData.callbackScheduledFor = callbackDateParsed
           updateData.callbackRequestedAt = now
         }
-        
-        // Handle deep prospecting
-        if (transition.shouldMoveToDeepProspect) {
-          updateData.deepProspectEnteredAt = now
-        }
-        
-        // Handle DNC (not workable)
-        if (transition.shouldMoveToNotWorkable) {
-          updateData.cadenceState = 'EXITED_DNC'
-          updateData.cadenceExitDate = now
-          updateData.cadenceExitReason = 'DNC'
-        }
-        
-        // Update phone stats if phoneId provided
-        if (body.phoneId) {
+
+        // Update phone stats if phoneId provided and we have phone update
+        if (body.phoneId && callResult.phoneUpdate) {
           await prisma.recordPhoneNumber.update({
             where: { id: body.phoneId },
             data: {
-              attemptCount: { increment: 1 },
-              lastAttemptAt: now,
-              lastOutcome: lceOutcome,
-              consecutiveNoAnswer: outcomeConfig.isContact ? 0 : { increment: 1 },
-              phoneStatus: lceOutcome === 'WRONG_NUMBER' ? 'WRONG' : 
-                           lceOutcome === 'DISCONNECTED' ? 'DISCONNECTED' :
-                           lceOutcome === 'ANSWERED_DNC' ? 'DNC' : undefined,
+              attemptCount: callResult.phoneUpdate.updates.attemptCount as number,
+              lastAttemptAt: callResult.phoneUpdate.updates.lastAttemptAt as Date,
+              lastOutcome: callResult.phoneUpdate.updates.lastOutcome as string,
+              consecutiveNoAnswer: callResult.phoneUpdate.updates.consecutiveNoAnswer as number,
+              phoneStatus: callResult.phoneUpdate.updates.phoneStatus as string || undefined,
             },
           })
         }
-        
+
         activityAction = 'call_logged'
         activityField = 'callAttempts'
         activityOldValue = String(record.callAttempts)
