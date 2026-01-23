@@ -4,6 +4,13 @@ import { getAuthUser } from '@/lib/roles'
 import { verifyToken } from '@/lib/auth'
 import { computePriority, sortByPriority, filterByBucket, getBucketCounts, RecordWithRelations, Bucket } from '@/lib/scoring'
 import { headers } from 'next/headers'
+import {
+  assignQueueTier,
+  type CadencePhase,
+  type CadenceState,
+  type QueueTier,
+  type TemperatureBand,
+} from '@/lib/lce/v4'
 
 export async function GET(request: Request) {
   try {
@@ -76,32 +83,72 @@ export async function GET(request: Request) {
     // Apply pagination
     const paginatedRecords = sortedRecords.slice(offset, offset + limit)
 
-    // Format response
-    const formattedRecords = paginatedRecords.map((r, index) => ({
-      id: r.id,
-      ownerFullName: r.ownerFullName,
-      ownerFirstName: r.ownerFirstName,
-      ownerLastName: r.ownerLastName,
-      propertyStreet: r.propertyStreet,
-      propertyCity: r.propertyCity,
-      propertyState: r.propertyState,
-      propertyZip: r.propertyZip,
-      temperature: r.temperature,
-      score: r.priority.score,
-      nextAction: r.priority.nextAction,
-      topReason: r.priority.topReason,
-      reasonString: r.priority.reasonString,
-      confidence: r.priority.confidence,
-      lastContactedAt: (r as unknown as { lastContactedAt?: Date | null }).lastContactedAt || null,
-      hasEngaged: (r as unknown as { hasEngaged?: boolean }).hasEngaged || false,
-      callAttempts: r.callAttempts,
-      phoneCount: r.phoneNumbers.length,
-      hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
-      motivationCount: r.recordMotivations.length,
-      topMotivation: r.recordMotivations[0]?.motivation.name || null,
-      hasOverdueTask: r.priority.flags.hasOverdueTask,
-      queuePosition: offset + index + 1,
-    }))
+    // Format response with LCE v4.0 queue tier info
+    const formattedRecords = paginatedRecords.map((r, index) => {
+      const rec = r as any
+      const phoneCount = r.phoneNumbers.length
+      const hasValidPhone = r.phoneNumbers.some(p => 
+        p.phoneStatus === 'VALID' || p.phoneStatus === 'UNVERIFIED'
+      )
+
+      // Calculate LCE v4.0 queue tier
+      const confidenceStr = String(r.priority.confidence).toUpperCase()
+      const queueAssignment = assignQueueTier({
+        cadencePhase: (rec.cadencePhase as CadencePhase) || 'NEW',
+        cadenceState: (rec.cadenceState as CadenceState) || 'ACTIVE',
+        callbackScheduledFor: rec.callbackScheduledFor || null,
+        nextActionDue: rec.nextActionDue || null,
+        callAttempts: r.callAttempts || 0,
+        hasOverdueTask: r.priority.flags.hasOverdueTask,
+        hasDueTodayTask: r.priority.flags.hasTask || false,
+        priorityScore: r.priority.score,
+        confidenceLevel: confidenceStr === 'HIGH' ? 'HIGH' : confidenceStr === 'LOW' ? 'LOW' : 'MEDIUM',
+        phoneExhaustedAt: rec.phoneExhaustedAt || null,
+        hasValidPhone,
+        phoneCount,
+      })
+
+      return {
+        id: r.id,
+        ownerFullName: r.ownerFullName,
+        ownerFirstName: r.ownerFirstName,
+        ownerLastName: r.ownerLastName,
+        propertyStreet: r.propertyStreet,
+        propertyCity: r.propertyCity,
+        propertyState: r.propertyState,
+        propertyZip: r.propertyZip,
+        temperature: r.temperature,
+        score: r.priority.score,
+        nextAction: r.priority.nextAction,
+        topReason: r.priority.topReason,
+        reasonString: r.priority.reasonString,
+        confidence: r.priority.confidence,
+        lastContactedAt: rec.lastContactedAt || null,
+        hasEngaged: rec.hasEngaged || false,
+        callAttempts: r.callAttempts,
+        phoneCount,
+        hasMobile: r.phoneNumbers.some(p => p.type?.toUpperCase() === 'MOBILE'),
+        motivationCount: r.recordMotivations.length,
+        topMotivation: r.recordMotivations[0]?.motivation.name || null,
+        hasOverdueTask: r.priority.flags.hasOverdueTask,
+        queuePosition: offset + index + 1,
+        // LCE v4.0 fields
+        cadencePhase: rec.cadencePhase || 'NEW',
+        cadenceState: rec.cadenceState || 'ACTIVE',
+        cadenceType: rec.cadenceType || null,
+        cadenceStep: rec.cadenceStep || 0,
+        cadenceProgress: rec.cadenceProgress || null,
+        nextActionDue: rec.nextActionDue || null,
+        nextActionType: rec.nextActionType || null,
+        queueTier: queueAssignment.tier,
+        queueBucket: queueAssignment.bucket,
+        queueReason: queueAssignment.reason,
+        blitzAttempts: rec.blitzAttempts || 0,
+        enrollmentCount: rec.enrollmentCount || 0,
+        snoozedUntil: rec.snoozedUntil || null,
+        hasValidPhone,
+      }
+    })
 
     return NextResponse.json({
       bucket,
