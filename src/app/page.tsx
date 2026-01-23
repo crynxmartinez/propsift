@@ -524,26 +524,26 @@ function HowItWorksSection() {
   const steps = [
     {
       number: '01',
-      title: 'Import Your Leads',
-      description: 'Bulk import from skip trace services, list providers, or add properties manually. PropSift handles any CSV format.',
+      title: 'Import & Score',
+      description: 'Upload your leads from any source. Our algorithm instantly scores each one based on motivations, data quality, and engagement potential.',
       icon: ClipboardList,
     },
     {
       number: '02',
-      title: 'Qualify & Prioritize',
-      description: 'Tag leads by source, add motivations, set temperature (hot/warm/cold), and let PropSift surface your best opportunities.',
-      icon: Target,
+      title: 'LCE Takes Over',
+      description: 'The Lead Cadence Engine assigns a temperature (Hot/Warm/Cold/Ice) and builds a custom follow-up schedule for every lead.',
+      icon: RefreshCw,
     },
     {
       number: '03',
-      title: 'Work Your Pipeline',
-      description: 'Tasks, calls, and follow-ups are tracked automatically. Automations handle the repetitive work so you can focus on conversations.',
+      title: 'Call Who Matters',
+      description: 'Each day, PropSift tells you exactly who to call. Hot leads surface first. No guessing, no spreadsheets, no leads falling through cracks.',
       icon: Phone,
     },
     {
       number: '04',
-      title: 'Close More Deals',
-      description: 'Data-driven insights show you exactly where to focus. Spend less time on admin, more time talking to motivated sellers.',
+      title: 'Log & Repeat',
+      description: 'Log your call result, and LCE automatically schedules the next follow-up. The system learns and adapts — you just keep closing.',
       icon: TrendingUp,
     },
   ]
@@ -553,10 +553,10 @@ function HowItWorksSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            How PropSift Works
+            How the Lead Cadence Engine Works
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            From lead import to deal closed, PropSift streamlines your entire wholesaling workflow.
+            Stop wondering who to call. Let the algorithm do the thinking — you do the closing.
           </p>
         </div>
 
