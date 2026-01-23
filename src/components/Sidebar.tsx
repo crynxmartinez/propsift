@@ -89,7 +89,6 @@ const adminMenuItems = [
   { name: 'Overview', href: '/dashboard/admin', icon: TrendingUp },
   { name: 'Accounts', href: '/dashboard/admin/accounts', icon: Building2 },
   { name: 'Users', href: '/dashboard/admin/users', icon: Users },
-  { name: 'Feedback', href: '/dashboard/admin/feedback', icon: MessageSquare },
 ]
 
 export default function Sidebar() {
