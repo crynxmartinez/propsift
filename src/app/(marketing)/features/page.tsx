@@ -40,7 +40,7 @@ export const metadata = {
 
 export default function FeaturesPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-gray-950">
       <HeroSection />
       <LeadManagementSection />
       <AnalyticsSection />
@@ -55,13 +55,13 @@ export default function FeaturesPage() {
 
 function HeroSection() {
   return (
-    <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
+    <section className="bg-gradient-to-br from-gray-950 to-gray-900 py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
           Powerful Features for{' '}
-          <span className="text-blue-600">Modern Wholesalers</span>
+          <span className="text-blue-400">Modern Wholesalers</span>
         </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
           Everything you need to manage leads, automate workflows, and close more deals — all in one platform built specifically for real estate wholesalers.
         </p>
         <Link
@@ -111,18 +111,18 @@ function LeadManagementSection() {
   ]
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/50 text-blue-400 rounded-full text-sm font-medium mb-4">
               <ClipboardList className="w-4 h-4" />
               Lead Management
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               All Your Leads in One Place
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-400 mb-8">
               Stop juggling spreadsheets. PropSift centralizes all your property leads with complete owner and property information, outreach history, and custom categorization.
             </p>
 
@@ -131,12 +131,12 @@ function LeadManagementSection() {
                 const Icon = feature.icon
                 return (
                   <div key={feature.title} className="flex gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                      <p className="text-sm text-gray-600">{feature.description}</p>
+                      <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
+                      <p className="text-sm text-gray-400">{feature.description}</p>
                     </div>
                   </div>
                 )
@@ -145,33 +145,33 @@ function LeadManagementSection() {
           </div>
 
           {/* Visual */}
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden">
+              <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-400" />
+                  <Search className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-500">Search records...</span>
                 </div>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-700">
                 {[
                   { name: 'John Smith', address: '123 Main St, Houston TX', temp: 'Hot', tags: ['Vacant', 'Absentee'] },
                   { name: 'ABC Holdings LLC', address: '456 Oak Ave, Dallas TX', temp: 'Warm', tags: ['Tax Lien'] },
                   { name: 'Mary Johnson', address: '789 Pine Rd, Austin TX', temp: 'Hot', tags: ['Probate'] },
                 ].map((record, i) => (
-                  <div key={i} className="p-4 hover:bg-gray-50">
+                  <div key={i} className="p-4 hover:bg-gray-700/50">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900">{record.name}</span>
+                      <span className="font-medium text-white">{record.name}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        record.temp === 'Hot' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                        record.temp === 'Hot' ? 'bg-red-900/50 text-red-400' : 'bg-orange-900/50 text-orange-400'
                       }`}>
                         {record.temp}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">{record.address}</p>
+                    <p className="text-sm text-gray-400 mb-2">{record.address}</p>
                     <div className="flex gap-1">
                       {record.tags.map((tag) => (
-                        <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                        <span key={tag} className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs">
                           {tag}
                         </span>
                       ))}
@@ -203,20 +203,20 @@ function AnalyticsSection() {
   ]
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Visual */}
           <div className="order-2 lg:order-1">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div className="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6">
               {/* KPI Cards */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {kpis.map((kpi) => (
-                  <div key={kpi.label} className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">{kpi.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
+                  <div key={kpi.label} className="bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-400 mb-1">{kpi.label}</p>
+                    <p className="text-2xl font-bold text-white">{kpi.value}</p>
                     {kpi.change && (
-                      <p className={`text-xs ${kpi.change.includes('overdue') ? 'text-orange-600' : 'text-green-600'}`}>
+                      <p className={`text-xs ${kpi.change.includes('overdue') ? 'text-orange-400' : 'text-green-400'}`}>
                         {kpi.change}
                       </p>
                     )}
@@ -225,18 +225,18 @@ function AnalyticsSection() {
               </div>
 
               {/* Action Cards */}
-              <p className="text-sm font-medium text-gray-700 mb-3">Action Cards</p>
+              <p className="text-sm font-medium text-gray-300 mb-3">Action Cards</p>
               <div className="grid grid-cols-2 gap-3">
                 {actionCards.map((card) => (
-                  <div key={card.label} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={card.label} className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg">
                     <div className={`w-2 h-8 rounded-full ${
                       card.color === 'red' ? 'bg-red-500' :
                       card.color === 'yellow' ? 'bg-yellow-500' :
                       card.color === 'green' ? 'bg-green-500' : 'bg-gray-400'
                     }`} />
                     <div>
-                      <p className="text-lg font-bold text-gray-900">{card.count}</p>
-                      <p className="text-xs text-gray-500">{card.label}</p>
+                      <p className="text-lg font-bold text-white">{card.count}</p>
+                      <p className="text-xs text-gray-400">{card.label}</p>
                     </div>
                   </div>
                 ))}
@@ -245,14 +245,14 @@ function AnalyticsSection() {
           </div>
 
           <div className="order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-900/50 text-purple-400 rounded-full text-sm font-medium mb-4">
               <BarChart3 className="w-4 h-4" />
               DockInsight Analytics
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Data-Driven Decisions at a Glance
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-400 mb-8">
               Stop guessing where to focus. DockInsight shows you real-time KPIs, charts, and action cards so you always know what to work on next.
             </p>
 
@@ -266,10 +266,10 @@ function AnalyticsSection() {
                 const Icon = item.icon
                 return (
                   <li key={i} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Icon className="w-4 h-4 text-purple-600" />
+                    <div className="w-8 h-8 bg-purple-900/50 rounded-lg flex items-center justify-center">
+                      <Icon className="w-4 h-4 text-purple-400" />
                     </div>
-                    <span className="text-gray-700">{item.text}</span>
+                    <span className="text-gray-300">{item.text}</span>
                   </li>
                 )
               })}
@@ -290,18 +290,18 @@ function KanbanSection() {
   ]
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-900/50 text-green-400 rounded-full text-sm font-medium mb-4">
               <LayoutGrid className="w-4 h-4" />
               Kanban Boards
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Visual Pipeline Management
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-400 mb-8">
               Create custom boards for acquisitions, dispositions, or any workflow. Drag and drop records through stages and see your pipeline at a glance.
             </p>
 
@@ -315,27 +315,27 @@ function KanbanSection() {
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">{item}</span>
+                  <span className="text-gray-300">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Visual */}
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             <div className="flex gap-4 overflow-x-auto pb-2">
               {columns.map((col) => (
                 <div key={col.name} className="flex-shrink-0 w-48">
                   <div className="flex items-center gap-2 mb-3">
                     <div className={`w-3 h-3 rounded-full ${col.color}`} />
-                    <span className="font-medium text-gray-900 text-sm">{col.name}</span>
-                    <span className="text-xs text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{col.count}</span>
+                    <span className="font-medium text-white text-sm">{col.name}</span>
+                    <span className="text-xs text-gray-400 bg-gray-700 px-1.5 py-0.5 rounded">{col.count}</span>
                   </div>
                   <div className="space-y-2">
                     {[1, 2, 3].map((card) => (
-                      <div key={card} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                        <div className="h-2 bg-gray-200 rounded w-3/4 mb-2" />
-                        <div className="h-2 bg-gray-100 rounded w-1/2" />
+                      <div key={card} className="bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-700">
+                        <div className="h-2 bg-gray-700 rounded w-3/4 mb-2" />
+                        <div className="h-2 bg-gray-600 rounded w-1/2" />
                       </div>
                     ))}
                   </div>
@@ -354,43 +354,43 @@ function AutomationsSection() {
   const actions = ['Update Status', 'Update Temperature', 'Add/Remove Tags', 'Assign User', 'Create Task', 'Send Notification']
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Visual */}
           <div className="order-2 lg:order-1">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div className="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6">
               {/* Workflow visualization */}
               <div className="flex flex-col items-center gap-4">
                 {/* Trigger */}
-                <div className="w-full max-w-xs bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center">
-                  <p className="text-xs text-blue-600 font-medium mb-1">TRIGGER</p>
-                  <p className="font-semibold text-gray-900">When record marked HOT</p>
+                <div className="w-full max-w-xs bg-blue-900/30 border-2 border-blue-700 rounded-lg p-4 text-center">
+                  <p className="text-xs text-blue-400 font-medium mb-1">TRIGGER</p>
+                  <p className="font-semibold text-white">When record marked HOT</p>
                 </div>
                 
                 <GitBranch className="w-6 h-6 text-gray-400 rotate-180" />
                 
                 {/* Condition */}
-                <div className="w-full max-w-xs bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 text-center">
-                  <p className="text-xs text-yellow-600 font-medium mb-1">CONDITION</p>
-                  <p className="font-semibold text-gray-900">If unassigned</p>
+                <div className="w-full max-w-xs bg-yellow-900/30 border-2 border-yellow-700 rounded-lg p-4 text-center">
+                  <p className="text-xs text-yellow-400 font-medium mb-1">CONDITION</p>
+                  <p className="font-semibold text-white">If unassigned</p>
                 </div>
                 
                 <GitBranch className="w-6 h-6 text-gray-400 rotate-180" />
                 
                 {/* Actions */}
                 <div className="w-full max-w-xs space-y-2">
-                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-green-600 font-medium mb-1">ACTION</p>
-                    <p className="font-medium text-gray-900 text-sm">Assign to closer</p>
+                  <div className="bg-green-900/30 border-2 border-green-700 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-400 font-medium mb-1">ACTION</p>
+                    <p className="font-medium text-white text-sm">Assign to closer</p>
                   </div>
-                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-green-600 font-medium mb-1">ACTION</p>
-                    <p className="font-medium text-gray-900 text-sm">Create "Make Offer" task</p>
+                  <div className="bg-green-900/30 border-2 border-green-700 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-400 font-medium mb-1">ACTION</p>
+                    <p className="font-medium text-white text-sm">Create "Make Offer" task</p>
                   </div>
-                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-green-600 font-medium mb-1">ACTION</p>
-                    <p className="font-medium text-gray-900 text-sm">Send notification</p>
+                  <div className="bg-green-900/30 border-2 border-green-700 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-400 font-medium mb-1">ACTION</p>
+                    <p className="font-medium text-white text-sm">Send notification</p>
                   </div>
                 </div>
               </div>
@@ -398,23 +398,23 @@ function AutomationsSection() {
           </div>
 
           <div className="order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-900/50 text-orange-400 rounded-full text-sm font-medium mb-4">
               <Zap className="w-4 h-4" />
               Workflow Automations
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Automate the Repetitive Stuff
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-400 mb-8">
               Build trigger-based workflows that run automatically. When something happens, PropSift takes action — so you can focus on talking to sellers.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
-                <p className="font-semibold text-gray-900 mb-3">Triggers</p>
+                <p className="font-semibold text-white mb-3">Triggers</p>
                 <ul className="space-y-2">
                   {triggers.map((trigger) => (
-                    <li key={trigger} className="flex items-center gap-2 text-sm text-gray-600">
+                    <li key={trigger} className="flex items-center gap-2 text-sm text-gray-400">
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
                       {trigger}
                     </li>
@@ -422,10 +422,10 @@ function AutomationsSection() {
                 </ul>
               </div>
               <div>
-                <p className="font-semibold text-gray-900 mb-3">Actions</p>
+                <p className="font-semibold text-white mb-3">Actions</p>
                 <ul className="space-y-2">
                   {actions.map((action) => (
-                    <li key={action} className="flex items-center gap-2 text-sm text-gray-600">
+                    <li key={action} className="flex items-center gap-2 text-sm text-gray-400">
                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                       {action}
                     </li>
@@ -449,30 +449,30 @@ function TeamSection() {
   ]
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-900/50 text-pink-400 rounded-full text-sm font-medium mb-4">
               <Users className="w-4 h-4" />
               Team Collaboration
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Scale Your Operation
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-400 mb-8">
               Add team members with role-based access. Assign leads, distribute tasks with round-robin, and track everyone's performance.
             </p>
 
             <div className="space-y-4">
               {roles.map((role) => (
-                <div key={role.name} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <UserCheck className="w-5 h-5 text-pink-600" />
+                <div key={role.name} className="flex gap-4 p-4 bg-gray-900 rounded-lg border border-gray-800">
+                  <div className="w-10 h-10 bg-pink-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <UserCheck className="w-5 h-5 text-pink-400" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{role.name}</p>
-                    <p className="text-sm text-gray-600">{role.description}</p>
+                    <p className="font-semibold text-white">{role.name}</p>
+                    <p className="text-sm text-gray-400">{role.description}</p>
                   </div>
                 </div>
               ))}
@@ -480,35 +480,35 @@ function TeamSection() {
           </div>
 
           {/* Visual */}
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-4">Team Performance</p>
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <p className="text-sm font-medium text-gray-300 mb-4">Team Performance</p>
             <div className="space-y-4">
               {[
                 { name: 'John D.', records: 145, tasks: 28, deals: 5 },
                 { name: 'Sarah M.', records: 132, tasks: 35, deals: 4 },
                 { name: 'Mike R.', records: 98, tasks: 22, deals: 3 },
               ].map((member) => (
-                <div key={member.name} className="bg-white rounded-lg p-4 border border-gray-200">
+                <div key={member.name} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-medium text-sm">{member.name.charAt(0)}</span>
+                      <div className="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                        <span className="text-blue-400 font-medium text-sm">{member.name.charAt(0)}</span>
                       </div>
-                      <span className="font-medium text-gray-900">{member.name}</span>
+                      <span className="font-medium text-white">{member.name}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-lg font-bold text-gray-900">{member.records}</p>
-                      <p className="text-xs text-gray-500">Records</p>
+                      <p className="text-lg font-bold text-white">{member.records}</p>
+                      <p className="text-xs text-gray-400">Records</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-gray-900">{member.tasks}</p>
-                      <p className="text-xs text-gray-500">Tasks</p>
+                      <p className="text-lg font-bold text-white">{member.tasks}</p>
+                      <p className="text-xs text-gray-400">Tasks</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">{member.deals}</p>
-                      <p className="text-xs text-gray-500">Deals</p>
+                      <p className="text-lg font-bold text-green-400">{member.deals}</p>
+                      <p className="text-xs text-gray-400">Deals</p>
                     </div>
                   </div>
                 </div>
@@ -534,13 +534,13 @@ function MoreFeaturesSection() {
   ]
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             And Much More...
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             PropSift is packed with features to help you work smarter.
           </p>
         </div>
@@ -549,12 +549,12 @@ function MoreFeaturesSection() {
           {features.map((feature) => {
             const Icon = feature.icon
             return (
-              <div key={feature.title} className="bg-white rounded-xl p-5 border border-gray-200">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3">
-                  <Icon className="w-5 h-5 text-gray-600" />
+              <div key={feature.title} className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center mb-3">
+                  <Icon className="w-5 h-5 text-gray-300" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
+                <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
+                <p className="text-sm text-gray-400">{feature.description}</p>
               </div>
             )
           })}

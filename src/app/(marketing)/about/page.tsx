@@ -20,7 +20,7 @@ export const metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-gray-950">
       <HeroSection />
       <MissionSection />
       <StorySection />
@@ -32,13 +32,13 @@ export default function AboutPage() {
 
 function HeroSection() {
   return (
-    <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
+    <section className="bg-gradient-to-br from-gray-950 to-gray-900 py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
           Built by Wholesalers,{' '}
-          <span className="text-blue-600">For Wholesalers</span>
+          <span className="text-blue-400">For Wholesalers</span>
         </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto">
           We understand the hustle. That's why we built PropSift — to help you spend less time on admin and more time closing deals.
         </p>
       </div>
@@ -48,42 +48,42 @@ function HeroSection() {
 
 function MissionSection() {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/50 text-blue-400 rounded-full text-sm font-medium mb-4">
               <Target className="w-4 h-4" />
               Our Mission
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
               Empowering Wholesalers to Scale Their Business
             </h2>
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+            <p className="text-lg text-gray-400 mb-6 leading-relaxed">
               Real estate wholesaling is one of the best ways to build wealth and create financial freedom. But managing hundreds or thousands of leads across spreadsheets, sticky notes, and scattered tools? That's a recipe for missed opportunities.
             </p>
-            <p className="text-lg text-gray-600 leading-relaxed">
-              Our mission is simple: <strong>give every wholesaler the tools they need to work smarter, not harder.</strong> We believe that with the right system, anyone can build a successful wholesaling business.
+            <p className="text-lg text-gray-400 leading-relaxed">
+              Our mission is simple: <strong className="text-white">give every wholesaler the tools they need to work smarter, not harder.</strong> We believe that with the right system, anyone can build a successful wholesaling business.
             </p>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-6">
-            <div className="bg-blue-50 rounded-2xl p-6 text-center">
-              <p className="text-4xl font-bold text-blue-600 mb-2">500+</p>
-              <p className="text-gray-600">Active Wholesalers</p>
+            <div className="bg-blue-900/30 border border-blue-800/50 rounded-2xl p-6 text-center">
+              <p className="text-4xl font-bold text-blue-400 mb-2">500+</p>
+              <p className="text-gray-400">Active Wholesalers</p>
             </div>
-            <div className="bg-green-50 rounded-2xl p-6 text-center">
-              <p className="text-4xl font-bold text-green-600 mb-2">50K+</p>
-              <p className="text-gray-600">Leads Managed</p>
+            <div className="bg-green-900/30 border border-green-800/50 rounded-2xl p-6 text-center">
+              <p className="text-4xl font-bold text-green-400 mb-2">50K+</p>
+              <p className="text-gray-400">Leads Managed</p>
             </div>
-            <div className="bg-purple-50 rounded-2xl p-6 text-center">
-              <p className="text-4xl font-bold text-purple-600 mb-2">$2.5M+</p>
-              <p className="text-gray-600">Deals Closed</p>
+            <div className="bg-purple-900/30 border border-purple-800/50 rounded-2xl p-6 text-center">
+              <p className="text-4xl font-bold text-purple-400 mb-2">$2.5M+</p>
+              <p className="text-gray-400">Deals Closed</p>
             </div>
-            <div className="bg-orange-50 rounded-2xl p-6 text-center">
-              <p className="text-4xl font-bold text-orange-600 mb-2">4.9/5</p>
-              <p className="text-gray-600">Customer Rating</p>
+            <div className="bg-orange-900/30 border border-orange-800/50 rounded-2xl p-6 text-center">
+              <p className="text-4xl font-bold text-orange-400 mb-2">4.9/5</p>
+              <p className="text-gray-400">Customer Rating</p>
             </div>
           </div>
         </div>
@@ -94,15 +94,15 @@ function MissionSection() {
 
 function StorySection() {
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Our Story
           </h2>
         </div>
 
-        <div className="prose prose-lg max-w-none text-gray-600">
+        <div className="prose prose-lg max-w-none text-gray-400">
           <p className="mb-6">
             PropSift was born out of frustration. Like many wholesalers, we started with spreadsheets. Thousands of rows of property data, owner information, and follow-up notes — all crammed into Excel files that crashed when they got too big.
           </p>
@@ -115,7 +115,7 @@ function StorySection() {
           <p className="mb-6">
             Today, PropSift is used by hundreds of wholesalers across the country. From solo operators working their first deals to teams closing millions in assignments every year. We're proud to be part of their success.
           </p>
-          <p className="font-semibold text-gray-900">
+          <p className="font-semibold text-white">
             And we're just getting started.
           </p>
         </div>
@@ -165,22 +165,22 @@ function ValuesSection() {
   ]
 
   const colorClasses: Record<string, { bg: string; icon: string }> = {
-    blue: { bg: 'bg-blue-100', icon: 'text-blue-600' },
-    red: { bg: 'bg-red-100', icon: 'text-red-600' },
-    green: { bg: 'bg-green-100', icon: 'text-green-600' },
-    purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
-    orange: { bg: 'bg-orange-100', icon: 'text-orange-600' },
-    cyan: { bg: 'bg-cyan-100', icon: 'text-cyan-600' },
+    blue: { bg: 'bg-blue-900/50', icon: 'text-blue-400' },
+    red: { bg: 'bg-red-900/50', icon: 'text-red-400' },
+    green: { bg: 'bg-green-900/50', icon: 'text-green-400' },
+    purple: { bg: 'bg-purple-900/50', icon: 'text-purple-400' },
+    orange: { bg: 'bg-orange-900/50', icon: 'text-orange-400' },
+    cyan: { bg: 'bg-cyan-900/50', icon: 'text-cyan-400' },
   }
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Our Values
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             The principles that guide everything we do at PropSift.
           </p>
         </div>
@@ -194,8 +194,8 @@ function ValuesSection() {
                 <div className={`w-14 h-14 ${colors.bg} rounded-xl flex items-center justify-center mx-auto mb-4`}>
                   <Icon className={`w-7 h-7 ${colors.icon}`} />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{value.title}</h3>
-                <p className="text-gray-600">{value.description}</p>
+                <h3 className="text-xl font-semibold text-white mb-2">{value.title}</h3>
+                <p className="text-gray-400">{value.description}</p>
               </div>
             )
           })}
