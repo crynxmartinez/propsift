@@ -284,7 +284,7 @@ function HeroSection() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                14-day free trial
+                Free for 2026
               </div>
             </div>
           </div>
@@ -839,7 +839,7 @@ function FAQSection() {
     },
     {
       question: 'Is there a free trial?',
-      answer: 'Yes, we offer a 14-day free trial with full access to all features. No credit card required to start.',
+      answer: 'Yes, PropSift is completely free for 2026 with full access to all features. No credit card required.',
     },
     {
       question: 'Can I add team members?',
@@ -922,7 +922,7 @@ function CTASection() {
           </Link>
         </div>
         <p className="mt-6 text-blue-200 text-sm">
-          No credit card required • 14-day free trial • Cancel anytime
+          No credit card required • Free for 2026 • Cancel anytime
         </p>
       </div>
     </section>
