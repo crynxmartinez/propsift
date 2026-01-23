@@ -249,16 +249,16 @@ function HeroSection() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/50 text-blue-400 rounded-full text-sm font-medium mb-6">
               <Zap className="w-4 h-4" />
-              Built for Real Estate Wholesalers
+              Intelligent Lead Management
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Stop Chasing Leads.{' '}
-              <span className="text-blue-400">Start Closing Deals.</span>
+              Know Exactly Who to Call.{' '}
+              <span className="text-blue-400">Every Single Day.</span>
             </h1>
             
             <p className="text-xl text-gray-400 mb-8 leading-relaxed">
-              The all-in-one CRM built for real estate wholesalers. Organize leads, automate follow-ups, and make data-driven decisions to close more deals.
+              PropSift analyzes your leads and tells you who&apos;s ready to sell. Stop guessing. Start closing.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
