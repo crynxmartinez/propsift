@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { PhaseBadge, StateBadge, CadenceProgressBar, SnoozeDropdown } from './lce'
 
 interface ScoreReason {
   label: string
@@ -133,13 +134,22 @@ export interface NextUpData {
   message?: string
   contactLogs?: ContactLog[]
   status?: RecordStatus | null
-  // LCE v2.3.1 fields
+  // LCE v4.0 fields
+  cadencePhase?: string
   cadenceState?: string
   cadenceType?: string
   cadenceStep?: number
   totalSteps?: number
+  cadenceProgress?: string
   nextActionType?: string
   nextActionDue?: string
+  blitzAttempts?: number
+  enrollmentCount?: number
+  reEnrollmentDate?: string
+  snoozedUntil?: string
+  pausedReason?: string
+  queueTier?: number
+  phoneExhausted?: boolean
 }
 
 interface CallResultOption {
@@ -327,51 +337,58 @@ export function NextUpCard({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* LCE Cadence Progress Bar - Only show if cadence is active (step > 0) */}
-        {data.cadenceStep !== undefined && data.cadenceStep > 0 && data.totalSteps && data.totalSteps > 0 && data.cadenceType && (
+        {/* LCE v4.0 Cadence Info - Show phase badge and progress */}
+        {(data.cadencePhase || data.cadenceState) && (
           <div className="bg-muted/50 rounded-lg p-3 -mt-1">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                {data.cadenceState === 'PAUSED' ? (
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs">
-                    <Pause className="w-3 h-3 mr-1" />
-                    PAUSED
-                  </Badge>
-                ) : data.cadenceState === 'SNOOZED' ? (
-                  <Badge variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs">
-                    <Clock className="w-3 h-3 mr-1" />
-                    SNOOZED
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                    <Play className="w-3 h-3 mr-1" />
-                    ACTIVE
-                  </Badge>
+                {/* Phase Badge */}
+                {data.cadencePhase && (
+                  <PhaseBadge phase={data.cadencePhase} size="sm" />
                 )}
-                <span className="text-sm font-medium text-foreground">
-                  {data.cadenceType} Cadence
-                </span>
+                {/* State Badge */}
+                <StateBadge state={data.cadenceState || 'ACTIVE'} size="sm" />
+                {data.cadenceType && (
+                  <span className="text-sm font-medium text-foreground">
+                    {data.cadenceType} Cadence
+                  </span>
+                )}
               </div>
-              <span className="text-xs text-muted-foreground">
-                Step {data.cadenceStep} of {data.totalSteps}
-              </span>
+              {data.cadenceProgress && (
+                <span className="text-xs text-muted-foreground">
+                  {data.cadenceProgress}
+                </span>
+              )}
             </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className={cn(
-                  "h-2 rounded-full transition-all",
-                  data.cadenceType === 'HOT' ? 'bg-red-500' :
-                  data.cadenceType === 'WARM' ? 'bg-orange-500' :
-                  data.cadenceType === 'COLD' ? 'bg-blue-500' :
-                  'bg-primary'
-                )}
-                style={{ width: `${(data.cadenceStep / data.totalSteps) * 100}%` }}
+            {/* Progress Bar */}
+            {data.cadenceStep !== undefined && data.totalSteps && data.totalSteps > 0 && (
+              <CadenceProgressBar
+                step={data.cadenceStep}
+                totalSteps={data.totalSteps}
+                cadenceType={data.cadenceType}
+                size="md"
+                showLabel={false}
               />
-            </div>
+            )}
+            {/* Blitz attempts indicator */}
+            {data.cadencePhase && (data.cadencePhase === 'BLITZ_1' || data.cadencePhase === 'BLITZ_2') && data.blitzAttempts !== undefined && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-orange-400">
+                <Flame className="w-3 h-3" />
+                Blitz attempt {data.blitzAttempts + 1}/{data.cadencePhase === 'BLITZ_1' ? 3 : 2}
+              </div>
+            )}
+            {/* Next action due */}
             {data.nextActionDue && (
               <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3" />
                 Next: {data.nextActionType || 'CALL'} due {new Date(data.nextActionDue).toLocaleDateString()}
+              </div>
+            )}
+            {/* Enrollment count */}
+            {data.enrollmentCount !== undefined && data.enrollmentCount > 1 && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                <History className="w-3 h-3" />
+                Enrollment cycle {data.enrollmentCount}/6
               </div>
             )}
           </div>
