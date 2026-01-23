@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 
 export default function PricingPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-gray-950">
       <FreeBanner />
       <HeroSection />
       <PricingCards />
@@ -38,13 +38,13 @@ function FreeBanner() {
 
 function HeroSection() {
   return (
-    <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
+    <section className="bg-gradient-to-br from-gray-950 to-gray-900 py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
           Simple, Transparent{' '}
-          <span className="text-blue-600">Pricing</span>
+          <span className="text-blue-400">Pricing</span>
         </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto">
           One plan. Everything included. No hidden fees. Cancel anytime.
         </p>
       </div>
@@ -71,23 +71,23 @@ function PricingCards() {
   ]
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Single Pricing Card */}
         <div className="max-w-lg mx-auto">
-          <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8">
+          <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8 bg-gray-900">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-red-600 text-white text-sm font-semibold rounded-full">
               FREE FOR 2026
             </div>
 
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Full Access</h3>
+              <h3 className="text-2xl font-semibold text-white mb-4">Full Access</h3>
               <div className="flex items-baseline justify-center gap-1 mb-2">
-                <span className="text-5xl font-bold text-gray-900">$49</span>
-                <span className="text-gray-500">/month</span>
+                <span className="text-5xl font-bold text-white">$49</span>
+                <span className="text-gray-400">/month</span>
               </div>
-              <p className="text-gray-600 mt-2">Everything you need to manage leads and close deals.</p>
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
+              <p className="text-gray-400 mt-2">Everything you need to manage leads and close deals.</p>
+              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-900/50 text-red-300 rounded-full text-sm font-semibold">
                 🎉 Currently FREE — No payment required for 2026!
               </div>
             </div>
@@ -96,7 +96,7 @@ function PricingCards() {
               {features.map((feature) => (
                 <li key={feature} className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">{feature}</span>
+                  <span className="text-gray-300">{feature}</span>
                 </li>
               ))}
             </ul>
@@ -112,13 +112,13 @@ function PricingCards() {
 
         {/* Enterprise */}
         <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+          <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-900/50 text-purple-400 rounded-full text-sm font-medium mb-4">
               <Zap className="w-4 h-4" />
               Enterprise
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Need More?</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-2">Need More?</h3>
+            <p className="text-gray-400 mb-6">
               For larger teams or custom requirements, contact us for a tailored solution.
             </p>
             <Button asChild size="lg">
@@ -189,22 +189,22 @@ function FeatureComparison() {
   ]
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything Included</h2>
-          <p className="text-xl text-gray-600">One plan with all the features you need</p>
+          <h2 className="text-3xl font-bold text-white mb-4">Everything Included</h2>
+          <p className="text-xl text-gray-400">One plan with all the features you need</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {categories.map((category) => (
-            <div key={category.name} className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{category.name}</h3>
+            <div key={category.name} className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">{category.name}</h3>
               <ul className="space-y-3">
                 {category.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-600 text-sm">{feature}</span>
+                    <span className="text-gray-400 text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -247,33 +247,33 @@ function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gray-950">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Billing FAQ</h2>
-          <p className="text-xl text-gray-600">Common questions about pricing and billing</p>
+          <h2 className="text-3xl font-bold text-white mb-4">Billing FAQ</h2>
+          <p className="text-xl text-gray-400">Common questions about pricing and billing</p>
         </div>
 
         <div className="space-y-4">
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="border border-gray-200 rounded-lg overflow-hidden"
+              className="border border-gray-700 rounded-lg overflow-hidden"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-4 text-left bg-white hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left bg-gray-900 hover:bg-gray-800 transition-colors"
               >
-                <span className="font-semibold text-gray-900">{faq.question}</span>
+                <span className="font-semibold text-white">{faq.question}</span>
                 {openIndex === index ? (
-                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                  <ChevronUp className="w-5 h-5 text-gray-400" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
                 )}
               </button>
               {openIndex === index && (
                 <div className="px-4 pb-4">
-                  <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                  <p className="text-gray-400 leading-relaxed">{faq.answer}</p>
                 </div>
               )}
             </div>

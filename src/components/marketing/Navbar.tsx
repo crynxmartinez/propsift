@@ -17,7 +17,7 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -29,7 +29,7 @@ export function Navbar() {
               height={32}
               className="rounded-lg"
             />
-            <span className="text-xl font-bold text-gray-900">PropSift</span>
+            <span className="text-xl font-bold text-white">PropSift</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -38,7 +38,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                className="text-gray-400 hover:text-white font-medium transition-colors"
               >
                 {link.label}
               </Link>
@@ -69,19 +69,19 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100">
+        <div className="md:hidden bg-gray-950 border-b border-gray-800">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-gray-600 hover:text-gray-900 font-medium py-2"
+                className="block text-gray-400 hover:text-white font-medium py-2"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-gray-100 space-y-3">
+            <div className="pt-4 border-t border-gray-800 space-y-3">
               <Button variant="ghost" className="w-full justify-start" asChild>
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
               </Button>
