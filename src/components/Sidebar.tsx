@@ -21,7 +21,10 @@ import {
   Crown,
   Shield,
   ShieldCheck,
-  User
+  User,
+  Users,
+  Building2,
+  TrendingUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -37,6 +40,7 @@ import {
 interface UserProfile {
   firstName: string | null
   role: string
+  isPlatformAdmin: boolean
 }
 
 const roleConfig: Record<string, { label: string; color: string; icon: typeof Crown; description: string }> = {
@@ -66,7 +70,7 @@ const roleConfig: Record<string, { label: string; color: string; icon: typeof Cr
   }
 }
 
-const menuItems = [
+const clientMenuItems = [
   { name: 'Dock Insight', href: '/dashboard', icon: BarChart3 },
   { name: 'Board', href: '/dashboard/board', icon: LayoutGrid },
   { name: 'Records', href: '/dashboard/records', icon: FileText },
@@ -81,10 +85,18 @@ const menuItems = [
   { name: 'Feedback', href: '/dashboard/feedback', icon: MessageSquare },
 ]
 
+const adminMenuItems = [
+  { name: 'Overview', href: '/dashboard/admin', icon: TrendingUp },
+  { name: 'Accounts', href: '/dashboard/admin/accounts', icon: Building2 },
+  { name: 'Users', href: '/dashboard/admin/users', icon: Users },
+  { name: 'Feedback', href: '/dashboard/admin/feedback', icon: MessageSquare },
+]
+
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [adminMode, setAdminMode] = useState(false)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -97,7 +109,7 @@ export default function Sidebar() {
         })
         if (res.ok) {
           const data = await res.json()
-          setUser({ firstName: data.firstName, role: data.role })
+          setUser({ firstName: data.firstName, role: data.role, isPlatformAdmin: data.isPlatformAdmin })
         }
       } catch (error) {
         console.error('Error fetching user:', error)
@@ -114,6 +126,7 @@ export default function Sidebar() {
 
   const role = roleConfig[user?.role || 'member'] || roleConfig.member
   const RoleIcon = role.icon
+  const menuItems = adminMode ? adminMenuItems : clientMenuItems
 
   return (
     <TooltipProvider>
@@ -135,6 +148,39 @@ export default function Sidebar() {
         </div>
 
         <Separator />
+
+        {/* Admin/Client Toggle - Only visible to platform admins */}
+        {user?.isPlatformAdmin && (
+          <>
+            <div className="px-4 py-3">
+              <div className="flex items-center bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setAdminMode(false)}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    !adminMode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Client
+                </button>
+                <button
+                  onClick={() => setAdminMode(true)}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    adminMode
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Admin
+                </button>
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
 
         <ScrollArea className="flex-1 px-3 py-4">
           <nav>

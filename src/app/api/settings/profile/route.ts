@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         billingZip: true,
         billingCountry: true,
         accountOwnerId: true,
+        isPlatformAdmin: true,
       }
     })
 
