@@ -154,7 +154,10 @@ export default function Sidebar() {
             <div className="px-4 py-3">
               <div className="flex items-center bg-muted rounded-lg p-1">
                 <button
-                  onClick={() => setAdminMode(false)}
+                  onClick={() => {
+                    setAdminMode(false)
+                    router.push('/dashboard')
+                  }}
                   className={cn(
                     "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                     !adminMode
@@ -165,7 +168,10 @@ export default function Sidebar() {
                   Client
                 </button>
                 <button
-                  onClick={() => setAdminMode(true)}
+                  onClick={() => {
+                    setAdminMode(true)
+                    router.push('/dashboard/admin')
+                  }}
                   className={cn(
                     "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                     adminMode
