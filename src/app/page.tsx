@@ -31,6 +31,7 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <HeroSection />
+        <IntelligenceSection />
         <SocialProofBar />
         <FeaturesSection />
         <HowItWorksSection />
@@ -254,6 +255,123 @@ function HeroSection() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function IntelligenceSection() {
+  const comparisons = [
+    {
+      traditional: '📋 List of 1,000 leads',
+      propsift: '🎯 "Call John Smith NOW — Hot lead, due today"',
+    },
+    {
+      traditional: '❓ "Who should I call first?"',
+      propsift: '✅ Your top priorities, ranked automatically',
+    },
+    {
+      traditional: '📝 Manual follow-up tracking',
+      propsift: '🤖 Auto-scheduled based on temperature',
+    },
+    {
+      traditional: '😰 Leads falling through cracks',
+      propsift: '🔄 Every lead stays in rotation until closed',
+    },
+  ]
+
+  return (
+    <section className="py-20 bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900/50 text-blue-400 rounded-full text-sm font-semibold mb-6">
+            <Zap className="w-4 h-4" />
+            What Makes PropSift Different
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+            The Only CRM With{' '}
+            <span className="text-blue-400">Built-In Intelligence</span>
+          </h2>
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+            Other CRMs store your data. PropSift tells you what to do with it. Our algorithm analyzes every lead and answers the questions that matter.
+          </p>
+        </div>
+
+        {/* Comparison Grid */}
+        <div className="grid lg:grid-cols-2 gap-8 mb-16">
+          {/* Traditional CRM */}
+          <div className="bg-gray-950 border border-gray-800 rounded-2xl p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500 text-xl">📊</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-400">Traditional CRM</h3>
+                <p className="text-sm text-gray-500">Just stores data</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {comparisons.map((item, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg">
+                  <span className="text-gray-400">{item.traditional}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* PropSift */}
+          <div className="bg-gradient-to-br from-blue-900/20 to-gray-900 border-2 border-blue-600 rounded-2xl p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center">
+                <span className="text-blue-400 text-xl">🧠</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">PropSift</h3>
+                <p className="text-sm text-blue-400">Intelligent lead management</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {comparisons.map((item, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <span className="text-white">{item.propsift}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Key Questions */}
+        <div className="bg-gray-950 border border-gray-800 rounded-2xl p-8 lg:p-12">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-white mb-2">PropSift Answers The Questions That Matter</h3>
+            <p className="text-gray-400">No more staring at spreadsheets wondering what to do next</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: '🎯', question: 'Who should I call first?', answer: 'Smart scoring ranks your leads' },
+              { icon: '📅', question: 'When should I follow up?', answer: 'Auto-scheduled by temperature' },
+              { icon: '🔥', question: 'Which leads are going cold?', answer: 'Temperature tracking alerts you' },
+              { icon: '✅', question: 'What should I do today?', answer: 'Priority buckets organize tasks' },
+            ].map((item, i) => (
+              <div key={i} className="text-center p-6 bg-gray-900 rounded-xl border border-gray-800">
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <p className="font-semibold text-white mb-2">{item.question}</p>
+                <p className="text-sm text-gray-400">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="text-center mt-12">
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
+          >
+            Experience Intelligent Lead Management
+            <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </div>
     </section>
