@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -21,9 +22,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
+            <Image
+              src="https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg"
+              alt="PropSift Logo"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="text-xl font-bold text-gray-900">PropSift</span>
           </Link>
 

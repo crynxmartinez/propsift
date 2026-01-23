@@ -1,16 +1,16 @@
 {
   "name": "PropSift",
   "short_name": "PropSift",
-  "description": "CRM for Real Estate Wholesalers",
+  "description": "Smart CRM for Real Estate Wholesalers",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
     }
   ]
 }

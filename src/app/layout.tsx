@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals.',
     images: [
       {
-        url: '/logo.svg',
+        url: 'https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg',
         width: 1200,
         height: 630,
         alt: 'PropSift - Real Estate Lead Analytics & CRM',
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'PropSift - Real Estate Lead Analytics & CRM',
     description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals.',
-    images: ['/logo.svg'],
+    images: ['https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg'],
     creator: '@propsift',
   },
   icons: {

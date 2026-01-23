@@ -7,8 +7,8 @@ export function JsonLd() {
     operatingSystem: 'Web',
     description: 'Smart CRM for real estate wholesalers. Organize leads, automate follow-ups, track analytics & close more deals.',
     url: 'https://propsift.com',
-    logo: 'https://propsift.com/logo.svg',
-    screenshot: 'https://propsift.com/og-image.svg',
+    logo: 'https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg',
+    screenshot: 'https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg',
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -33,7 +33,7 @@ export function JsonLd() {
       url: 'https://propsift.com',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://propsift.com/logo.svg',
+        url: 'https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg',
       },
     },
     featureList: [
@@ -60,7 +60,7 @@ export function JsonLd() {
     '@type': 'Organization',
     name: 'PropSift',
     url: 'https://propsift.com',
-    logo: 'https://propsift.com/logo.svg',
+    logo: 'https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg',
     description: 'Smart CRM for real estate wholesalers and investors.',
     sameAs: [
       'https://twitter.com/propsift',

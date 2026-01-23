@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   Settings, 
   LogOut,
-  Building2,
   Tag,
   Zap,
   CircleDot,
@@ -59,9 +59,13 @@ export default function Sidebar() {
       <aside className="w-64 bg-card text-card-foreground h-screen sticky top-0 flex flex-col shrink-0 border-r z-50">
         <div className="p-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <Image
+              src="https://storage.googleapis.com/msgsndr/xzA6eU8kOYmBuwFdr3CF/media/6972f53c15885e29eeb6832e.jpg"
+              alt="PropSift Logo"
+              width={40}
+              height={40}
+              className="rounded-lg"
+            />
             <div>
               <h1 className="font-bold text-lg">PropSift</h1>
               <p className="text-xs text-muted-foreground">Property Manager</p>
