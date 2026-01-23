@@ -448,51 +448,14 @@ function HowItWorksSection() {
 }
 
 function PricingSection() {
-  const plans = [
-    {
-      name: 'Starter',
-      price: 49,
-      description: 'Perfect for solo wholesalers just getting started.',
-      features: [
-        'Up to 1,000 records',
-        'DockInsight Analytics',
-        'Kanban Boards',
-        'Basic Automations',
-        'Email Support',
-      ],
-      cta: 'Start Free Trial',
-      popular: false,
-    },
-    {
-      name: 'Pro',
-      price: 99,
-      description: 'For serious wholesalers scaling their business.',
-      features: [
-        'Up to 10,000 records',
-        'Everything in Starter',
-        'Advanced Automations',
-        'Custom Fields',
-        'Priority Support',
-        'Export to CSV',
-      ],
-      cta: 'Start Free Trial',
-      popular: true,
-    },
-    {
-      name: 'Team',
-      price: 199,
-      description: 'For teams that need collaboration and control.',
-      features: [
-        'Unlimited records',
-        'Everything in Pro',
-        'Up to 10 team members',
-        'Role-based Access',
-        'Round-robin Assignment',
-        'Dedicated Support',
-      ],
-      cta: 'Start Free Trial',
-      popular: false,
-    },
+  const features = [
+    'Unlimited Records',
+    'DockInsight Analytics',
+    'Lead Cadence Engine',
+    'Smart Lead Scoring',
+    'Unlimited Automations',
+    'Up to 10 Team Members',
+    'Priority Support',
   ]
 
   return (
@@ -503,56 +466,49 @@ function PricingSection() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Start free for 14 days. No credit card required. Cancel anytime.
+            One plan. Everything included. No hidden fees.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl border-2 p-8 ${
-                plan.popular
-                  ? 'border-blue-600 shadow-xl'
-                  : 'border-gray-200'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-sm font-semibold rounded-full">
-                  Most Popular
-                </div>
-              )}
-
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-1 mb-2">
-                  <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                  <span className="text-gray-500">/month</span>
-                </div>
-                <p className="text-gray-600 text-sm">{plan.description}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-600 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/register"
-                className={`block w-full text-center py-3 rounded-lg font-semibold transition-colors ${
-                  plan.popular
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                {plan.cta}
-              </Link>
+        {/* Single Pricing Card with FREE banner */}
+        <div className="max-w-md mx-auto">
+          <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8 overflow-hidden">
+            {/* FREE FOR 2026 Banner - diagonal strike across the price */}
+            <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 font-bold text-lg">
+              🎉 FREE FOR 2026 🎉
             </div>
-          ))}
+
+            <div className="text-center mb-6 pt-8">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Full Access</h3>
+              
+              {/* Price with strikethrough effect */}
+              <div className="relative inline-block">
+                <div className="flex items-baseline justify-center gap-1 mb-2">
+                  <span className="text-5xl font-bold text-gray-400 line-through decoration-red-600 decoration-4">$49</span>
+                  <span className="text-gray-400 line-through decoration-red-600 decoration-2">/month</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600">$0 /month for 2026</div>
+              </div>
+              
+              <p className="text-gray-600 mt-4">Everything you need to close more deals.</p>
+            </div>
+
+            <ul className="space-y-3 mb-8">
+              {features.map((feature) => (
+                <li key={feature} className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  <span className="text-gray-700">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/register"
+              className="block w-full text-center py-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg"
+            >
+              Get Started Free
+            </Link>
+          </div>
         </div>
 
         <div className="text-center mt-12">
@@ -560,7 +516,7 @@ function PricingSection() {
             href="/pricing"
             className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition-colors"
           >
-            Compare all features
+            See all features
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
