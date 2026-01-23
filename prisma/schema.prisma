@@ -280,11 +280,22 @@ model Record {
   cadenceExitDate   DateTime? // When exited cadence
   cadenceExitReason String? // COMPLETED, ANSWERED, DNC, DEAD, MANUAL, CLOSED
 
-  // LCE v3.0: First-to-Market Phases
-  currentPhase          String    @default("NEW") // NEW, BLITZ_1, DEEP_PROSPECT, BLITZ_2, MULTI_CHANNEL, NURTURE
+  // LCE v3.0/v4.0: First-to-Market Phases
+  currentPhase          String    @default("NEW") // Legacy: NEW, BLITZ_1, DEEP_PROSPECT, BLITZ_2, MULTI_CHANNEL, NURTURE
+  cadencePhase          String    @default("NEW") // LCE v4.0: NEW, BLITZ_1, DEEP_PROSPECT, BLITZ_2, TEMPERATURE, COMPLETED, ENGAGED, NURTURE
+  cadenceProgress       String?   // LCE v4.0: Progress string like "3/7"
   blitzAttempts         Int       @default(0) // Attempts in current blitz phase (resets on phase change)
+  blitzStartedAt        DateTime? // LCE v4.0: When blitz phase started
   lastBlitzDate         DateTime? // Last blitz call date (for daily follow-up tracking)
   deepProspectEnteredAt DateTime? // When entered deep prospecting
+  temperatureStartedAt  DateTime? // LCE v4.0: When temperature cadence started
+
+  // LCE v4.0: Queue Management
+  queueTier             Int       @default(9) // LCE v4.0: Queue priority tier (1=highest, 9=lowest)
+
+  // LCE v4.0: Phone Tracking
+  lastPhoneCalledId     String?   // LCE v4.0: ID of last phone number called
+  phoneExhaustedAt      DateTime? // LCE v4.0: When all phones were exhausted
 
   // Next Action
   nextActionType String? // CALL, SMS, RVM, EMAIL
@@ -339,6 +350,10 @@ model Record {
   @@index([createdById, temperatureBand])
   @@index([createdById, reEnrollmentDate])
   @@index([cadenceState, nextActionDue])
+  // LCE v4.0: Additional indexes
+  @@index([createdById, cadencePhase])
+  @@index([createdById, queueTier])
+  @@index([phoneExhaustedAt])
 }
 
 model RecordTag {
