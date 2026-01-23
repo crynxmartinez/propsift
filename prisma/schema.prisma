@@ -17,8 +17,15 @@ model User {
 
   // Role & Status
   role            String  @default("owner") // owner, super_admin, admin, member
-  status          String  @default("active") // active, inactive
+  status          String  @default("pending") // pending, active, inactive
   isPlatformAdmin Boolean @default(false) // Platform-level admin (PropSift staff only)
+
+  // Email verification
+  emailVerified         Boolean   @default(false)
+  verificationToken     String?   @unique
+  verificationExpires   DateTime?
+  lastVerificationSentAt DateTime?
+  registrationIp        String?
 
   // Account ownership (for team members)
   accountOwnerId String?

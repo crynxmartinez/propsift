@@ -18,6 +18,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
+    // Check if user is verified
+    if (user.status === 'pending' || !user.emailVerified) {
+      return NextResponse.json({ 
+        error: 'Please verify your email before logging in. Check your inbox for the activation link.',
+        requiresVerification: true 
+      }, { status: 403 })
+    }
+
+    // Check if user is inactive
+    if (user.status === 'inactive') {
+      return NextResponse.json({ 
+        error: 'Your account has been deactivated. Please contact support.' 
+      }, { status: 403 })
+    }
+
     const isValid = await verifyPassword(password, user.password)
 
     if (!isValid) {

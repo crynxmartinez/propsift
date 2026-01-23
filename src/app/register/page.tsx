@@ -48,8 +48,14 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed')
       }
 
-      localStorage.setItem('token', data.token)
-      router.push('/dashboard')
+      // Redirect to check-email page for verification
+      if (data.requiresVerification) {
+        router.push(`/check-email?email=${encodeURIComponent(email)}`)
+      } else {
+        // Fallback for any edge case
+        localStorage.setItem('token', data.token)
+        router.push('/dashboard')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
