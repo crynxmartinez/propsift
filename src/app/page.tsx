@@ -108,13 +108,13 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* Free offer */}
+              {/* Enrollment offer */}
               <div className="bg-green-900/30 border border-green-600/50 rounded-xl p-4 mb-6">
                 <p className="text-green-400 font-semibold text-lg">
-                  🎉 FREE for all of 2026!
+                  🎉 $10 Enrollment + 3 Months FREE!
                 </p>
                 <p className="text-green-300/80 text-sm">
-                  No credit card required. Full access to everything.
+                  One-time setup fee. Full access to everything.
                 </p>
               </div>
 
@@ -124,7 +124,7 @@ export default function LandingPage() {
                 onClick={handleClosePopup}
                 className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-lg"
               >
-                Get Started Free
+                Get Started — $10
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
@@ -187,7 +187,7 @@ function Navbar() {
               href="/register"
               className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Start Free Trial
+              Get Started
             </Link>
           </div>
 
@@ -226,7 +226,7 @@ function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block w-full text-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Start Free Trial
+                Get Started
               </Link>
             </div>
           </div>
@@ -266,7 +266,7 @@ function HeroSection() {
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Start Free Trial
+                Get Started
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
@@ -284,7 +284,7 @@ function HeroSection() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                Free for 2026
+                3 Months Free
               </div>
             </div>
           </div>
@@ -705,24 +705,24 @@ function PricingSection() {
           </p>
         </div>
 
-        {/* Single Pricing Card with FREE banner */}
+        {/* Single Pricing Card with enrollment offer */}
         <div className="max-w-md mx-auto">
           <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8 overflow-hidden bg-gray-900">
-            {/* FREE FOR 2026 Banner - diagonal strike across the price */}
-            <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 font-bold text-lg">
-              🎉 FREE FOR 2026 🎉
+            {/* Enrollment Banner */}
+            <div className="absolute top-0 left-0 right-0 bg-green-600 text-white text-center py-2 font-bold text-lg">
+              🎉 $10 + 3 MONTHS FREE 🎉
             </div>
 
             <div className="text-center mb-6 pt-8">
               <h3 className="text-2xl font-semibold text-white mb-4">Full Access</h3>
               
-              {/* Price with strikethrough effect */}
+              {/* Price display */}
               <div className="relative inline-block">
                 <div className="flex items-baseline justify-center gap-1 mb-2">
-                  <span className="text-5xl font-bold text-gray-400 line-through decoration-red-600 decoration-4">$49</span>
-                  <span className="text-gray-400 line-through decoration-red-600 decoration-2">/month</span>
+                  <span className="text-5xl font-bold text-white">$10</span>
+                  <span className="text-gray-400">one-time</span>
                 </div>
-                <div className="text-2xl font-bold text-green-600">$0 /month for 2026</div>
+                <div className="text-xl font-semibold text-green-400">Then $49/month after 3 months</div>
               </div>
               
               <p className="text-gray-400 mt-4">Everything you need to close more deals.</p>
@@ -741,7 +741,7 @@ function PricingSection() {
               href="/register"
               className="block w-full text-center py-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg"
             >
-              Get Started Free
+              Get Started — $10
             </Link>
           </div>
         </div>
@@ -839,7 +839,7 @@ function FAQSection() {
     },
     {
       question: 'Is there a free trial?',
-      answer: 'Yes, PropSift is completely free for 2026 with full access to all features. No credit card required.',
+      answer: 'Yes! Pay a one-time $10 enrollment fee and get 3 months of full access completely free. After that, it\'s $49/month. Cancel anytime.',
     },
     {
       question: 'Can I add team members?',
@@ -910,7 +910,7 @@ function CTASection() {
             href="/register"
             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Start Your Free Trial
+            Get Started — $10
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
@@ -922,7 +922,7 @@ function CTASection() {
           </Link>
         </div>
         <p className="mt-6 text-blue-200 text-sm">
-          No credit card required • Free for 2026 • Cancel anytime
+          $10 enrollment • 3 months free • Then $49/month • Cancel anytime
         </p>
       </div>
     </section>
