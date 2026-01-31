@@ -108,13 +108,13 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* Enrollment offer */}
+              {/* Soft launch offer */}
               <div className="bg-green-900/30 border border-green-600/50 rounded-xl p-4 mb-6">
                 <p className="text-green-400 font-semibold text-lg">
-                  🎉 $10 Enrollment + 3 Months FREE!
+                  🚀 Soft Launch 2026 — 100% FREE!
                 </p>
                 <p className="text-green-300/80 text-sm">
-                  One-time setup fee. Full access to everything.
+                  Help us build the perfect CRM. Full access, no credit card.
                 </p>
               </div>
 
@@ -124,7 +124,7 @@ export default function LandingPage() {
                 onClick={handleClosePopup}
                 className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-lg"
               >
-                Get Started — $10
+                Join the Soft Launch
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
@@ -187,7 +187,7 @@ function Navbar() {
               href="/register"
               className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Get Started
+              Get Started Free
             </Link>
           </div>
 
@@ -226,7 +226,7 @@ function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block w-full text-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Get Started
+                Get Started Free
               </Link>
             </div>
           </div>
@@ -266,7 +266,7 @@ function HeroSection() {
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Get Started
+                Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
@@ -284,7 +284,7 @@ function HeroSection() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                3 Months Free
+                Free for 2026
               </div>
             </div>
           </div>
@@ -705,12 +705,12 @@ function PricingSection() {
           </p>
         </div>
 
-        {/* Single Pricing Card with enrollment offer */}
+        {/* Single Pricing Card with soft launch */}
         <div className="max-w-md mx-auto">
           <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8 overflow-hidden bg-gray-900">
-            {/* Enrollment Banner */}
+            {/* Soft Launch Banner */}
             <div className="absolute top-0 left-0 right-0 bg-green-600 text-white text-center py-2 font-bold text-lg">
-              🎉 $10 + 3 MONTHS FREE 🎉
+              🚀 SOFT LAUNCH — FREE FOR 2026 🚀
             </div>
 
             <div className="text-center mb-6 pt-8">
@@ -719,13 +719,13 @@ function PricingSection() {
               {/* Price display */}
               <div className="relative inline-block">
                 <div className="flex items-baseline justify-center gap-1 mb-2">
-                  <span className="text-5xl font-bold text-white">$10</span>
-                  <span className="text-gray-400">one-time</span>
+                  <span className="text-5xl font-bold text-white">$0</span>
+                  <span className="text-gray-400">/month</span>
                 </div>
-                <div className="text-xl font-semibold text-green-400">Then $49/month after 3 months</div>
+                <div className="text-xl font-semibold text-green-400">Free while we build together</div>
               </div>
               
-              <p className="text-gray-400 mt-4">Everything you need to close more deals.</p>
+              <p className="text-gray-400 mt-4">Help shape the future of PropSift.</p>
             </div>
 
             <ul className="space-y-3 mb-8">
@@ -741,7 +741,7 @@ function PricingSection() {
               href="/register"
               className="block w-full text-center py-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg"
             >
-              Get Started — $10
+              Join the Soft Launch — Free
             </Link>
           </div>
         </div>
@@ -838,8 +838,8 @@ function FAQSection() {
       answer: 'Yes! PropSift supports bulk CSV imports from any source — skip trace services, list providers, or your own spreadsheets. Our import wizard maps your columns automatically.',
     },
     {
-      question: 'Is there a free trial?',
-      answer: 'Yes! Pay a one-time $10 enrollment fee and get 3 months of full access completely free. After that, it\'s $49/month. Cancel anytime.',
+      question: 'Is PropSift really free?',
+      answer: 'Yes! We\'re in soft launch mode for 2026. Get full access completely free while we build and improve the platform together. No credit card required. Pricing starts in 2027.',
     },
     {
       question: 'Can I add team members?',
@@ -910,7 +910,7 @@ function CTASection() {
             href="/register"
             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Get Started — $10
+            Join the Soft Launch
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
@@ -918,11 +918,11 @@ function CTASection() {
             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white/10 transition-colors"
           >
             <Mail className="w-5 h-5" />
-            Contact Sales
+            Contact Us
           </Link>
         </div>
         <p className="mt-6 text-blue-200 text-sm">
-          $10 enrollment • 3 months free • Then $49/month • Cancel anytime
+          No credit card required • Free for 2026 • Shape the future with us
         </p>
       </div>
     </section>

@@ -86,11 +86,11 @@ function ContactSection() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-white mb-4">Ready to Get Started?</h3>
             <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
-              $10 enrollment + 3 months free. Start closing more deals today.
+              PropSift is FREE for 2026! Join the soft launch and help us build together.
             </p>
             <Button asChild size="lg">
               <Link href="/register">
-                Get Started — $10
+                Join the Soft Launch
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>

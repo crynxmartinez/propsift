@@ -29,7 +29,7 @@ function FreeBanner() {
     <div className="bg-green-600 py-4 px-4">
       <div className="max-w-7xl mx-auto text-center">
         <p className="text-white text-xl sm:text-2xl font-bold tracking-wide">
-          🎉 $10 ENROLLMENT + 3 MONTHS FREE — Limited Time Offer! 🎉
+          🚀 SOFT LAUNCH 2026 — Free Access While We Build Together! 🚀
         </p>
       </div>
     </div>
@@ -77,17 +77,17 @@ function PricingCards() {
         <div className="max-w-lg mx-auto">
           <div className="relative rounded-2xl border-2 border-blue-600 shadow-xl p-8 bg-gray-900">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-green-600 text-white text-sm font-semibold rounded-full">
-              $10 + 3 MONTHS FREE
+              SOFT LAUNCH — FREE
             </div>
 
             <div className="text-center mb-8">
               <h3 className="text-2xl font-semibold text-white mb-4">Full Access</h3>
               <div className="flex items-baseline justify-center gap-1 mb-2">
-                <span className="text-5xl font-bold text-white">$10</span>
-                <span className="text-gray-400">one-time</span>
+                <span className="text-5xl font-bold text-white">$0</span>
+                <span className="text-gray-400">/month</span>
               </div>
-              <p className="text-xl font-semibold text-green-400 mt-2">Then $49/month after 3 months</p>
-              <p className="text-gray-400 mt-2">Everything you need to manage leads and close deals.</p>
+              <p className="text-xl font-semibold text-green-400 mt-2">Free for 2026 — $49/month starting 2027</p>
+              <p className="text-gray-400 mt-2">Help us build the perfect CRM together.</p>
             </div>
 
             <ul className="space-y-3 mb-8">
@@ -101,7 +101,7 @@ function PricingCards() {
 
             <Button asChild className="w-full" size="lg">
               <Link href="/register">
-                Get Started — $10
+                Join the Soft Launch — Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
@@ -217,16 +217,16 @@ function FeatureComparison() {
 function FAQSection() {
   const faqs = [
     {
-      question: 'What does the $10 enrollment fee include?',
-      answer: 'The $10 one-time enrollment fee gives you immediate full access to PropSift for 3 months completely free. This includes all features: DockInsight analytics, Lead Cadence Engine, smart scoring, unlimited automations, and up to 10 team members.',
+      question: 'Is PropSift really free?',
+      answer: 'Yes! We\'re in soft launch mode for 2026. Get full access to all features completely free while we build and improve the platform together. No credit card required.',
     },
     {
-      question: 'What happens after 3 months?',
-      answer: 'After your 3-month free period, PropSift is $49/month for continued full access. We\'ll notify you before any charges begin. You can cancel anytime — no contracts or commitments.',
+      question: 'What happens after 2026?',
+      answer: 'Starting in 2027, PropSift will be $49/month for full access. We\'ll notify you well in advance before any charges begin. Your data and settings will be preserved.',
     },
     {
       question: 'Is there a contract or commitment?',
-      answer: 'No contracts, no commitments. After your 3-month free period, it\'s month-to-month and you can cancel anytime. Your data is always yours.',
+      answer: 'No contracts, no commitments. During the soft launch, you can use PropSift without any obligations. When paid plans begin in 2027, it\'s month-to-month and you can cancel anytime.',
     },
     {
       question: 'What\'s included in the $49/month plan?',
@@ -238,7 +238,7 @@ function FAQSection() {
     },
     {
       question: 'How do I get started?',
-      answer: 'Click "Get Started" and pay the one-time $10 enrollment fee. You\'ll get immediate full access to all features for 3 months free.',
+      answer: 'Just click "Join the Soft Launch" and create your account. No credit card needed. You\'ll have immediate access to all features for free.',
     },
   ]
 
@@ -287,14 +287,14 @@ function CTASection() {
     <section className="py-20 bg-blue-600">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-          Get Started for Just $10
+          Join the Soft Launch — Free for 2026
         </h2>
         <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-          One-time enrollment fee. 3 months free. Then $49/month. Cancel anytime.
+          No credit card required. Help us build the perfect CRM together.
         </p>
         <Button asChild size="lg" variant="secondary">
           <Link href="/register">
-            Get Started — $10
+            Get Started Free
             <ArrowRight className="w-5 h-5 ml-2" />
           </Link>
         </Button>
